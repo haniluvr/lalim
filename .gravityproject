@@ -1,0 +1,26 @@
+{
+  "projectName": "LALIM",
+  "editorMode": "Unity-External",
+  "indexingRules": {
+    "includeExtensions": [".cs", ".json", ".asmdef"],
+    "excludeDirectories": [
+      "**/Library",
+      "**/Logs",
+      "**/Packages",
+      "**/ProjectSettings",
+      "**/UserSettings",
+      "**/WebGLTemplates",
+      "**/*.meta",
+      "**/*.fbx",
+      "**/*.wav",
+      "**/*.mp3",
+      "**/*.png"
+    ]
+  },
+  "agentProfiles": {
+    "core_architect": {
+      "modelLimit": "AI_Pro_Context_Preservation",
+      "systemPrompt": "You are the Lead Systems Architect for LALIM. Focus exclusively on C# scripts, JSON data manifests, and local rule-based architectures. Never reference cloud synchronization pipelines or heavy machine learning dependencies."
+    }
+  }
+}
