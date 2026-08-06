@@ -64,6 +64,61 @@ namespace Lalim.Mechanics
             DontDestroyOnLoad(gameObject);
         }
 
+        // ─────────────────────────────────────────────
+        // Editor / Desktop Fallback (WASD + Mouse)
+        // ─────────────────────────────────────────────
+
+        private void Update()
+        {
+            // Clear look delta at the start of each frame so stale values
+            // don't carry over, but CameraController (in LateUpdate) can
+            // still read whatever gets set during this Update.
+            LookDelta = Vector2.zero;
+
+            // Only use keyboard/mouse fallback on non-touch platforms (Editor, Standalone)
+            if (Application.isMobilePlatform) return;
+            if (!_inputEnabled) return;
+
+            // --- WASD Movement ---
+            Vector2 keyboardMove = Vector2.zero;
+            if (Input.GetKey(KeyCode.W)) keyboardMove.y += 1f;
+            if (Input.GetKey(KeyCode.S)) keyboardMove.y -= 1f;
+            if (Input.GetKey(KeyCode.A)) keyboardMove.x -= 1f;
+            if (Input.GetKey(KeyCode.D)) keyboardMove.x += 1f;
+
+            if (keyboardMove.sqrMagnitude > 0f)
+            {
+                MoveInput = keyboardMove.normalized;
+            }
+            else if (!HasTouchInput)
+            {
+                // Only clear if no touch joystick is active
+                MoveInput = Vector2.zero;
+            }
+
+            // --- Right-click Mouse Look ---
+            if (Input.GetMouseButton(1)) // Right mouse button held
+            {
+                float mouseX = Input.GetAxis("Mouse X") * 5f;
+                float mouseY = Input.GetAxis("Mouse Y") * 5f;
+                SetLookDelta(new Vector2(mouseX, mouseY));
+            }
+
+            // --- Keyboard Triggers ---
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                TriggerInteract();
+            }
+            if (Input.GetKeyDown(KeyCode.Q))
+            {
+                TriggerSpiritSense();
+            }
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                TriggerPause();
+            }
+        }
+
         private void OnEnable()
         {
             EventBus.Subscribe<GameStateChangedEvent>(OnGameStateChanged);

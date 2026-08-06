@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d37861341d451f47a8fe5f819540e68, type: 3}
   m_Name: 05_CoralReplantingKit
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemData
-  itemId: 
-  displayName: 
+  itemId: 05_coralreplantingkit
+  displayName: Coral Replanting Kit
   description: 
-  itemType: 0
+  itemType: 1
   regionOrigin: 0
   isKeyItem: 0
   icon: {fileID: 0}

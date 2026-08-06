@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d37861341d451f47a8fe5f819540e68, type: 3}
   m_Name: 03_TideLens
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemData
-  itemId: 
-  displayName: 
+  itemId: 03_tidelens
+  displayName: Tide Lens
   description: 
   itemType: 0
-  regionOrigin: 0
+  regionOrigin: 2
   isKeyItem: 0
   icon: {fileID: 0}
   worldModelPrefab: {fileID: 0}

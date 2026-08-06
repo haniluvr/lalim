@@ -12,4 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 306cf590b0019b54da9ad3d15542ea6a, type: 3}
   m_Name: ItemDatabase
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemDatabase
-  _items: []
+  _items:
+  - {fileID: 11400000, guid: 70b96ffbfc318234f8b04addc117aac9, type: 2}
+  - {fileID: 11400000, guid: de74d76745c2c85429f20eb80d78e69a, type: 2}
+  - {fileID: 11400000, guid: 41050cdf7b644274ab4b49502b730656, type: 2}
+  - {fileID: 11400000, guid: 6ff4eb63f5d8f0a41a506e283bb594ff, type: 2}
+  - {fileID: 11400000, guid: 221b3203e65a77242a58d4b7b68d5920, type: 2}
+  - {fileID: 11400000, guid: 28d472f4bdfc6a54eac0cb60e595a1a0, type: 2}
+  - {fileID: 11400000, guid: b19787c40ca922b4db574725262c4ed6, type: 2}
+  - {fileID: 11400000, guid: ea1ab8b41110169459593ec36a9c0ed7, type: 2}
+  - {fileID: 11400000, guid: 961c777b2c2508b44bcaf3487e1039d2, type: 2}

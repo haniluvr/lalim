@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d37861341d451f47a8fe5f819540e68, type: 3}
   m_Name: 08_FishingRod
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemData
-  itemId: 
-  displayName: 
+  itemId: 08_fishingrod
+  displayName: Fishing Rod
   description: 
-  itemType: 0
-  regionOrigin: 0
+  itemType: 1
+  regionOrigin: 1
   isKeyItem: 0
   icon: {fileID: 0}
   worldModelPrefab: {fileID: 0}

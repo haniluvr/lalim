@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d37861341d451f47a8fe5f819540e68, type: 3}
   m_Name: 00_RadiantConch
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemData
-  itemId: 00_RadiantConch
+  itemId: 00_radiantconch
   displayName: Radiant Conch
   description: 
   itemType: 0
