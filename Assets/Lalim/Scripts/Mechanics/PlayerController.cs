@@ -74,10 +74,12 @@ namespace Lalim.Mechanics
 
         private void Update()
         {
-            if (!_movementEnabled || _isInChallenge) return;
+            if (!_movementEnabled) return;
 
             HandleMovement();
             HandleGravity();
+
+            // Allow interaction during walk-around challenges too
             HandleInteraction();
         }
 
@@ -188,7 +190,9 @@ namespace Lalim.Mechanics
         private void OnChallengeStarted(ChallengeStartedEvent evt)
         {
             _isInChallenge = true;
-            _movementEnabled = false;
+
+            // Some challenges still need player movement (walk to bins, etc.)
+            _movementEnabled = IsMoveableChallenge(evt.Type);
         }
 
         private void OnChallengeCompleted(ChallengeCompletedEvent evt)
@@ -201,6 +205,33 @@ namespace Lalim.Mechanics
         {
             _isInChallenge = false;
             _movementEnabled = true;
+        }
+
+        /// <summary>
+        /// Returns true for challenge types where the player needs
+        /// to walk around (3P stays active). Returns false for
+        /// stationary challenges (lock movement, switch to 1P).
+        /// </summary>
+        private bool IsMoveableChallenge(ChallengeType type)
+        {
+            switch (type)
+            {
+                case ChallengeType.WasteSegregation:
+                case ChallengeType.CoralReplanting:
+                case ChallengeType.WaterSampling:
+                case ChallengeType.PollutionScan:
+                case ChallengeType.HazardDefusal:
+                case ChallengeType.GhostNetRescue:
+                    return true;
+
+                // Stationary 1P challenges
+                case ChallengeType.SustainableFishing:
+                case ChallengeType.FrequencyMatching:
+                case ChallengeType.TrenchDescent:
+                case ChallengeType.RitualOffering:
+                default:
+                    return false;
+            }
         }
 
         private void OnGameStateChanged(GameStateChangedEvent evt)

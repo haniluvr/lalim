@@ -262,6 +262,7 @@ namespace Lalim.Mechanics
 
         private void OnChallengeStarted(ChallengeStartedEvent evt)
         {
+            // All challenges use first-person camera
             SwitchMode(CameraMode.FirstPerson);
         }
 
