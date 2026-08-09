@@ -4,7 +4,19 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Lalim/Scenes/00_BootSequence/00_BootSequence.unity
+    guid: 360aa08a4e7acc0439d8a35eb3e64dc9
+  - enabled: 1
+    path: Assets/Lalim/Scenes/02_Luzon/02_Luzon.unity
+    guid: 7c5581e61f856884d8919bd4c26bdb42
+  - enabled: 1
+    path: Assets/Lalim/Scenes/03_Visayas/03_Visayas.unity
+    guid: 94b9fa35ea848fa4e82d4c80629582d2
+  - enabled: 1
+    path: Assets/Lalim/Scenes/04_Mindanao/04_Mindanao.unity
+    guid: 96df88f54c17ef6449c2e08b631fe561
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f,
       type: 2}

@@ -148,7 +148,7 @@ namespace Lalim.UI
                 EventBus.Publish(new ChallengeFailedEvent
                 {
                     ChallengeId = "",
-                    Type = ChallengeType.TrashCleanup,
+                    Type = ChallengeType.WasteSegregation,
                     Reason = "timeout"
                 });
             }

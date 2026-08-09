@@ -264,6 +264,10 @@ namespace Lalim.Core
         // Inventory (item IDs)
         public List<string> collectedRelicIds = new List<string>();
         public List<string> collectedToolIds = new List<string>();
+        public List<string> collectedQuestItemIds = new List<string>();
+
+        // Zone completion (RegionProgressTracker)
+        public List<string> completedZoneIds = new List<string>();
 
         // DDA Metrics
         public float difficultyLevel = GameConstants.DDA.DEFAULT_DIFFICULTY;
