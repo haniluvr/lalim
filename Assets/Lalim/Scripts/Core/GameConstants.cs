@@ -97,6 +97,48 @@ namespace Lalim.Core
         }
 
         // ─────────────────────────────────────────────
+        // Zone Identifiers
+        // ─────────────────────────────────────────────
+
+        public static class Zones
+        {
+            // Luzon zones
+            public const string LUZON_BLEACHED_REEF = "luzon_zone_a";
+            public const string LUZON_TOXIN_SITES = "luzon_zone_b";
+            public const string LUZON_CORAL_BED = "luzon_zone_c";
+
+            // Visayas zones
+            public const string VISAYAS_FISHING_GROUNDS = "visayas_zone_a";
+            public const string VISAYAS_GHOST_NET_FIELD = "visayas_zone_b";
+            public const string VISAYAS_RESCUE_SITE = "visayas_zone_c";
+
+            // Mindanao zones
+            public const string MINDANAO_TRENCH_ENTRY = "mindanao_zone_a";
+            public const string MINDANAO_BOMB_FIELD = "mindanao_zone_b";
+            public const string MINDANAO_WHALE_SANCTUARY = "mindanao_zone_c";
+
+            public const int ZONES_PER_REGION = 3;
+
+            /// <summary>
+            /// Get all zone IDs for a given region.
+            /// </summary>
+            public static string[] GetZonesForRegion(Region region)
+            {
+                switch (region)
+                {
+                    case Region.Luzon:
+                        return new[] { LUZON_BLEACHED_REEF, LUZON_TOXIN_SITES, LUZON_CORAL_BED };
+                    case Region.Visayas:
+                        return new[] { VISAYAS_FISHING_GROUNDS, VISAYAS_GHOST_NET_FIELD, VISAYAS_RESCUE_SITE };
+                    case Region.Mindanao:
+                        return new[] { MINDANAO_TRENCH_ENTRY, MINDANAO_BOMB_FIELD, MINDANAO_WHALE_SANCTUARY };
+                    default:
+                        return new string[0];
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────
         // Player Defaults
         // ─────────────────────────────────────────────
 

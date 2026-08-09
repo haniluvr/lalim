@@ -53,10 +53,23 @@ namespace Lalim.Core
 
     public enum ChallengeType
     {
-        TrashCleanup,
-        RelicRestoration,
-        PuzzleSolving,
-        ConservationTask
+        // Shared (appear in multiple regions)
+        WasteSegregation,       // Sort trash into correct bins
+        WaterSampling,          // Test pH/salinity/temp at marked locations
+        CoralReplanting,        // Anchor coral fragments to substrate
+
+        // Luzon-specific
+        PollutionScan,          // Use Spirit Sense to find hidden pollution zones
+        RitualOffering,         // Deliver offering at shrine
+
+        // Visayas-specific
+        SustainableFishing,     // Line tension + species ID mini-game
+        GhostNetRescue,         // Cut nets to free trapped wildlife
+
+        // Mindanao-specific
+        HazardDefusal,          // Locate and defuse underwater explosives
+        FrequencyMatching,      // Sound-match to calm whale shark
+        TrenchDescent           // Manage pressure during deep dive
     }
 
     public struct ChallengeStartedEvent
@@ -94,8 +107,11 @@ namespace Lalim.Core
 
     public enum ItemType
     {
-        Relic,
-        ConservationTool
+        Relic,              // Cultural artifacts (Radiant Conch, Woven Net Fragment, Tide Lens)
+        Tool,               // Reusable conservation tools (Water Sample Kit, Coral Replanting Kit)
+        ConsumableKit,      // Single-use items (Waste Segregation Bag)
+        QuestItem,          // Key progression items (Recycled Coral Stone, Ritual Offering)
+        CompanionItem       // Dugong-related (Bioluminescent Pearl)
     }
 
     public struct ItemCollectedEvent
@@ -115,6 +131,22 @@ namespace Lalim.Core
     {
         public int TotalRelics;
         public int TotalTools;
+        public int TotalQuestItems;
+    }
+
+    // ─────────────────────────────────────────────
+    // Tool Equip
+    // ─────────────────────────────────────────────
+
+    public struct ToolEquippedEvent
+    {
+        public string ItemId;
+        public ItemType Type;
+    }
+
+    public struct ToolUnequippedEvent
+    {
+        public string ItemId;
     }
 
     // ─────────────────────────────────────────────
@@ -195,6 +227,44 @@ namespace Lalim.Core
     public struct RegionCompletedEvent
     {
         public Region CompletedRegion;
+    }
+
+    // ─────────────────────────────────────────────
+    // Zone Completion
+    // ─────────────────────────────────────────────
+
+    public struct ZoneCompletedEvent
+    {
+        public string ZoneId;
+        public Region Region;
+        public ChallengeType ChallengeType;
+    }
+
+    // ─────────────────────────────────────────────
+    // Moon Tides
+    // ─────────────────────────────────────────────
+
+    public enum TideLevel
+    {
+        Low,
+        Mid,
+        High
+    }
+
+    public struct TideChangedEvent
+    {
+        public TideLevel NewTide;
+        public TideLevel PreviousTide;
+    }
+
+    // ─────────────────────────────────────────────
+    // Marine Species Codex
+    // ─────────────────────────────────────────────
+
+    public struct CodexEntryUnlockedEvent
+    {
+        public string SpeciesId;
+        public string RegionDiscovered;
     }
 
     // ─────────────────────────────────────────────

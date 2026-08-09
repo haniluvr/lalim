@@ -19,15 +19,19 @@ namespace Lalim.Inventory
         // Inventory State
         // ─────────────────────────────────────────────
 
-        private List<string> _collectedRelicIds = new List<string>();
-        private List<string> _collectedToolIds = new List<string>();
+        private Dictionary<ItemType, List<string>> _inventory = new Dictionary<ItemType, List<string>>
+        {
+            { ItemType.Relic, new List<string>() },
+            { ItemType.Tool, new List<string>() },
+            { ItemType.QuestItem, new List<string>() }
+        };
 
-        private HashSet<string> _relicLookup = new HashSet<string>();
-        private HashSet<string> _toolLookup = new HashSet<string>();
+        private HashSet<string> _allItemLookup = new HashSet<string>();
 
-        public int RelicCount => _collectedRelicIds.Count;
-        public int ToolCount => _collectedToolIds.Count;
-        public int TotalItemCount => RelicCount + ToolCount;
+        public int RelicCount => _inventory[ItemType.Relic].Count;
+        public int ToolCount => _inventory[ItemType.Tool].Count;
+        public int QuestItemCount => _inventory[ItemType.QuestItem].Count;
+        public int TotalItemCount => _allItemLookup.Count;
 
         // ─────────────────────────────────────────────
         // Lifecycle
@@ -78,16 +82,9 @@ namespace Lalim.Inventory
             }
 
             // Add to appropriate list
-            if (itemData.itemType == ItemType.Relic)
-            {
-                _collectedRelicIds.Add(itemId);
-                _relicLookup.Add(itemId);
-            }
-            else if (itemData.itemType == ItemType.ConservationTool)
-            {
-                _collectedToolIds.Add(itemId);
-                _toolLookup.Add(itemId);
-            }
+            ItemType storageType = GetStorageType(itemData.itemType);
+            _inventory[storageType].Add(itemId);
+            _allItemLookup.Add(itemId);
 
             Debug.Log($"[Inventory] Collected: {itemData.displayName} ({itemData.itemType})");
 
@@ -102,7 +99,8 @@ namespace Lalim.Inventory
             EventBus.Publish(new InventoryChangedEvent
             {
                 TotalRelics = RelicCount,
-                TotalTools = ToolCount
+                TotalTools = ToolCount,
+                TotalQuestItems = QuestItemCount
             });
 
             // Update save data
@@ -127,16 +125,9 @@ namespace Lalim.Inventory
             if (itemData == null) return false;
 
             // Remove from lists
-            if (itemData.itemType == ItemType.Relic)
-            {
-                _collectedRelicIds.Remove(itemId);
-                _relicLookup.Remove(itemId);
-            }
-            else
-            {
-                _collectedToolIds.Remove(itemId);
-                _toolLookup.Remove(itemId);
-            }
+            ItemType storageType = GetStorageType(itemData.itemType);
+            _inventory[storageType].Remove(itemId);
+            _allItemLookup.Remove(itemId);
 
             EventBus.Publish(new ItemUsedEvent
             {
@@ -147,7 +138,8 @@ namespace Lalim.Inventory
             EventBus.Publish(new InventoryChangedEvent
             {
                 TotalRelics = RelicCount,
-                TotalTools = ToolCount
+                TotalTools = ToolCount,
+                TotalQuestItems = QuestItemCount
             });
 
             UpdateSaveData();
@@ -164,7 +156,7 @@ namespace Lalim.Inventory
         /// </summary>
         public bool HasItem(string itemId)
         {
-            return _relicLookup.Contains(itemId) || _toolLookup.Contains(itemId);
+            return _allItemLookup.Contains(itemId);
         }
 
         /// <summary>
@@ -172,9 +164,8 @@ namespace Lalim.Inventory
         /// </summary>
         public List<string> GetCollectedItemIds(ItemType type)
         {
-            return type == ItemType.Relic
-                ? new List<string>(_collectedRelicIds)
-                : new List<string>(_collectedToolIds);
+            ItemType storageType = GetStorageType(type);
+            return new List<string>(_inventory[storageType]);
         }
 
         /// <summary>
@@ -183,7 +174,7 @@ namespace Lalim.Inventory
         public List<ItemData> GetCollectedItems(ItemType type)
         {
             List<ItemData> items = new List<ItemData>();
-            List<string> ids = type == ItemType.Relic ? _collectedRelicIds : _collectedToolIds;
+            List<string> ids = GetCollectedItemIds(type);
 
             foreach (string id in ids)
             {
@@ -225,19 +216,38 @@ namespace Lalim.Inventory
             if (SaveManager.Instance == null) return;
 
             var save = SaveManager.Instance.CurrentSave;
-            save.collectedRelicIds = new List<string>(_collectedRelicIds);
-            save.collectedToolIds = new List<string>(_collectedToolIds);
+            save.collectedRelicIds = new List<string>(_inventory[ItemType.Relic]);
+            save.collectedToolIds = new List<string>(_inventory[ItemType.Tool]);
+            save.collectedQuestItemIds = new List<string>(_inventory[ItemType.QuestItem]);
         }
 
         private void RestoreFromSave(SaveData save)
         {
-            _collectedRelicIds = new List<string>(save.collectedRelicIds ?? new List<string>());
-            _collectedToolIds = new List<string>(save.collectedToolIds ?? new List<string>());
+            _inventory[ItemType.Relic] = new List<string>(save.collectedRelicIds ?? new List<string>());
+            _inventory[ItemType.Tool] = new List<string>(save.collectedToolIds ?? new List<string>());
+            _inventory[ItemType.QuestItem] = new List<string>(save.collectedQuestItemIds ?? new List<string>());
 
-            _relicLookup = new HashSet<string>(_collectedRelicIds);
-            _toolLookup = new HashSet<string>(_collectedToolIds);
+            _allItemLookup = new HashSet<string>();
+            foreach (var kvp in _inventory)
+            {
+                foreach (var id in kvp.Value) _allItemLookup.Add(id);
+            }
 
-            Debug.Log($"[Inventory] Restored: {RelicCount} relics, {ToolCount} tools");
+            Debug.Log($"[Inventory] Restored: {RelicCount} relics, {ToolCount} tools, {QuestItemCount} quest items");
+        }
+
+        /// <summary>
+        /// Map any ItemType to its storage bucket key.
+        /// ConsumableKit and CompanionItem share the Tool bucket.
+        /// </summary>
+        private ItemType GetStorageType(ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.Relic:       return ItemType.Relic;
+                case ItemType.QuestItem:   return ItemType.QuestItem;
+                default:                   return ItemType.Tool;  // Tool, ConsumableKit, CompanionItem
+            }
         }
     }
 }
