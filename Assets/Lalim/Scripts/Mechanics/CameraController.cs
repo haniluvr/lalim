@@ -160,8 +160,8 @@ namespace Lalim.Mechanics
 
         private void UpdateFirstPerson()
         {
-            // Position at player's eye level
-            transform.position = _playerTarget.position + _firstPersonOffset;
+            // Position using local space offset so it can be pushed forward (Z) or up (Y) relative to player
+            transform.position = _playerTarget.TransformPoint(_firstPersonOffset);
 
             // Rotation based on look input
             Quaternion targetRot = Quaternion.Euler(_verticalAngle, _horizontalAngle, 0f);
@@ -246,7 +246,7 @@ namespace Lalim.Mechanics
 
             if (CurrentMode == CameraMode.FirstPerson)
             {
-                transform.position = _playerTarget.position + _firstPersonOffset;
+                transform.position = _playerTarget.TransformPoint(_firstPersonOffset);
                 transform.rotation = Quaternion.Euler(_verticalAngle, _horizontalAngle, 0f);
             }
             else

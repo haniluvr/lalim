@@ -225,6 +225,25 @@ namespace Lalim.Challenges
             else
             {
                 _sortedIncorrectly++;
+                Debug.LogWarning($"[WasteSegregation] Incorrectly sorted {category}! Errors: {_sortedIncorrectly}");
+            }
+
+            // Check for challenge completion
+            int totalSorted = _sortedCorrectly + _sortedIncorrectly;
+            if (totalSorted >= _totalDebris)
+            {
+                // Consider success if 100% correct, or you can allow a margin of error.
+                bool success = _sortedIncorrectly == 0;
+                
+                Debug.Log($"[WasteSegregation] All items sorted! Firing completion event. Success: {success}");
+                
+                EventBus.Publish(new ChallengeCompletedEvent
+                {
+                    ChallengeId = "WasteSegregation", 
+                    Type = ChallengeType.WasteSegregation, 
+                    Success = success,
+                    ErrorCount = _sortedIncorrectly
+                });
             }
         }
 

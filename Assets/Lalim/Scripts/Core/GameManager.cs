@@ -68,10 +68,20 @@ namespace Lalim.Core
 
         private void Start()
         {
-            // Boot sequence: load save data, then transition to menu
+            // Boot sequence: load save data
             if (SaveManager.Instance != null)
             {
                 SaveManager.Instance.LoadGame();
+            }
+
+            // Load the main menu scene (unless we started directly in it from the Editor)
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != GameConstants.Scenes.MAIN_MENU)
+            {
+                EventBus.Publish(new SceneLoadRequestedEvent
+                {
+                    SceneName = GameConstants.Scenes.MAIN_MENU,
+                    ShowLoadingScreen = true
+                });
             }
 
             SetState(GameState.Menu);

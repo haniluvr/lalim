@@ -99,9 +99,11 @@ namespace Lalim.Mechanics
             // --- Right-click Mouse Look ---
             if (Input.GetMouseButton(1)) // Right mouse button held
             {
-                float mouseX = Input.GetAxis("Mouse X") * 5f;
-                float mouseY = Input.GetAxis("Mouse Y") * 5f;
-                SetLookDelta(new Vector2(mouseX, mouseY));
+                float mouseX = Input.GetAxis("Mouse X") * 10f;
+                float mouseY = Input.GetAxis("Mouse Y") * 10f;
+                
+                // Set directly to bypass the touch deadzone
+                LookDelta = new Vector2(mouseX, mouseY);
             }
 
             // --- Keyboard Triggers ---

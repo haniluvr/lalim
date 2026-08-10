@@ -10,9 +10,9 @@ namespace Lalim.Challenges
     /// </summary>
     public enum DebrisCategory
     {
-        Plastic,    // Plastic bottles, bags, straws
+        Bottle,    // Plastic bottles, bags, straws
         Metal,      // Metal cans, scrap
-        General     // Mixed waste, organic debris
+        Food     // Mixed waste, organic debris
     }
 
     /// <summary>
@@ -170,9 +170,9 @@ namespace Lalim.Challenges
             // Color by category
             switch (_category)
             {
-                case DebrisCategory.Plastic: Gizmos.color = Color.blue; break;
+                case DebrisCategory.Bottle: Gizmos.color = Color.blue; break;
                 case DebrisCategory.Metal:   Gizmos.color = Color.gray; break;
-                case DebrisCategory.General: Gizmos.color = Color.green; break;
+                case DebrisCategory.Food: Gizmos.color = Color.green; break;
             }
             Gizmos.DrawWireSphere(transform.position, 0.3f);
 

@@ -91,8 +91,21 @@ namespace Lalim.Mechanics
         {
             if (InputManager.Instance == null || _characterController == null) return;
 
-            Vector2 moveInput = InputManager.Instance.MoveInput;
+            // Handle 1P camera-based rotation first, regardless of movement
+            if (_isInChallenge && _cameraTransform != null)
+            {
+                // 1P Mode: Character always faces where the camera is looking
+                Vector3 camForward = _cameraTransform.forward;
+                camForward.y = 0f; // Keep character upright
+                if (camForward.sqrMagnitude > 0.001f)
+                {
+                    transform.rotation = Quaternion.LookRotation(camForward.normalized);
+                }
+            }
 
+            Vector2 moveInput = InputManager.Instance.MoveInput;
+            
+            // Skip actual translation if not moving
             if (moveInput.magnitude < 0.1f) return;
 
             // Calculate movement direction relative to camera
@@ -117,8 +130,8 @@ namespace Lalim.Mechanics
             // Move
             _characterController.Move(moveDirection * _moveSpeed * Time.deltaTime);
 
-            // Rotate character to face movement direction
-            if (moveDirection != Vector3.zero)
+            // 3P Mode: Character faces movement direction
+            if (!_isInChallenge && moveDirection != Vector3.zero)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
                 transform.rotation = Quaternion.Slerp(
@@ -150,14 +163,46 @@ namespace Lalim.Mechanics
         {
             if (InputManager.Instance == null || !InputManager.Instance.InteractPressed) return;
 
-            // Raycast forward from player to find interactables
-            Ray ray = new Ray(transform.position + Vector3.up, transform.forward);
+            // Use camera for raycasting if available, otherwise fallback to player body
+            Ray ray;
+            if (_cameraTransform != null)
+            {
+                ray = new Ray(_cameraTransform.position, _cameraTransform.forward);
+            }
+            else
+            {
+                ray = new Ray(transform.position + Vector3.up, transform.forward);
+            }
+
+            Debug.DrawRay(ray.origin, ray.direction * _interactionRange, Color.red, 2.0f);
+            Debug.Log($"[PlayerController] 'E' Pressed. Raycasting from {ray.origin} direction {ray.direction}");
 
             if (Physics.Raycast(ray, out RaycastHit hit, _interactionRange, _interactableLayer))
             {
+                Debug.Log($"[PlayerController] Raycast hit: {hit.collider.name} on Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)}");
+                
+                // Avoid hitting our own player capsule
+                if (hit.collider.transform.root == transform)
+                {
+                    Debug.Log("[PlayerController] Raycast hit the player's own body. Ignoring.");
+                    return;
+                }
+
                 // Try to get IInteractable from hit object
-                IInteractable interactable = hit.collider.GetComponent<IInteractable>();
-                interactable?.Interact();
+                IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+                if (interactable != null)
+                {
+                    Debug.Log($"[PlayerController] Found IInteractable on {hit.collider.name}, triggering Interact()!");
+                    interactable.Interact();
+                }
+                else
+                {
+                    Debug.Log($"[PlayerController] Object {hit.collider.name} does not have an IInteractable component.");
+                }
+            }
+            else
+            {
+                Debug.Log("[PlayerController] Raycast hit nothing.");
             }
         }
 

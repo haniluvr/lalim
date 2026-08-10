@@ -211,9 +211,9 @@ namespace Lalim.Challenges
         {
             switch (_acceptedCategory)
             {
-                case DebrisCategory.Plastic: Gizmos.color = new Color(0.2f, 0.5f, 1f, 0.4f); break;
+                case DebrisCategory.Bottle: Gizmos.color = new Color(0.2f, 0.5f, 1f, 0.4f); break;
                 case DebrisCategory.Metal:   Gizmos.color = new Color(0.6f, 0.6f, 0.6f, 0.4f); break;
-                case DebrisCategory.General: Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.4f); break;
+                case DebrisCategory.Food: Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.4f); break;
             }
 
             Collider col = GetComponent<Collider>();
