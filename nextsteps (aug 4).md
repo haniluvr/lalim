@@ -109,9 +109,10 @@ To get these scripts running in Unity, you'll need to:
 
 ---
 
-## Deferred: Zone B & Zone C Setup Instructions (Put Off for Now)
+## Zone Setup Guides & Walkthrough
 
-When ready to wire up the remaining Luzon zones in Unity, follow these drag-and-drop setup steps:
+> [!NOTE]
+> A detailed, step-by-step setup guide for creating all 3 challenges from scratch in Unity is available in [CHALLENGES_SETUP_GUIDE.md](file:///d:/UnityProj/Lalim_Capstone_Final/CHALLENGES_SETUP_GUIDE.md).
 
 ### Zone B — Water Sampling (`ChallengeType.WaterSampling`)
 * **Required Tool**: Water Sample Kit (`07_watersamplekit`) equipped via `ToolEquipSystem`.
