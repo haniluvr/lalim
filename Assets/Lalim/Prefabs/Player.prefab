@@ -174,8 +174,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Mechanics.PlayerController
   _moveSpeed: 5
-  _rotationSpeed: 10
-  _gravity: -9.81
+  _swimVerticalSpeed: 3.5
+  _sprintMultiplier: 1.5
+  _swimAcceleration: 8
+  _waterDrag: 5
+  _neutralBuoyancy: 1
+  _buoyancyDrift: 0
+  _pitchSwimming: 1
+  _rotationSpeed: 8
+  _swimPitchTilt: 25
+  _pitchSmoothSpeed: 5
   _interactionRange: 3
   _interactableLayer:
     serializedVersion: 2

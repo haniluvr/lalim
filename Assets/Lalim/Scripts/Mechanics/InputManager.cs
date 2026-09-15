@@ -20,14 +20,26 @@ namespace Lalim.Mechanics
         /// <summary>Normalized movement direction from virtual joystick (-1 to 1).</summary>
         public Vector2 MoveInput { get; private set; }
 
+        /// <summary>Vertical swim input (-1 to 1): Space = +1 (ascend), Control/C = -1 (descend).</summary>
+        public float VerticalMoveInput { get; private set; }
+
         /// <summary>Look delta from swipe gesture (raw pixel delta per frame).</summary>
         public Vector2 LookDelta { get; private set; }
+
+        /// <summary>Whether sprint / fast swim is held (LeftShift).</summary>
+        public bool SwimSprintHeld { get; private set; }
+
+        /// <summary>Whether free look is active (holding Mouse Button 4 or Alt).</summary>
+        public bool IsFreeLooking { get; private set; }
 
         /// <summary>Whether the SpiritSense button was pressed this frame.</summary>
         public bool SpiritSensePressed { get; private set; }
 
         /// <summary>Whether the interact button was pressed this frame.</summary>
         public bool InteractPressed { get; private set; }
+
+        /// <summary>Whether the interact button is currently held down (for hold-to-complete mechanics).</summary>
+        public bool InteractHeld { get; private set; }
 
         /// <summary>Whether the pause button was pressed this frame.</summary>
         public bool PausePressed { get; private set; }
@@ -51,6 +63,8 @@ namespace Lalim.Mechanics
         // ─────────────────────────────────────────────
 
         private bool _inputEnabled = true;
+        private Vector2 _lastMousePosition;
+        private bool _isRmbDragging;
 
         private void Awake()
         {
@@ -86,6 +100,14 @@ namespace Lalim.Mechanics
             if (Input.GetKey(KeyCode.A)) keyboardMove.x -= 1f;
             if (Input.GetKey(KeyCode.D)) keyboardMove.x += 1f;
 
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.wKey.isPressed) keyboardMove.y += 1f;
+                if (Keyboard.current.sKey.isPressed) keyboardMove.y -= 1f;
+                if (Keyboard.current.aKey.isPressed) keyboardMove.x -= 1f;
+                if (Keyboard.current.dKey.isPressed) keyboardMove.x += 1f;
+            }
+
             if (keyboardMove.sqrMagnitude > 0f)
             {
                 MoveInput = keyboardMove.normalized;
@@ -96,17 +118,72 @@ namespace Lalim.Mechanics
                 MoveInput = Vector2.zero;
             }
 
-            // --- Right-click Mouse Look ---
-            if (Input.GetMouseButton(1)) // Right mouse button held
+            // --- Vertical Swim (Space = Up, Control / C = Down) ---
+            float verticalSwim = 0f;
+            if (Input.GetKey(KeyCode.Space)) verticalSwim += 1f;
+            if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.C)) verticalSwim -= 1f;
+
+            if (Keyboard.current != null)
             {
+                if (Keyboard.current.spaceKey.isPressed) verticalSwim += 1f;
+                if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed || Keyboard.current.cKey.isPressed) verticalSwim -= 1f;
+            }
+            VerticalMoveInput = Mathf.Clamp(verticalSwim, -1f, 1f);
+
+            // --- Swim Sprint (LeftShift) ---
+            SwimSprintHeld = Input.GetKey(KeyCode.LeftShift) || (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed);
+
+            // --- Free Look (Mouse Button 4 / KeyCode.Mouse3 / Alt) ---
+            bool mouse4Held = Input.GetMouseButton(3) || Input.GetMouseButton(4) ||
+                              Input.GetKey(KeyCode.Mouse3) || Input.GetKey(KeyCode.Mouse4) ||
+                              Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+
+            if (Mouse.current != null && (Mouse.current.backButton.isPressed || Mouse.current.forwardButton.isPressed))
+            {
+                mouse4Held = true;
+            }
+            IsFreeLooking = mouse4Held;
+
+            // --- Camera Look: Free Look (Mouse 4) or Swipe Simulation (RMB Drag) ---
+            if (mouse4Held)
+            {
+                // Free look mode: mouse movement directly controls orbit camera
                 float mouseX = Input.GetAxis("Mouse X") * 10f;
                 float mouseY = Input.GetAxis("Mouse Y") * 10f;
-                
-                // Set directly to bypass the touch deadzone
-                LookDelta = new Vector2(mouseX, mouseY);
+                if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
+                {
+                    LookDelta = new Vector2(mouseX, mouseY);
+                }
+            }
+            else
+            {
+                // RMB Drag simulating mobile swipe
+                if (Input.GetMouseButtonDown(1))
+                {
+                    _isRmbDragging = true;
+                    _lastMousePosition = Input.mousePosition;
+                    SetTouchActive(true);
+                }
+                else if (Input.GetMouseButton(1) && _isRmbDragging)
+                {
+                    Vector2 currentMousePos = Input.mousePosition;
+                    Vector2 mouseDelta = currentMousePos - _lastMousePosition;
+                    _lastMousePosition = currentMousePos;
+
+                    // Pass delta through SetLookDelta so it uses the exact same sensitivity & deadzone as touch swipe
+                    SetLookDelta(mouseDelta);
+                }
+                else if (Input.GetMouseButtonUp(1))
+                {
+                    _isRmbDragging = false;
+                    SetLookDelta(Vector2.zero);
+                    SetTouchActive(false);
+                }
             }
 
             // --- Keyboard Triggers ---
+            InteractHeld = Input.GetKey(KeyCode.E);
+
             if (Input.GetKeyDown(KeyCode.E))
             {
                 TriggerInteract();
@@ -184,7 +261,7 @@ namespace Lalim.Mechanics
         }
 
         /// <summary>
-        /// Called by interact button UI.
+        /// Called by interact button UI (single press).
         /// </summary>
         public void TriggerInteract()
         {
@@ -192,6 +269,26 @@ namespace Lalim.Mechanics
             {
                 InteractPressed = true;
             }
+        }
+
+        /// <summary>
+        /// Called by interact button UI when pressed down (hold start).
+        /// </summary>
+        public void TriggerInteractDown()
+        {
+            if (_inputEnabled)
+            {
+                InteractHeld = true;
+                InteractPressed = true;
+            }
+        }
+
+        /// <summary>
+        /// Called by interact button UI when released (hold end).
+        /// </summary>
+        public void TriggerInteractUp()
+        {
+            InteractHeld = false;
         }
 
         /// <summary>
@@ -209,6 +306,14 @@ namespace Lalim.Mechanics
         public void SetTapPosition(Vector2 screenPos)
         {
             LastTapPosition = screenPos;
+        }
+
+        /// <summary>
+        /// Called by UI buttons or virtual controls to set vertical swim input (-1 to 1).
+        /// </summary>
+        public void SetVerticalMoveInput(float value)
+        {
+            VerticalMoveInput = _inputEnabled ? Mathf.Clamp(value, -1f, 1f) : 0f;
         }
 
         /// <summary>
@@ -233,7 +338,11 @@ namespace Lalim.Mechanics
             if (!enabled)
             {
                 MoveInput = Vector2.zero;
+                VerticalMoveInput = 0f;
                 LookDelta = Vector2.zero;
+                SwimSprintHeld = false;
+                IsFreeLooking = false;
+                _isRmbDragging = false;
             }
         }
 

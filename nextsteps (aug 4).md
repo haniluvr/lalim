@@ -59,6 +59,19 @@ All **26 foundational scripts** for the LALIM game have been created across 7 sy
 | [PauseMenu.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/UI/PauseMenu.cs) | Resume, Save, Settings, Quit |
 | [RegionSelectUI.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/UI/RegionSelectUI.cs) | Three-region selector with lock/unlock states |
 
+### Challenges (`Assets/Lalim/Scripts/Challenges/`) — 8 files
+
+| Script | Purpose |
+|--------|---------|
+| [WasteSegregationChallenge.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/WasteSegregationChallenge.cs) | Zone A challenge controller — debris sorting gameplay |
+| [DebrisItem.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/DebrisItem.cs) | Pickable debris item with classification |
+| [SortingBin.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/SortingBin.cs) | Categorized receptacle for waste items |
+| [SamplePoint.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/SamplePoint.cs) | Zone B interactable world marker (pH / Salinity / Temp); hold E to collect reading |
+| [WaterSamplingChallenge.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/WaterSamplingChallenge.cs) | Zone B challenge controller — manages sample points & completion criteria |
+| [CoralFragment.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralFragment.cs) | Zone C collectible coral piece (bob/rotate idle, tap to pickup) |
+| [CoralSlot.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralSlot.cs) | Zone C substrate anchor point; hold E to plant, swaps empty/planted visuals |
+| [CoralReplantingChallenge.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralReplantingChallenge.cs) | Zone C challenge controller — fragment collection & replanting logic |
+
 ---
 
 ## Key Architecture Decisions
@@ -93,3 +106,52 @@ To get these scripts running in Unity, you'll need to:
 
 > [!TIP]
 > You may also need to add `TextMeshPro` via the Unity Package Manager if it's not already installed — `LoadingScreen`, `HUDController`, `PauseMenu`, and `RegionSelectUI` use `TMP_Text`.
+
+---
+
+## Deferred: Zone B & Zone C Setup Instructions (Put Off for Now)
+
+When ready to wire up the remaining Luzon zones in Unity, follow these drag-and-drop setup steps:
+
+### Zone B — Water Sampling (`ChallengeType.WaterSampling`)
+* **Required Tool**: Water Sample Kit (`07_watersamplekit`) equipped via `ToolEquipSystem`.
+* **Interaction**: Player walks up and holds Interact (`E` on desktop or hold interact button on mobile) for ~2.5s.
+
+**Hierarchy Setup:**
+1. Create a parent `GameObject` named `[WaterSamplingChallenge]` and attach [WaterSamplingChallenge.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/WaterSamplingChallenge.cs).
+2. Create child `GameObject`s for each sample point and add:
+   - A Collider (Sphere Collider recommended, `radius ~ 1m`).
+   - Attach [SamplePoint.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/SamplePoint.cs).
+   - In the Inspector, set `_parameter` (`pH`, `Salinity`, or `Temperature`) and configure feedback colors / VFX / SFX.
+3. In `WaterSamplingChallenge` Inspector, drag all child sample points into `_preplacedPoints`.
+4. Create a `ZoneTrigger` GameObject for Zone B:
+   - Attach `ZoneTrigger.cs`.
+   - Set `ChallengeType = WaterSampling` and `Zone ID = luzon_zone_b`.
+   - Set the trigger collider encompassing the zone area.
+
+---
+
+### Zone C — Coral Replanting (`ChallengeType.CoralReplanting`)
+* **Required Tool**: Coral Replanting Kit (`05_coralreplantingkit`) equipped via `ToolEquipSystem` + at least 1 collected coral fragment.
+* **Interaction**:
+  - Tap Interact to pick up fragments.
+  - Walk to a substrate slot and hold Interact (`E` on desktop or hold button on mobile) to plant.
+
+**Hierarchy Setup:**
+1. Create a parent `GameObject` named `[CoralReplantingChallenge]` and attach [CoralReplantingChallenge.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralReplantingChallenge.cs).
+2. Create collectible coral fragments:
+   - Add child `GameObject`s with a Collider (trigger or solid) and 3D mesh.
+   - Attach [CoralFragment.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralFragment.cs).
+   - Position them scattered around the zone.
+3. Create substrate planting anchors:
+   - Add child `GameObject`s with a Collider at desired reef planting locations.
+   - Attach [CoralSlot.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralSlot.cs).
+   - Assign `_emptySlotVisual` (unplanted state) and `_plantedCoralVisual` (active upon planting) in the Inspector.
+4. In `CoralReplantingChallenge` Inspector:
+   - Drag all fragment GameObjects into `_preplacedFragments`.
+   - Drag all slot GameObjects into `_preplacedSlots`.
+5. Create a `ZoneTrigger` GameObject for Zone C:
+   - Attach `ZoneTrigger.cs`.
+   - Set `ChallengeType = CoralReplanting` and `Zone ID = luzon_zone_c`.
+   - Set the trigger collider encompassing the reef area.
+

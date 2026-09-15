@@ -5,7 +5,6 @@ namespace Lalim.DDA
 {
     /// <summary>
     /// ScriptableObject holding all DDA tuning parameters.
-    /// Create instances via Assets > Create > Lalim > DDA Config.
     /// Allows designers to tweak difficulty behavior without touching code.
     /// </summary>
     [CreateAssetMenu(fileName = "DDAConfig", menuName = "Lalim/DDA Config")]

@@ -2616,6 +2616,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a1803cb40a961b04ebda3ad82f91f4d7, type: 3}
+--- !u!1 &850000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 850000002}
+  - component: {fileID: 850000003}
+  m_Layer: 0
+  m_Name: '[UnderwaterBounds]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &850000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &850000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87369b7795b5438a82edf3f47b116fbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Mechanics.UnderwaterBounds
+  _boundsCenter: {x: 0, y: 7.5, z: 0}
+  _boundsSize: {x: 96, y: 15, z: 96}
+  _generateColliders: 1
+  _barrierThickness: 2
+  _enableCurrentPushback: 1
+  _currentMargin: 4
+  _currentPushForce: 5
+  _clampPlayerPosition: 1
+  _surfaceMaterial: {fileID: 2100000, guid: 2fb6979e67066854089b0f6629e8fd46, type: 2}
+  _createSurfaceVisual: 1
+  _drawGizmos: 1
+  _boundsColor: {r: 0.1, g: 0.7, b: 1, a: 0.4}
+  _surfaceColor: {r: 0.3, g: 0.9, b: 1, a: 0.7}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2625,3 +2682,5 @@ SceneRoots:
   - {fileID: 1449258254}
   - {fileID: 305006568}
   - {fileID: 670209819}
+  - {fileID: 850000002}
+
