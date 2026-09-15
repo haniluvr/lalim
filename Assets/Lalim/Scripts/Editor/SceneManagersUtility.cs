@@ -81,13 +81,22 @@ namespace Lalim.Editor
                 createdCount++;
             }
 
+            // 6. [InventoryUI]
+            if (Object.FindObjectOfType<Lalim.UI.InventoryUI>() == null)
+            {
+                GameObject uiObj = new GameObject("[InventoryUI]");
+                Undo.RegisterCreatedObjectUndo(uiObj, "Create [InventoryUI]");
+                uiObj.AddComponent<Lalim.UI.InventoryUI>();
+                createdCount++;
+            }
+
             if (createdCount > 0)
             {
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
                 EditorUtility.DisplayDialog(
                     "Scene Managers Setup",
                     $"Successfully created {createdCount} missing manager(s) at the root of your scene:\n\n" +
-                    "• [GameManager]\n• [ChallengeManager]\n• [InputManager]\n• [InventoryManager]\n• [ToolEquipSystem]\n\n" +
+                    "• [GameManager]\n• [ChallengeManager]\n• [InputManager]\n• [InventoryManager]\n• [ToolEquipSystem]\n• [InventoryUI]\n\n" +
                     "Press Ctrl + S to save your scene.",
                     "OK"
                 );

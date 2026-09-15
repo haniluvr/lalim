@@ -43,6 +43,10 @@ namespace Lalim.Challenges
         [SerializeField] private AudioClip _challengeStartSound;
         [SerializeField] private AudioClip _challengeCompleteSound;
 
+        [Header("Timer Configuration")]
+        [Tooltip("Time limit in seconds. If 0 or unset, uses time limit from ChallengeStartedEvent (default 90s).")]
+        [SerializeField] private float _defaultTimeLimit = 90f;
+
         // ─────────────────────────────────────────────
         // State
         // ─────────────────────────────────────────────
@@ -51,6 +55,9 @@ namespace Lalim.Challenges
         private int _totalDebris;
         private int _sortedCorrectly;
         private int _sortedIncorrectly;
+        private float _timeLimit;
+        private float _timeRemaining;
+        private bool _hasTimer;
         private List<DebrisItem> _activeDebris = new List<DebrisItem>();
         private List<DebrisItem> _spawnedDebris = new List<DebrisItem>();
 
@@ -74,10 +81,51 @@ namespace Lalim.Challenges
 
         private void Start()
         {
+            // Auto-detect preplaced debris children if unassigned in Inspector
+            if (_preplacedDebris.Count == 0 && _spawnPoints.Count == 0)
+            {
+                DebrisItem[] found = GetComponentsInChildren<DebrisItem>(true);
+                if (found.Length > 0)
+                {
+                    _preplacedDebris.AddRange(found);
+                }
+            }
+
             // Hide all pre-placed debris until challenge starts
             foreach (var debris in _preplacedDebris)
             {
                 if (debris != null) debris.gameObject.SetActive(false);
+            }
+        }
+
+        private void Update()
+        {
+            if (!_isActive) return;
+
+            // Sync with ChallengeManager if it is running a timer
+            if (ChallengeManager.Instance != null && ChallengeManager.Instance.IsChallengeActive)
+            {
+                if (ChallengeManager.Instance.HasTimer)
+                {
+                    _timeRemaining = ChallengeManager.Instance.TimeRemaining;
+                    _hasTimer = true;
+                }
+            }
+            else if (_hasTimer)
+            {
+                _timeRemaining -= Time.deltaTime;
+                if (_timeRemaining <= 0f)
+                {
+                    _timeRemaining = 0f;
+                    _isActive = false;
+                    Debug.Log("[WasteSegregation] Time expired! Challenge failed.");
+                    EventBus.Publish(new ChallengeFailedEvent
+                    {
+                        ChallengeId = "WasteSegregation",
+                        Type = ChallengeType.WasteSegregation,
+                        Reason = "Time Limit Exceeded"
+                    });
+                }
             }
         }
 
@@ -95,7 +143,22 @@ namespace Lalim.Challenges
             _sortedIncorrectly = 0;
             _activeDebris.Clear();
 
-            int taskCount = evt.TaskQuantity;
+            // Setup timer
+            _timeLimit = evt.TimeLimit > 0 ? evt.TimeLimit : _defaultTimeLimit;
+            _timeRemaining = _timeLimit;
+            _hasTimer = _timeLimit > 0;
+
+            int taskCount = evt.TaskQuantity > 0 ? evt.TaskQuantity : (_preplacedDebris.Count > 0 ? _preplacedDebris.Count : 6);
+
+            // Auto-detect preplaced debris children if empty
+            if (_preplacedDebris.Count == 0 && _spawnPoints.Count == 0)
+            {
+                DebrisItem[] found = GetComponentsInChildren<DebrisItem>(true);
+                if (found.Length > 0)
+                {
+                    _preplacedDebris.AddRange(found);
+                }
+            }
 
             // Activate debris (pre-placed or spawned)
             if (_preplacedDebris.Count > 0)
@@ -121,7 +184,7 @@ namespace Lalim.Challenges
                 AudioSource.PlayClipAtPoint(_challengeStartSound, transform.position);
             }
 
-            Debug.Log($"[WasteSegregation] Challenge started with {_totalDebris} debris items");
+            Debug.Log($"[WasteSegregation] Challenge started with {_totalDebris} debris items. Time limit: {_timeLimit:F0}s");
         }
 
         /// <summary>
@@ -293,6 +356,101 @@ namespace Lalim.Challenges
             }
             _spawnedDebris.Clear();
             _activeDebris.Clear();
+        }
+
+        // ─────────────────────────────────────────────
+        // UI & On-Screen Challenge HUD
+        // ─────────────────────────────────────────────
+
+        private DebrisItem FindCarriedDebris()
+        {
+            foreach (var debris in _activeDebris)
+            {
+                if (debris != null && debris.IsCarried) return debris;
+            }
+            return null;
+        }
+
+        private void OnGUI()
+        {
+            if (!_isActive) return;
+
+            // Centered HUD card at top of screen
+            float boxWidth = 360f;
+            float boxHeight = 86f;
+            float x = (Screen.width - boxWidth) * 0.5f;
+            float y = 18f;
+
+            // Background Card
+            GUI.backgroundColor = new Color(0.04f, 0.12f, 0.22f, 0.90f);
+            GUIStyle cardStyle = new GUIStyle(GUI.skin.box);
+            cardStyle.padding = new RectOffset(12, 12, 8, 8);
+            GUI.Box(new Rect(x, y, boxWidth, boxHeight), GUIContent.none, cardStyle);
+
+            // Title Style
+            GUIStyle titleStyle = new GUIStyle(GUI.skin.label);
+            titleStyle.fontSize = 12;
+            titleStyle.fontStyle = FontStyle.Bold;
+            titleStyle.normal.textColor = new Color(0.35f, 0.85f, 1f);
+            titleStyle.alignment = TextAnchor.MiddleCenter;
+
+            // Remaining Debris Counter Style
+            GUIStyle counterStyle = new GUIStyle(GUI.skin.label);
+            counterStyle.fontSize = 15;
+            counterStyle.fontStyle = FontStyle.Bold;
+            counterStyle.normal.textColor = Color.white;
+            counterStyle.alignment = TextAnchor.MiddleLeft;
+
+            // Timer Style
+            GUIStyle timerStyle = new GUIStyle(GUI.skin.label);
+            timerStyle.fontSize = 16;
+            timerStyle.fontStyle = FontStyle.Bold;
+            timerStyle.alignment = TextAnchor.MiddleRight;
+
+            // Color-coded urgency for timer
+            if (_timeRemaining <= 15f)
+            {
+                timerStyle.normal.textColor = new Color(1f, 0.3f, 0.3f); // Red (<15s)
+            }
+            else if (_timeRemaining <= 30f)
+            {
+                timerStyle.normal.textColor = new Color(1f, 0.85f, 0.25f); // Yellow (<30s)
+            }
+            else
+            {
+                timerStyle.normal.textColor = new Color(0.35f, 1f, 0.6f); // Green / Cyan
+            }
+
+            int minutes = Mathf.FloorToInt(_timeRemaining / 60f);
+            int seconds = Mathf.FloorToInt(_timeRemaining % 60f);
+            string timerText = _hasTimer ? $"⏱ {minutes:00}:{seconds:00}" : "⏱ --:--";
+
+            int remainingDebris = Mathf.Max(0, _totalDebris - _sortedCorrectly);
+            string progressText = $"♻ Remaining: {remainingDebris} / {_totalDebris}";
+
+            // Draw Header
+            GUI.Label(new Rect(x, y + 6f, boxWidth, 20f), "WASTE SEGREGATION CHALLENGE", titleStyle);
+
+            // Draw Stats Row (Remaining Counter on Left, Timer on Right)
+            GUI.Label(new Rect(x + 16f, y + 28f, 210f, 24f), progressText, counterStyle);
+            GUI.Label(new Rect(x + boxWidth - 124f, y + 28f, 108f, 24f), timerText, timerStyle);
+
+            // Draw Bottom Status (Holding info / instruction)
+            GUIStyle subStyle = new GUIStyle(GUI.skin.label);
+            subStyle.fontSize = 12;
+            subStyle.alignment = TextAnchor.MiddleCenter;
+
+            DebrisItem carried = FindCarriedDebris();
+            if (carried != null)
+            {
+                subStyle.normal.textColor = new Color(1f, 0.9f, 0.4f);
+                GUI.Label(new Rect(x, y + 54f, boxWidth, 22f), $"Holding: {carried.Category} Debris → Deposit in {carried.Category} Bin", subStyle);
+            }
+            else
+            {
+                subStyle.normal.textColor = new Color(0.75f, 0.85f, 0.95f, 0.8f);
+                GUI.Label(new Rect(x, y + 54f, boxWidth, 22f), "Search the seabed for scattered debris", subStyle);
+            }
         }
     }
 }

@@ -103,11 +103,22 @@ namespace Lalim.Challenges
         {
             if (IsCarried || IsSorted) return;
 
+            if (ToolEquipSystem.Instance != null && !ToolEquipSystem.Instance.IsToolEquipped("04_wastesegregationbag"))
+            {
+                Debug.LogWarning("[DebrisItem] Waste Segregation Bag must be equipped to pick up debris! Press [3] or [I].");
+                return;
+            }
+
             PickUp();
         }
 
         public string GetInteractionPrompt()
         {
+            if (ToolEquipSystem.Instance != null && !ToolEquipSystem.Instance.IsToolEquipped("04_wastesegregationbag"))
+            {
+                return $"⚠ [3] Equip Waste Bag to collect {_debrisName}";
+            }
+
             return $"Pick up {_debrisName}";
         }
 

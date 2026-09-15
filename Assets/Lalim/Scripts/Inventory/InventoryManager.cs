@@ -10,10 +10,37 @@ namespace Lalim.Inventory
     /// </summary>
     public class InventoryManager : MonoBehaviour
     {
-        public static InventoryManager Instance { get; private set; }
+        private static InventoryManager _instance;
+        public static InventoryManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindObjectOfType<InventoryManager>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("[InventoryManager]");
+                        _instance = go.AddComponent<InventoryManager>();
+                    }
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
 
         [Header("Database")]
         [SerializeField] private ItemDatabase _itemDatabase;
+        public ItemDatabase Database => _itemDatabase;
+
+        [Header("Testing / Starter Items")]
+        [Tooltip("Items automatically granted when testing a scene without a save file.")]
+        [SerializeField] private List<string> _starterItemIds = new List<string>
+        {
+            "07_watersamplekit",
+            "05_coralreplantingkit",
+            "04_wastesegregationbag"
+        };
 
         // ─────────────────────────────────────────────
         // Inventory State
@@ -37,16 +64,39 @@ namespace Lalim.Inventory
         // Lifecycle
         // ─────────────────────────────────────────────
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void AutoInitialize()
+        {
+            var inv = Instance;
+        }
+
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            Instance = this;
+            _instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // Auto-fallback to find ItemDatabase if unassigned
+            if (_itemDatabase == null)
+            {
+                _itemDatabase = Resources.Load<ItemDatabase>("ItemDatabase");
+#if UNITY_EDITOR
+                if (_itemDatabase == null)
+                {
+                    string[] guids = UnityEditor.AssetDatabase.FindAssets("t:ItemDatabase");
+                    if (guids.Length > 0)
+                    {
+                        string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                        _itemDatabase = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemDatabase>(path);
+                    }
+                }
+#endif
+            }
         }
 
         private void Start()
@@ -55,6 +105,20 @@ namespace Lalim.Inventory
             if (SaveManager.Instance != null && SaveManager.Instance.HasSaveFile)
             {
                 RestoreFromSave(SaveManager.Instance.CurrentSave);
+            }
+            else
+            {
+                // Auto-grant starter items for rapid testing
+                if (_starterItemIds != null)
+                {
+                    foreach (string id in _starterItemIds)
+                    {
+                        if (!string.IsNullOrEmpty(id) && !HasItem(id))
+                        {
+                            AddItem(id);
+                        }
+                    }
+                }
             }
         }
 
@@ -185,6 +249,31 @@ namespace Lalim.Inventory
                 }
             }
 
+            return items;
+        }
+
+        /// <summary>
+        /// Retrieve ItemData for an item from the database.
+        /// </summary>
+        public ItemData GetItemData(string itemId)
+        {
+            return _itemDatabase != null ? _itemDatabase.GetItem(itemId) : null;
+        }
+
+        /// <summary>
+        /// Get all items collected by the player across all categories.
+        /// </summary>
+        public List<ItemData> GetAllCollectedItems()
+        {
+            List<ItemData> items = new List<ItemData>();
+            foreach (string id in _allItemLookup)
+            {
+                ItemData data = GetItemData(id);
+                if (data != null)
+                {
+                    items.Add(data);
+                }
+            }
             return items;
         }
 

@@ -19,15 +19,19 @@ Before setting up the zones, verify these scene components and project settings:
   * **`_interactableLayer`**: Must be set to include the **`Interactable`** layer (Layer 3) or `Default`. **If left as `Nothing`, raycasts will hit 0 objects.**
   * **`_interactionRange`**: Default is `3.0` – `4.0` meters.
 * **Controls**:
+  * **Press `I`**: Open/Close Inventory & Equipment menu (equips Water Sample Kit, Coral Replanting Kit, etc.).
+  * **Keys `1`–`3`**: Quick-equip hotkeys while Inventory is open.
   * **Press `E`**: Enter challenge zone trigger / Pick up debris / Collect coral fragment.
   * **Hold `E`**: Water sampling (hold for 2.5s) / Coral planting (hold for 3.0s).
 
 ### Required Scene Managers (Singletons)
-Ensure these managers are present in the scene (or persisting from the Boot sequence):
+Ensure these managers are present in the scene (can be created in 1 click via **`Tools > Lalim > Setup Scene Managers`**):
 * **`[GameManager]`** with [GameManager.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Core/GameManager.cs)
 * **`[ChallengeManager]`** with [ChallengeManager.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/ChallengeManager.cs)
 * **`[InputManager]`** with [InputManager.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/InputManager.cs)
-* **`[ToolEquipSystem]`** with [ToolEquipSystem.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/ToolEquipSystem.cs) & [InventoryManager.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Inventory/InventoryManager.cs)
+* **`[InventoryManager]`** with [InventoryManager.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Inventory/InventoryManager.cs)
+* **`[ToolEquipSystem]`** with [ToolEquipSystem.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/ToolEquipSystem.cs)
+* **`[InventoryUI]`** with [InventoryUI.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/UI/InventoryUI.cs)
 
 ---
 

@@ -12,7 +12,24 @@ namespace Lalim.Mechanics
     [DefaultExecutionOrder(-100)]
     public class InputManager : MonoBehaviour
     {
-        public static InputManager Instance { get; private set; }
+        private static InputManager _instance;
+        public static InputManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindObjectOfType<InputManager>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("[InputManager]");
+                        _instance = go.AddComponent<InputManager>();
+                    }
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
 
         // ─────────────────────────────────────────────
         // Input Values (read by PlayerController, CameraController, etc.)
@@ -42,6 +59,9 @@ namespace Lalim.Mechanics
         /// <summary>Whether the interact button is currently held down (for hold-to-complete mechanics).</summary>
         public bool InteractHeld { get; private set; }
 
+        /// <summary>Whether the inventory button was pressed this frame.</summary>
+        public bool InventoryPressed { get; private set; }
+
         /// <summary>Whether the pause button was pressed this frame.</summary>
         public bool PausePressed { get; private set; }
 
@@ -67,15 +87,21 @@ namespace Lalim.Mechanics
         private Vector2 _lastMousePosition;
         private bool _isRmbDragging;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void AutoInitialize()
+        {
+            var inst = Instance;
+        }
+
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            Instance = this;
+            _instance = this;
             DontDestroyOnLoad(gameObject);
         }
 
@@ -92,6 +118,26 @@ namespace Lalim.Mechanics
 
             // Only use keyboard/mouse fallback on non-touch platforms (Editor, Standalone)
             if (Application.isMobilePlatform) return;
+
+            // --- Always-Active UI Shortcuts (Available even when movement/gameplay is disabled) ---
+            bool iDown = Input.GetKeyDown(KeyCode.I);
+            bool escDown = Input.GetKeyDown(KeyCode.Escape);
+
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.iKey.wasPressedThisFrame) iDown = true;
+                if (Keyboard.current.escapeKey.wasPressedThisFrame) escDown = true;
+            }
+
+            if (iDown)
+            {
+                TriggerInventory();
+            }
+            if (escDown)
+            {
+                TriggerPause();
+            }
+
             if (!_inputEnabled) return;
 
             // --- WASD Movement ---
@@ -180,18 +226,16 @@ namespace Lalim.Mechanics
                 }
             }
 
-            // --- Keyboard Triggers ---
+            // --- Gameplay Keyboard Triggers ---
             bool eHeld = Input.GetKey(KeyCode.E);
             bool eDown = Input.GetKeyDown(KeyCode.E);
             bool qDown = Input.GetKeyDown(KeyCode.Q);
-            bool escDown = Input.GetKeyDown(KeyCode.Escape);
 
             if (Keyboard.current != null)
             {
                 if (Keyboard.current.eKey.isPressed) eHeld = true;
                 if (Keyboard.current.eKey.wasPressedThisFrame) eDown = true;
                 if (Keyboard.current.qKey.wasPressedThisFrame) qDown = true;
-                if (Keyboard.current.escapeKey.wasPressedThisFrame) escDown = true;
             }
 
             InteractHeld = eHeld;
@@ -203,10 +247,6 @@ namespace Lalim.Mechanics
             if (qDown)
             {
                 TriggerSpiritSense();
-            }
-            if (escDown)
-            {
-                TriggerPause();
             }
         }
 
@@ -225,6 +265,7 @@ namespace Lalim.Mechanics
             // Reset per-frame triggers
             SpiritSensePressed = false;
             InteractPressed = false;
+            InventoryPressed = false;
             PausePressed = false;
         }
 
@@ -301,6 +342,18 @@ namespace Lalim.Mechanics
         public void TriggerInteractUp()
         {
             InteractHeld = false;
+        }
+
+        /// <summary>
+        /// Called when the inventory key is pressed or inventory UI button is tapped.
+        /// </summary>
+        public void TriggerInventory()
+        {
+            InventoryPressed = true;
+            if (Lalim.UI.InventoryUI.Instance != null)
+            {
+                Lalim.UI.InventoryUI.Instance.ToggleInventory();
+            }
         }
 
         /// <summary>

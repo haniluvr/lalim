@@ -19,6 +19,8 @@ namespace Lalim.Mechanics
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
     {
+        public static PlayerController Instance { get; private set; }
+
         [Header("Underwater Swimming")]
         [Tooltip("Horizontal swimming speed")]
         [SerializeField] private float _moveSpeed = GameConstants.Player.MOVE_SPEED;
@@ -77,6 +79,7 @@ namespace Lalim.Mechanics
         private bool _isInChallenge = false;
         private IInteractable _currentLookTarget;
         private string _currentPromptText = "";
+        public string CurrentPromptText => _currentPromptText;
 
         // Free look heading lock
         private bool _wasFreeLooking;
@@ -93,6 +96,7 @@ namespace Lalim.Mechanics
 
         private void Awake()
         {
+            Instance = this;
             _characterController = GetComponent<CharacterController>();
             _targetYaw = transform.rotation;
 
@@ -105,6 +109,14 @@ namespace Lalim.Mechanics
                 if (interactableLayer != -1) mask |= (1 << interactableLayer);
                 if (defaultLayer != -1) mask |= (1 << defaultLayer);
                 _interactableLayer = mask != 0 ? mask : ~0;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
             }
         }
 

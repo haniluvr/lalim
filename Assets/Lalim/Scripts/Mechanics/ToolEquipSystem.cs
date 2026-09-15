@@ -14,7 +14,24 @@ namespace Lalim.Mechanics
     /// </summary>
     public class ToolEquipSystem : MonoBehaviour
     {
-        public static ToolEquipSystem Instance { get; private set; }
+        private static ToolEquipSystem _instance;
+        public static ToolEquipSystem Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindObjectOfType<ToolEquipSystem>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("[ToolEquipSystem]");
+                        _instance = go.AddComponent<ToolEquipSystem>();
+                    }
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
 
         // ─────────────────────────────────────────────
         // State
@@ -33,15 +50,21 @@ namespace Lalim.Mechanics
         // Lifecycle
         // ─────────────────────────────────────────────
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void AutoInitialize()
+        {
+            var tools = Instance;
+        }
+
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            Instance = this;
+            _instance = this;
             DontDestroyOnLoad(gameObject);
         }
 
@@ -120,6 +143,21 @@ namespace Lalim.Mechanics
             });
         }
 
+        /// <summary>
+        /// Toggle equip status: if already equipped, unequips it; otherwise equips it.
+        /// </summary>
+        public void ToggleEquip(string itemId)
+        {
+            if (IsToolEquipped(itemId))
+            {
+                UnequipTool();
+            }
+            else
+            {
+                EquipTool(itemId);
+            }
+        }
+
         // ─────────────────────────────────────────────
         // Query
         // ─────────────────────────────────────────────
@@ -145,30 +183,28 @@ namespace Lalim.Mechanics
         // ─────────────────────────────────────────────
 
         /// <summary>
-        /// Retrieve ItemData by ID. Uses the inventory system's collected items
-        /// to find the data reference.
+        /// Retrieve ItemData by ID. Checks inventory directly, then database.
         /// </summary>
         private ItemData GetItemDataById(string itemId)
         {
-            // Check relics
-            var relics = InventoryManager.Instance.GetCollectedItems(ItemType.Relic);
-            foreach (var item in relics)
+            if (InventoryManager.Instance != null)
             {
-                if (item.itemId == itemId) return item;
-            }
+                ItemData direct = InventoryManager.Instance.GetItemData(itemId);
+                if (direct != null) return direct;
 
-            // Check tools
-            var tools = InventoryManager.Instance.GetCollectedItems(ItemType.Tool);
-            foreach (var item in tools)
-            {
-                if (item.itemId == itemId) return item;
-            }
+                // Check tools & consumable kits
+                var tools = InventoryManager.Instance.GetCollectedItems(ItemType.Tool);
+                foreach (var item in tools)
+                {
+                    if (item != null && item.itemId == itemId) return item;
+                }
 
-            // Check consumable kits
-            var kits = InventoryManager.Instance.GetCollectedItems(ItemType.ConsumableKit);
-            foreach (var item in kits)
-            {
-                if (item.itemId == itemId) return item;
+                // Check relics
+                var relics = InventoryManager.Instance.GetCollectedItems(ItemType.Relic);
+                foreach (var item in relics)
+                {
+                    if (item != null && item.itemId == itemId) return item;
+                }
             }
 
             return null;
