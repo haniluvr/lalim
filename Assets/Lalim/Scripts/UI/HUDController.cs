@@ -42,6 +42,9 @@ namespace Lalim.UI
         [SerializeField] private float _timerCriticalThreshold = 5f;
 
         // ─────────────────────────────────────────────
+        public static HUDController Instance { get; private set; }
+
+        // ─────────────────────────────────────────────
         // State
         // ─────────────────────────────────────────────
 
@@ -53,6 +56,11 @@ namespace Lalim.UI
         // ─────────────────────────────────────────────
         // Lifecycle
         // ─────────────────────────────────────────────
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private void OnEnable()
         {

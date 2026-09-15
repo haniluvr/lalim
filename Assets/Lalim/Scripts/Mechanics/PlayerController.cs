@@ -1,5 +1,8 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Lalim.Core;
+using Lalim.UI;
 
 namespace Lalim.Mechanics
 {
@@ -72,6 +75,8 @@ namespace Lalim.Mechanics
 
         private bool _movementEnabled = true;
         private bool _isInChallenge = false;
+        private IInteractable _currentLookTarget;
+        private string _currentPromptText = "";
 
         // Free look heading lock
         private bool _wasFreeLooking;
@@ -90,6 +95,17 @@ namespace Lalim.Mechanics
         {
             _characterController = GetComponent<CharacterController>();
             _targetYaw = transform.rotation;
+
+            // Auto-fallback if LayerMask is unassigned (0 / Nothing) in Inspector
+            if (_interactableLayer.value == 0)
+            {
+                int interactableLayer = LayerMask.NameToLayer("Interactable");
+                int defaultLayer = LayerMask.NameToLayer("Default");
+                int mask = 0;
+                if (interactableLayer != -1) mask |= (1 << interactableLayer);
+                if (defaultLayer != -1) mask |= (1 << defaultLayer);
+                _interactableLayer = mask != 0 ? mask : ~0;
+            }
         }
 
         private void Start()
@@ -97,6 +113,19 @@ namespace Lalim.Mechanics
             if (Camera.main != null)
             {
                 _cameraTransform = Camera.main.transform;
+            }
+            else
+            {
+                CameraController cam = FindObjectOfType<CameraController>();
+                if (cam != null)
+                {
+                    _cameraTransform = cam.transform;
+                }
+                else
+                {
+                    Camera anyCam = FindObjectOfType<Camera>();
+                    if (anyCam != null) _cameraTransform = anyCam.transform;
+                }
             }
         }
 
@@ -121,6 +150,7 @@ namespace Lalim.Mechanics
             if (!_movementEnabled) return;
 
             HandleUnderwaterMovement();
+            UpdateInteractionPrompt();
             HandleInteraction();
         }
 
@@ -288,53 +318,171 @@ namespace Lalim.Mechanics
         }
 
         // ─────────────────────────────────────────────
-        // Interaction
+        // Interaction & Prompts
         // ─────────────────────────────────────────────
 
-        private void HandleInteraction()
+        /// <summary>
+        /// Updates the current interactable in sight and syncs prompt to HUD / GUI.
+        /// </summary>
+        private void UpdateInteractionPrompt()
         {
-            if (InputManager.Instance == null || !InputManager.Instance.InteractPressed) return;
+            _currentLookTarget = FindInteractableInSight();
 
-            // Use camera for raycasting if available, otherwise fallback to player body
-            Ray ray;
-            if (_cameraTransform != null)
+            if (_currentLookTarget != null)
             {
-                ray = new Ray(_cameraTransform.position, _cameraTransform.forward);
+                _currentPromptText = _currentLookTarget.GetInteractionPrompt();
+                if (HUDController.Instance != null)
+                {
+                    HUDController.Instance.ShowInteractionPrompt(_currentPromptText);
+                }
             }
             else
             {
-                ray = new Ray(transform.position + Vector3.up, transform.forward);
+                _currentPromptText = "";
+                if (HUDController.Instance != null)
+                {
+                    HUDController.Instance.SetInteractionPromptVisible(false);
+                }
+            }
+        }
+
+        private void HandleInteraction()
+        {
+            // Allow input from InputManager OR direct KeyDown fallback
+            bool interactPressed = (InputManager.Instance != null && InputManager.Instance.InteractPressed)
+                                   || Input.GetKeyDown(KeyCode.E);
+
+            if (!interactPressed && UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                interactPressed = UnityEngine.InputSystem.Keyboard.current.eKey.wasPressedThisFrame;
             }
 
-            Debug.DrawRay(ray.origin, ray.direction * _interactionRange, Color.red, 2.0f);
-            Debug.Log($"[PlayerController] 'E' Pressed. Raycasting from {ray.origin} direction {ray.direction}");
+            if (!interactPressed) return;
 
-            if (Physics.Raycast(ray, out RaycastHit hit, _interactionRange, _interactableLayer))
+            IInteractable target = _currentLookTarget ?? FindInteractableInSight();
+            if (target != null)
             {
-                Debug.Log($"[PlayerController] Raycast hit: {hit.collider.name} on Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)}");
+                Debug.Log($"[PlayerController] Interacting with: {target.GetType().Name}");
+                target.Interact();
+                return;
+            }
 
-                // Avoid hitting our own player capsule
-                if (hit.collider.transform.root == transform)
+            Debug.Log("[PlayerController] 'E' Pressed - no interactable object in front of player.");
+        }
+
+        /// <summary>
+        /// Finds the closest interactable in sight or in front of the player.
+        /// </summary>
+        private IInteractable FindInteractableInSight()
+        {
+            // Make sure camera reference is valid
+            if (_cameraTransform == null)
+            {
+                if (Camera.main != null) _cameraTransform = Camera.main.transform;
+                else
                 {
-                    Debug.Log("[PlayerController] Raycast hit the player's own body. Ignoring.");
-                    return;
+                    CameraController cam = FindObjectOfType<CameraController>();
+                    if (cam != null) _cameraTransform = cam.transform;
                 }
+            }
+
+            // Determine ray origin & direction
+            Vector3 rayOrigin;
+            Vector3 rayDirection;
+
+            if (_cameraTransform != null)
+            {
+                rayDirection = _cameraTransform.forward;
+                float camDistance = Vector3.Distance(_cameraTransform.position, transform.position);
+
+                if (camDistance < 1.0f)
+                {
+                    rayOrigin = _cameraTransform.position + rayDirection * 0.1f;
+                }
+                else
+                {
+                    rayOrigin = transform.position + Vector3.up * 0.8f + rayDirection * 0.3f;
+                }
+            }
+            else
+            {
+                rayOrigin = transform.position + Vector3.up * 0.8f;
+                rayDirection = transform.forward;
+            }
+
+            int interactableLayerIndex = LayerMask.NameToLayer("Interactable");
+            int defaultLayerIndex = LayerMask.NameToLayer("Default");
+            int requiredBits = (1 << defaultLayerIndex);
+            if (interactableLayerIndex != -1) requiredBits |= (1 << interactableLayerIndex);
+
+            LayerMask mask = _interactableLayer.value != 0 
+                ? (_interactableLayer.value | requiredBits)
+                : ~0;
+
+            Debug.DrawRay(rayOrigin, rayDirection * _interactionRange, Color.cyan, 0.1f);
+
+            // 1. RaycastAll and SphereCastAll combined
+            List<RaycastHit> allHits = new List<RaycastHit>();
+            allHits.AddRange(Physics.RaycastAll(rayOrigin, rayDirection, _interactionRange, mask, QueryTriggerInteraction.Collide));
+            allHits.AddRange(Physics.SphereCastAll(rayOrigin, 0.45f, rayDirection, _interactionRange, mask, QueryTriggerInteraction.Collide));
+            allHits.Sort((a, b) => a.distance.CompareTo(b.distance));
+
+            foreach (RaycastHit hit in allHits)
+            {
+                if (hit.collider.transform.root == transform) continue;
 
                 IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
                 if (interactable != null)
                 {
-                    Debug.Log($"[PlayerController] Found IInteractable on {hit.collider.name}, triggering Interact()!");
-                    interactable.Interact();
-                }
-                else
-                {
-                    Debug.Log($"[PlayerController] Object {hit.collider.name} does not have an IInteractable component.");
+                    return interactable;
                 }
             }
-            else
+
+            // 2. Proximity Assist Check around diver
+            Collider[] closeColliders = Physics.OverlapSphere(transform.position + Vector3.up * 0.5f, 3.0f, mask, QueryTriggerInteraction.Collide);
+            IInteractable bestTarget = null;
+            float closestDist = float.MaxValue;
+
+            foreach (Collider col in closeColliders)
             {
-                Debug.Log("[PlayerController] Raycast hit nothing.");
+                if (col.transform.root == transform) continue;
+
+                IInteractable interactable = col.GetComponentInParent<IInteractable>();
+                if (interactable != null)
+                {
+                    Vector3 toTarget = col.transform.position - transform.position;
+                    float dist = toTarget.sqrMagnitude;
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        bestTarget = interactable;
+                    }
+                }
             }
+
+            return bestTarget;
+        }
+
+        private void OnGUI()
+        {
+            if (string.IsNullOrEmpty(_currentPromptText)) return;
+
+            // Render on-screen prompt overlay (works even if HUD Canvas isn't set up yet)
+            GUIStyle style = new GUIStyle(GUI.skin.box);
+            style.fontSize = 16;
+            style.fontStyle = FontStyle.Bold;
+            style.normal.textColor = Color.white;
+            style.alignment = TextAnchor.MiddleCenter;
+
+            GUIContent content = new GUIContent(_currentPromptText);
+            Vector2 size = style.CalcSize(content);
+            float width = Mathf.Max(size.x + 40f, 260f);
+            float height = 44f;
+            float x = (Screen.width - width) * 0.5f;
+            float y = Screen.height - 110f;
+
+            GUI.backgroundColor = new Color(0.04f, 0.12f, 0.22f, 0.85f);
+            GUI.Box(new Rect(x, y, width, height), _currentPromptText, style);
         }
 
         // ─────────────────────────────────────────────
@@ -409,7 +557,25 @@ namespace Lalim.Mechanics
 
         private void OnGameStateChanged(GameStateChangedEvent evt)
         {
-            _movementEnabled = evt.NewState == GameState.Exploring;
+            if (evt.NewState == GameState.Exploring)
+            {
+                _movementEnabled = true;
+            }
+            else if (evt.NewState == GameState.InChallenge)
+            {
+                if (ChallengeManager.Instance != null && ChallengeManager.Instance.IsChallengeActive)
+                {
+                    _movementEnabled = IsMoveableChallenge(ChallengeManager.Instance.ActiveChallengeType);
+                }
+                else
+                {
+                    _movementEnabled = true;
+                }
+            }
+            else
+            {
+                _movementEnabled = false;
+            }
         }
     }
 

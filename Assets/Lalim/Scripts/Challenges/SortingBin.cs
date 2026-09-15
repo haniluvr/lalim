@@ -10,11 +10,15 @@ namespace Lalim.Challenges
     /// the debris is sorted and the challenge progresses.
     /// </summary>
     [RequireComponent(typeof(Collider))]
-    public class SortingBin : MonoBehaviour
+    public class SortingBin : MonoBehaviour, IInteractable
     {
         [Header("Bin Configuration")]
         [SerializeField] private DebrisCategory _acceptedCategory;
         [SerializeField] private string _binLabel = "Bin";
+
+        [Header("Interaction")]
+        [Tooltip("When true, player must look at bin and press E to deposit debris. When false, running into bin auto-deposits.")]
+        [SerializeField] private bool _requireInteractKeyPress = true;
 
         [Header("Visual Feedback")]
         [SerializeField] private Renderer _binRenderer;
@@ -46,7 +50,21 @@ namespace Lalim.Challenges
         {
             // Ensure trigger collider
             Collider col = GetComponent<Collider>();
-            col.isTrigger = true;
+            if (col != null)
+            {
+                col.isTrigger = true;
+            }
+
+            // Auto-assign Interactable layer so player raycast always finds it
+            int interactableLayer = LayerMask.NameToLayer("Interactable");
+            if (interactableLayer != -1)
+            {
+                gameObject.layer = interactableLayer;
+                foreach (Transform t in GetComponentsInChildren<Transform>(true))
+                {
+                    t.gameObject.layer = interactableLayer;
+                }
+            }
 
             // Cache audio source
             _audioSource = GetComponent<AudioSource>();
@@ -69,6 +87,46 @@ namespace Lalim.Challenges
         }
 
         // ─────────────────────────────────────────────
+        // IInteractable Implementation
+        // ─────────────────────────────────────────────
+
+        public void Interact()
+        {
+            DebrisItem carriedDebris = FindCarriedDebris();
+            if (carriedDebris == null)
+            {
+                Debug.Log($"[SortingBin] You are not carrying any debris to put into {_binLabel}.");
+                SetColor(_highlightColor);
+                Invoke(nameof(ResetColor), 0.5f);
+                return;
+            }
+
+            ProcessDeposit(carriedDebris);
+        }
+
+        public string GetInteractionPrompt()
+        {
+            DebrisItem carried = FindCarriedDebris();
+            if (carried != null)
+            {
+                return $"Press [E] to deposit into {_binLabel}";
+            }
+            return $"{_binLabel} ({_acceptedCategory})";
+        }
+
+        private void ProcessDeposit(DebrisItem carriedDebris)
+        {
+            if (carriedDebris.Category == _acceptedCategory)
+            {
+                OnCorrectSort(carriedDebris);
+            }
+            else
+            {
+                OnWrongSort(carriedDebris);
+            }
+        }
+
+        // ─────────────────────────────────────────────
         // Trigger Detection
         // ─────────────────────────────────────────────
 
@@ -77,23 +135,17 @@ namespace Lalim.Challenges
             // Only respond to the player
             if (!other.CompareTag(GameConstants.Tags.PLAYER)) return;
 
-            // Check if player is carrying debris
-            DebrisItem carriedDebris = FindCarriedDebris();
-            if (carriedDebris == null)
-            {
-                // Player entered bin without carrying anything — highlight bin
-                SetColor(_highlightColor);
-                return;
-            }
+            // Highlight bin when player approaches
+            SetColor(_highlightColor);
 
-            // Check if correct category
-            if (carriedDebris.Category == _acceptedCategory)
+            // If configured for automatic collision deposit
+            if (!_requireInteractKeyPress)
             {
-                OnCorrectSort(carriedDebris);
-            }
-            else
-            {
-                OnWrongSort(carriedDebris);
+                DebrisItem carriedDebris = FindCarriedDebris();
+                if (carriedDebris != null)
+                {
+                    ProcessDeposit(carriedDebris);
+                }
             }
         }
 

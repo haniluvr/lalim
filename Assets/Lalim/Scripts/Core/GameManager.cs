@@ -74,17 +74,28 @@ namespace Lalim.Core
                 SaveManager.Instance.LoadGame();
             }
 
-            // Load the main menu scene (unless we started directly in it from the Editor)
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != GameConstants.Scenes.MAIN_MENU)
+            string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+            // Only redirect to Main Menu if starting from the Boot scene
+            if (activeScene == GameConstants.Scenes.BOOT)
             {
                 EventBus.Publish(new SceneLoadRequestedEvent
                 {
                     SceneName = GameConstants.Scenes.MAIN_MENU,
                     ShowLoadingScreen = true
                 });
+                SetState(GameState.Menu);
             }
-
-            SetState(GameState.Menu);
+            else if (activeScene == GameConstants.Scenes.MAIN_MENU)
+            {
+                SetState(GameState.Menu);
+            }
+            else
+            {
+                // In Editor / directly testing a gameplay region (e.g. 02_Luzon)
+                CurrentRegion = GameConstants.Scenes.GetRegionForScene(activeScene) ?? Region.Luzon;
+                SetState(GameState.Exploring);
+            }
         }
 
         // ─────────────────────────────────────────────

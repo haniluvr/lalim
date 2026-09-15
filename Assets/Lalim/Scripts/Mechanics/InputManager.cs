@@ -9,6 +9,7 @@ namespace Lalim.Mechanics
     /// Provides MoveInput (from joystick), LookDelta (from swipe), and action buttons.
     /// Multiple systems can read input without conflict.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     public class InputManager : MonoBehaviour
     {
         public static InputManager Instance { get; private set; }
@@ -112,9 +113,9 @@ namespace Lalim.Mechanics
             {
                 MoveInput = keyboardMove.normalized;
             }
-            else if (!HasTouchInput)
+            else
             {
-                // Only clear if no touch joystick is active
+                // Always reset on desktop when no keyboard movement keys are pressed
                 MoveInput = Vector2.zero;
             }
 
@@ -157,12 +158,11 @@ namespace Lalim.Mechanics
             }
             else
             {
-                // RMB Drag simulating mobile swipe
+                // RMB Drag simulating look swipe (desktop camera look)
                 if (Input.GetMouseButtonDown(1))
                 {
                     _isRmbDragging = true;
                     _lastMousePosition = Input.mousePosition;
-                    SetTouchActive(true);
                 }
                 else if (Input.GetMouseButton(1) && _isRmbDragging)
                 {
@@ -177,22 +177,34 @@ namespace Lalim.Mechanics
                 {
                     _isRmbDragging = false;
                     SetLookDelta(Vector2.zero);
-                    SetTouchActive(false);
                 }
             }
 
             // --- Keyboard Triggers ---
-            InteractHeld = Input.GetKey(KeyCode.E);
+            bool eHeld = Input.GetKey(KeyCode.E);
+            bool eDown = Input.GetKeyDown(KeyCode.E);
+            bool qDown = Input.GetKeyDown(KeyCode.Q);
+            bool escDown = Input.GetKeyDown(KeyCode.Escape);
 
-            if (Input.GetKeyDown(KeyCode.E))
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.eKey.isPressed) eHeld = true;
+                if (Keyboard.current.eKey.wasPressedThisFrame) eDown = true;
+                if (Keyboard.current.qKey.wasPressedThisFrame) qDown = true;
+                if (Keyboard.current.escapeKey.wasPressedThisFrame) escDown = true;
+            }
+
+            InteractHeld = eHeld;
+
+            if (eDown)
             {
                 TriggerInteract();
             }
-            if (Input.GetKeyDown(KeyCode.Q))
+            if (qDown)
             {
                 TriggerSpiritSense();
             }
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (escDown)
             {
                 TriggerPause();
             }

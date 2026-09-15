@@ -52,11 +52,36 @@ namespace Lalim.Challenges
         {
             _startPosition = transform.position;
 
-            // Ensure collider is set properly
-            Collider col = GetComponent<Collider>();
-            if (col != null)
+            // 1. Disable gravity & make kinematic so PhysX doesn't fight hover/carry
+            Rigidbody[] rbs = GetComponentsInChildren<Rigidbody>(true);
+            foreach (var rb in rbs)
             {
-                col.isTrigger = false; // Solid for raycasting
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+
+            // 2. Ensure collider exists and is solid for raycasting
+            Collider[] cols = GetComponentsInChildren<Collider>(true);
+            if (cols.Length == 0)
+            {
+                BoxCollider box = gameObject.AddComponent<BoxCollider>();
+                box.size = new Vector3(0.5f, 0.5f, 0.5f);
+                cols = new Collider[] { box };
+            }
+            foreach (var col in cols)
+            {
+                col.isTrigger = false;
+            }
+
+            // 3. Auto-assign Interactable layer to root and all children
+            int interactableLayer = LayerMask.NameToLayer("Interactable");
+            if (interactableLayer != -1)
+            {
+                gameObject.layer = interactableLayer;
+                foreach (Transform t in GetComponentsInChildren<Transform>(true))
+                {
+                    t.gameObject.layer = interactableLayer;
+                }
             }
         }
 
@@ -97,18 +122,43 @@ namespace Lalim.Challenges
         {
             IsCarried = true;
 
-            // Disable physics collider while carried
-            Collider col = GetComponent<Collider>();
-            if (col != null) col.enabled = false;
+            // Disable physics colliders while carried
+            Collider[] cols = GetComponentsInChildren<Collider>(true);
+            foreach (var col in cols) col.enabled = false;
 
-            // Attach to camera (or player) for carrying
-            Transform cameraTransform = Camera.main?.transform;
-            if (cameraTransform != null)
+            // Freeze Rigidbody so physics engine doesn't drop it out of camera
+            Rigidbody[] rbs = GetComponentsInChildren<Rigidbody>(true);
+            foreach (var rb in rbs)
             {
-                _carryParent = cameraTransform;
+                rb.isKinematic = true;
+                rb.useGravity = false;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            // Find camera transform (with fallback to CameraController or Player)
+            Transform carryParent = Camera.main != null ? Camera.main.transform : null;
+            if (carryParent == null)
+            {
+                CameraController cam = FindObjectOfType<CameraController>();
+                if (cam != null) carryParent = cam.transform;
+                else
+                {
+                    Camera anyCam = FindObjectOfType<Camera>();
+                    if (anyCam != null) carryParent = anyCam.transform;
+                    else
+                    {
+                        PlayerController p = FindObjectOfType<PlayerController>();
+                        if (p != null) carryParent = p.transform;
+                    }
+                }
+            }
+
+            if (carryParent != null)
+            {
+                _carryParent = carryParent;
                 transform.SetParent(_carryParent);
-                transform.localPosition = new Vector3(0f, -0.3f, 1.0f); // In front of camera
-                transform.localScale = Vector3.one * 0.5f; // Scale down when carried
+                transform.localPosition = new Vector3(0.2f, -0.25f, 0.8f); // In view
                 transform.localRotation = Quaternion.identity;
             }
 
@@ -118,7 +168,7 @@ namespace Lalim.Challenges
                 ChallengeManager.Instance.ReportPlayerAction();
             }
 
-            Debug.Log($"[DebrisItem] Picked up: {_debrisName} ({_category})");
+            Debug.Log($"[DebrisItem] Picked up: {_debrisName} ({_category}) attached to {carryParent?.name}");
         }
 
         /// <summary>
@@ -136,9 +186,17 @@ namespace Lalim.Challenges
             transform.position = _startPosition;
             transform.localScale = Vector3.one;
 
-            // Re-enable collider
-            Collider col = GetComponent<Collider>();
-            if (col != null) col.enabled = true;
+            // Re-enable colliders
+            Collider[] cols = GetComponentsInChildren<Collider>(true);
+            foreach (var col in cols) col.enabled = true;
+
+            Rigidbody[] rbs = GetComponentsInChildren<Rigidbody>(true);
+            foreach (var rb in rbs)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+                rb.linearVelocity = Vector3.zero;
+            }
 
             Debug.Log($"[DebrisItem] Dropped: {_debrisName}");
         }

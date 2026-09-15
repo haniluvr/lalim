@@ -232,7 +232,51 @@ Select **`CoralReplanting_Zone`**:
 
 ---
 
-## 5. Quick Reference & Common Pitfalls
+## 5. Environmental Transformation: Broken to Restored States
+
+To visually transform an area from **broken/polluted** before the challenge to **healed/vibrant** after completion, use the provided [ZoneRestorationController.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/ZoneRestorationController.cs).
+
+### The Two-Container Pattern
+
+The cleanest workflow is grouping your environment art into two parent GameObjects under each zone:
+
+```text
+▼ WasteSegregation_Zone                 [WasteSegregationChallenge, ZoneRestorationController]
+   ├── ZoneTrigger_Entry               [ZoneTrigger.cs]
+   ├── Bins & Challenge Objects...
+   │
+   ├── [Environment_Broken]            <-- Active by default; disabled on completion
+   │   ├── Bleached_Coral_Clusters     (Grey, dull, lifeless models)
+   │   ├── Trash_Heaps_Static          (Background clutter, tangled nets)
+   │   ├── Murky_Water_VFX             (Brown/green particulate fog)
+   │   └── Oil_Slick_Decals
+   │
+   └── [Environment_Restored]          <-- Disabled by default; enabled on completion
+       ├── Vibrant_Coral_Garden        (Lush, colorful corals, anemones)
+       ├── Fish_Flock_Spawner          (Swimming tropical fish schools)
+       ├── Clear_Sunrays_VFX           (Underwater caustics & bubbles)
+       └── Bioluminescent_Flora        (Glowing sea plants)
+```
+
+### How to Set It Up in Unity:
+1. Select your zone root GameObject (e.g., `WasteSegregation_Zone`).
+2. Add the [ZoneRestorationController.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/ZoneRestorationController.cs) component.
+3. Configure the fields:
+   * **Zone Id**: Set to match your `ZoneTrigger._zoneId` (e.g., `luzon_zone_a`, `luzon_zone_b`, or `luzon_zone_c`).
+   * **Broken State Container**: Drag in the `[Environment_Broken]` parent GameObject.
+   * **Restored State Container**: Drag in the `[Environment_Restored]` parent GameObject.
+   * **Restoration VFX**: (Optional) Assign a celebratory cleansing wave or bubble burst particle system.
+   * **Restoration Fanfare**: (Optional) Assign a triumphant sound clip.
+   * **Transition Delay**: Default `0.5` seconds (lets the fanfare/particle effect start before visuals swap).
+
+### What Happens Automatically:
+* **On Scene Start**: The script checks `RegionProgressTracker`. If the player already finished this zone in their save, it immediately shows the restored environment and hides the broken one.
+* **On Challenge Complete**: When the player finishes the final task, `ZoneTrigger` fires `ZoneCompletedEvent`. The controller catches this event, plays the VFX & audio fanfare, hides the broken container, and activates the flourishing restored container.
+* **Testing in Editor**: Right-click the `ZoneRestorationController` component in the Inspector to use **Preview Broken State** or **Preview Restored State** without entering Play Mode.
+
+---
+
+## 6. Quick Reference & Common Pitfalls
 
 | Object Type | Component | Collider Setting | Layer | Interaction Method |
 |:---|:---|:---|:---|:---|
@@ -247,3 +291,4 @@ Select **`CoralReplanting_Zone`**:
 1. **Raycast hitting nothing when pressing E**: Check that the item's GameObject layer is set to `Interactable` AND that `_interactableLayer` on `PlayerController` has `Interactable` checked.
 2. **Zone Trigger not detecting player**: Verify the player root GameObject has the `Player` tag applied.
 3. **Bypassing tools for rapid test**: During prototyping, clear the `Required Tool Id` field on `ZoneTrigger`, `SamplePoint`, and `CoralSlot` to test the full gameplay loop immediately without having to equip items from the inventory first.
+

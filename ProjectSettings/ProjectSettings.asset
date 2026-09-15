@@ -853,7 +853,13 @@ PlayerSettings:
   XboxOneOverrideIdentityName: 
   XboxOneOverrideIdentityPublisher: 
   cloudServicesEnabled:
+    Build: 0
+    Game Performance: 0
+    Legacy Analytics: 0
+    Purchasing: 0
+    UDP: 0
     UNet: 1
+    Unity Ads: 0
   luminIcon:
     m_Name: 
     m_ModelFolderPath: 
@@ -876,11 +882,11 @@ PlayerSettings:
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
-  cloudProjectId: 2ba6f0a9-0325-4c71-bcbb-5cf170bf5115
+  cloudProjectId: 15d2c1af-6d54-4e7a-b813-9a5de17d3b2d
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: Lalim_Capstone_Final
-  organizationId: qkshombre
+  organizationId: kurthombre123
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

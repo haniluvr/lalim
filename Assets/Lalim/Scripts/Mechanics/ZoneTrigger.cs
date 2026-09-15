@@ -90,8 +90,22 @@ namespace Lalim.Mechanics
         {
             if (!_playerInRange || _isCompleted || _challengeActive) return;
 
-            // Wait for interact input
-            if (InputManager.Instance != null && InputManager.Instance.InteractPressed)
+            // Wait for interact input (via InputManager or direct fallback)
+            bool interactPressed = false;
+            if (InputManager.Instance != null)
+            {
+                interactPressed = InputManager.Instance.InteractPressed;
+            }
+            else
+            {
+                interactPressed = Input.GetKeyDown(KeyCode.E);
+                if (!interactPressed && UnityEngine.InputSystem.Keyboard.current != null)
+                {
+                    interactPressed = UnityEngine.InputSystem.Keyboard.current.eKey.wasPressedThisFrame;
+                }
+            }
+
+            if (interactPressed)
             {
                 TryStartChallenge();
             }
@@ -108,7 +122,16 @@ namespace Lalim.Mechanics
             if (other.CompareTag(GameConstants.Tags.PLAYER))
             {
                 _playerInRange = true;
-                Debug.Log($"[ZoneTrigger] Player entered zone: {_zoneId}");
+                Debug.Log($"[ZoneTrigger] Player entered zone: {_zoneId} ({_challengeType}). Press [E] to start.");
+
+                if (InputManager.Instance == null)
+                {
+                    Debug.LogWarning("[ZoneTrigger] Note: InputManager is missing from scene. You can add it via Tools > Lalim > Setup Scene Managers.");
+                }
+                if (ChallengeManager.Instance == null)
+                {
+                    Debug.LogWarning("[ZoneTrigger] Note: ChallengeManager is missing from scene. You can add it via Tools > Lalim > Setup Scene Managers.");
+                }
 
                 // TODO: Show interaction prompt via HUD
             }
