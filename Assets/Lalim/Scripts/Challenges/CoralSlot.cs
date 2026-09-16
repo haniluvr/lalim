@@ -38,6 +38,9 @@ namespace Lalim.Challenges
         [Tooltip("GameObject shown after coral is planted (e.g., coral fragment mesh)")]
         [SerializeField] private GameObject _plantedCoralVisual;
 
+        [Tooltip("Optional coral prefab to instantiate automatically if _plantedCoralVisual is not assigned")]
+        [SerializeField] private GameObject _plantedCoralPrefab;
+
         [Tooltip("Renderer to tint for feedback (can be on the empty slot visual)")]
         [SerializeField] private Renderer _slotRenderer;
 
@@ -65,6 +68,7 @@ namespace Lalim.Challenges
         private AudioSource _audioSource;
         private Material _slotMaterial;
         private CoralReplantingChallenge _challenge;
+        private static Texture2D _guiTex;
 
         // ─────────────────────────────────────────────
         // Lifecycle
@@ -95,6 +99,13 @@ namespace Lalim.Challenges
                 _slotMaterial.color = _availableColor;
             }
 
+            // If planted visual is missing but prefab is assigned, instantiate it as a child
+            if (_plantedCoralVisual == null && _plantedCoralPrefab != null)
+            {
+                _plantedCoralVisual = Instantiate(_plantedCoralPrefab, transform.position, transform.rotation, transform);
+                _plantedCoralVisual.name = $"{_plantedCoralPrefab.name}_Planted";
+            }
+
             // Initial visual state
             if (_emptySlotVisual != null) _emptySlotVisual.SetActive(true);
             if (_plantedCoralVisual != null) _plantedCoralVisual.SetActive(false);
@@ -110,8 +121,22 @@ namespace Lalim.Challenges
             // Progress the planting hold
             _plantingProgress += Time.deltaTime;
 
-            // Check if player released the interact button (cancel)
-            if (InputManager.Instance != null && !InputManager.Instance.InteractHeld)
+            // Check if player released interact key (E / Gamepad)
+            bool isHeld = false;
+            if (InputManager.Instance != null && InputManager.Instance.InteractHeld)
+            {
+                isHeld = true;
+            }
+            else
+            {
+                isHeld = Input.GetKey(KeyCode.E);
+                if (!isHeld && UnityEngine.InputSystem.Keyboard.current != null)
+                {
+                    isHeld = UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
+                }
+            }
+
+            if (!isHeld)
             {
                 CancelPlanting();
                 return;
@@ -318,6 +343,73 @@ namespace Lalim.Challenges
         private void ResetColor()
         {
             SetColor(_availableColor);
+        }
+
+        // ─────────────────────────────────────────────
+        // OnGUI Visuals
+        // ─────────────────────────────────────────────
+
+        private static void EnsureTextures()
+        {
+            if (_guiTex == null)
+            {
+                _guiTex = new Texture2D(1, 1);
+                _guiTex.SetPixel(0, 0, Color.white);
+                _guiTex.Apply();
+            }
+        }
+
+        private void DrawOutline(Rect rect, Color color, int thickness)
+        {
+            Color prev = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, thickness), _guiTex);
+            GUI.DrawTexture(new Rect(rect.x, rect.y + rect.height - thickness, rect.width, thickness), _guiTex);
+            GUI.DrawTexture(new Rect(rect.x, rect.y, thickness, rect.height), _guiTex);
+            GUI.DrawTexture(new Rect(rect.x + rect.width - thickness, rect.y, thickness, rect.height), _guiTex);
+            GUI.color = prev;
+        }
+
+        private void OnGUI()
+        {
+            if (!IsPlanting) return;
+
+            EnsureTextures();
+
+            float barWidth = 340f;
+            float barHeight = 24f;
+            float x = (Screen.width - barWidth) * 0.5f;
+            float y = Screen.height * 0.62f;
+
+            // Background plate
+            Rect bgRect = new Rect(x - 10f, y - 28f, barWidth + 20f, barHeight + 36f);
+            GUI.color = new Color(0.02f, 0.12f, 0.16f, 0.94f);
+            GUI.DrawTexture(bgRect, _guiTex);
+            DrawOutline(bgRect, new Color(0.2f, 0.9f, 0.6f, 0.9f), 2);
+            GUI.color = Color.white;
+
+            // Title label
+            GUIStyle labelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            labelStyle.normal.textColor = new Color(0.4f, 1.0f, 0.7f);
+            int percent = Mathf.RoundToInt(PlantingProgressNormalized * 100f);
+            GUI.Label(new Rect(bgRect.x, y - 24f, bgRect.width, 20f), $"PLANTING CORAL FRAGMENT... {percent}%", labelStyle);
+
+            // Progress bar track
+            Rect trackRect = new Rect(x, y + 2f, barWidth, barHeight - 4f);
+            GUI.color = new Color(0.1f, 0.2f, 0.25f, 0.8f);
+            GUI.DrawTexture(trackRect, _guiTex);
+
+            // Progress bar fill
+            float fillWidth = barWidth * PlantingProgressNormalized;
+            Rect fillRect = new Rect(x, y + 2f, fillWidth, barHeight - 4f);
+            GUI.color = new Color(0.25f, 0.95f, 0.55f, 0.95f);
+            GUI.DrawTexture(fillRect, _guiTex);
+            GUI.color = Color.white;
         }
 
         // ─────────────────────────────────────────────

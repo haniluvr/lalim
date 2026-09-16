@@ -25,6 +25,10 @@ namespace Lalim.Challenges
     /// </summary>
     public class CoralReplantingChallenge : MonoBehaviour
     {
+        [Header("Zone Identification")]
+        [Tooltip("Unique zone identifier matching the ZoneTrigger (e.g., luzon_zone_c, luzon_zone_c_2)")]
+        [SerializeField] private string _zoneId = "luzon_zone_c";
+
         [Header("Coral Fragments")]
         [Tooltip("Pre-placed coral fragments (children of this object).")]
         [SerializeField] private List<CoralFragment> _preplacedFragments = new List<CoralFragment>();
@@ -52,7 +56,11 @@ namespace Lalim.Challenges
         // State
         // ─────────────────────────────────────────────
 
+        public string ZoneId => _zoneId;
+        public void SetZoneId(string zoneId) => _zoneId = zoneId;
+
         private bool _isActive;
+        public bool IsActive => _isActive;
         private int _totalSlots;
         private int _slotsPlanted;
         private int _fragmentsCollected;
@@ -83,6 +91,30 @@ namespace Lalim.Challenges
 
         private void Start()
         {
+            // Auto-sync ZoneId with child/parent ZoneTrigger if not explicitly customized
+            if (string.IsNullOrEmpty(_zoneId) || _zoneId == "luzon_zone_c")
+            {
+                ZoneTrigger zt = GetComponentInChildren<ZoneTrigger>(true);
+                if (zt != null && !string.IsNullOrEmpty(zt.ZoneId))
+                {
+                    _zoneId = zt.ZoneId;
+                }
+            }
+
+            // Auto-detect children Slots if empty
+            if (_preplacedSlots.Count == 0 && _slotSpawnPoints.Count == 0)
+            {
+                CoralSlot[] foundSlots = GetComponentsInChildren<CoralSlot>(true);
+                if (foundSlots.Length > 0) _preplacedSlots.AddRange(foundSlots);
+            }
+
+            // Auto-detect children Fragments if empty
+            if (_preplacedFragments.Count == 0 && _fragmentSpawnPoints.Count == 0)
+            {
+                CoralFragment[] foundFrags = GetComponentsInChildren<CoralFragment>(true);
+                if (foundFrags.Length > 0) _preplacedFragments.AddRange(foundFrags);
+            }
+
             // Hide all pre-placed objects until challenge starts
             foreach (var fragment in _preplacedFragments)
             {
@@ -102,6 +134,9 @@ namespace Lalim.Challenges
         {
             // Only respond to coral replanting challenges
             if (evt.Type != ChallengeType.CoralReplanting) return;
+
+            // Only respond to this specific zone if ZoneId is specified
+            if (!string.IsNullOrEmpty(_zoneId) && !string.IsNullOrEmpty(evt.ChallengeId) && evt.ChallengeId != _zoneId) return;
 
             _isActive = true;
             _slotsPlanted = 0;
@@ -261,11 +296,12 @@ namespace Lalim.Challenges
             // Check for challenge completion
             if (_slotsPlanted >= _totalSlots)
             {
-                Debug.Log("[CoralReplanting] All slots filled! Challenge complete.");
+                Debug.Log($"[CoralReplanting] All slots filled in '{_zoneId}'! Challenge complete.");
 
+                string pubId = !string.IsNullOrEmpty(_zoneId) ? _zoneId : "CoralReplanting";
                 EventBus.Publish(new ChallengeCompletedEvent
                 {
-                    ChallengeId = "CoralReplanting",
+                    ChallengeId = pubId,
                     Type = ChallengeType.CoralReplanting,
                     Success = true,
                     ErrorCount = 0
@@ -298,6 +334,7 @@ namespace Lalim.Challenges
         private void OnChallengeCompleted(ChallengeCompletedEvent evt)
         {
             if (evt.Type != ChallengeType.CoralReplanting) return;
+            if (!string.IsNullOrEmpty(_zoneId) && !string.IsNullOrEmpty(evt.ChallengeId) && evt.ChallengeId != _zoneId) return;
 
             _isActive = false;
 
@@ -308,7 +345,7 @@ namespace Lalim.Challenges
 
             Cleanup();
 
-            Debug.Log($"[CoralReplanting] Challenge {(evt.Success ? "COMPLETED" : "ENDED")}: " +
+            Debug.Log($"[CoralReplanting] Zone '{_zoneId}' {(evt.Success ? "COMPLETED" : "ENDED")}: " +
                       $"planted={_slotsPlanted}/{_totalSlots}, " +
                       $"fragments collected={_fragmentsCollected}, used={_fragmentsUsed}");
         }
@@ -316,11 +353,12 @@ namespace Lalim.Challenges
         private void OnChallengeFailed(ChallengeFailedEvent evt)
         {
             if (evt.Type != ChallengeType.CoralReplanting) return;
+            if (!string.IsNullOrEmpty(_zoneId) && !string.IsNullOrEmpty(evt.ChallengeId) && evt.ChallengeId != _zoneId) return;
 
             _isActive = false;
             Cleanup();
 
-            Debug.Log($"[CoralReplanting] Challenge FAILED: {evt.Reason}");
+            Debug.Log($"[CoralReplanting] Zone '{_zoneId}' FAILED: {evt.Reason}");
         }
 
         private void Cleanup()

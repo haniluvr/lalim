@@ -112,127 +112,72 @@ Select the parent **`WasteSegregation_Zone`**:
 
 ## 3. Challenge 2: Water Sampling Challenge
 
-**Gameplay Flow**: Diver equips the Water Sample Kit (`07_watersamplekit`), swims to designated floating sample points at varying depths, aims at each point, and holds `E` for 2.5 seconds to collect water quality parameters (`pH`, `Salinity`, `Temperature`).
+**Gameplay Flow**: Diver equips the Water Sample Kit (`07_watersamplekit` / Press `[1]`), swims to designated floating sample points at varying depths, aims at each point, and holds `E` for 2.5 seconds to collect water quality parameters (`pH`, `Salinity`, `Temperature`).
 
 ```text
 Hierarchy Layout:
-▼ WaterSampling_Zone                    [WaterSamplingChallenge.cs]
-   ├── ZoneTrigger_Entry               [BoxCollider (isTrigger), ZoneTrigger.cs]
-   └── SamplePoints (Parent)
-       ├── SamplePoint_pH_01           [SphereCollider (solid), SamplePoint.cs, Layer: Interactable]
-       ├── SamplePoint_Salinity_01     [SphereCollider (solid), SamplePoint.cs, Layer: Interactable]
-       ├── SamplePoint_Temp_01         [SphereCollider (solid), SamplePoint.cs, Layer: Interactable]
-       └── ...
+▼ WaterSampling_Zone_01                 [WaterSamplingChallenge.cs (_zoneId: luzon_zone_b)]
+   ├── ZoneTrigger_Entry               [BoxCollider (isTrigger), ZoneTrigger.cs (_zoneId: luzon_zone_b)]
+   ├── SamplePoint_pH_01               [SphereCollider (solid), SamplePoint.cs, Layer: Interactable]
+   ├── SamplePoint_Salinity_01         [SphereCollider (solid), SamplePoint.cs, Layer: Interactable]
+   └── SamplePoint_Temp_01             [SphereCollider (solid), SamplePoint.cs, Layer: Interactable]
 ```
 
-### Step-by-Step Setup
+### Multi-Zone Setup (1-Click or Manual)
+* **1-Click Generation**: Go to **`Tools > Lalim > Create Water Sampling Zone (1-Click)`**.
+  * Automatically assigns incremental names (`WaterSampling_Zone_01`, `02`, `03`...).
+  * Automatically sets matching unique IDs (`luzon_zone_b`, `luzon_zone_b_2`, `luzon_zone_b_3`...).
+  * Automatically offsets position in the water column so zones do not overlap.
+* **Auto-Repair Existing Zones**: If you previously created multiple zones that share duplicate IDs or fail to trigger, click **`Tools > Lalim > Validate & Fix Zone IDs`** to instantly inspect and repair every zone in the scene.
 
-#### Step 1: Create Zone Root
-1. In the Hierarchy, create an Empty GameObject named **`WaterSampling_Zone`**.
-2. Attach [WaterSamplingChallenge.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/WaterSamplingChallenge.cs).
-
-#### Step 2: Create Zone Trigger Entrance
-1. Create a child GameObject named **`ZoneTrigger_Entry`**.
-2. Add a **Box Collider** with **`Is Trigger = true`**.
-3. Add [ZoneTrigger.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/ZoneTrigger.cs):
-   * **Zone Id**: `luzon_zone_b`
-   * **Region**: `Luzon`
-   * **Challenge Type**: `WaterSampling`
-   * **Base Task Quantity**: `3` to `5`
-   * **Base Time Limit**: `120` seconds
-   * **Expected Completion Time**: `75` seconds
-   * **Interaction Prompt**: `Press E to begin Water Sampling`
-   * **Required Tool Id**: `07_watersamplekit` (*or leave blank for rapid testing*).
-
-#### Step 3: Create Sample Points
-Create 3 to 6 sample points suspended in the water volume at different depths:
-1. Create a child GameObject named **`SamplePoint_pH_01`**:
-   * Visual: Add a child Sphere (scale `0.4, 0.4, 0.4`) with a bright/glowing material as a floating sensor buoy.
-   * **Layer**: Set to **`Interactable`** (Layer 3).
-   * **Collider**: Add a **Sphere Collider** with radius `0.8m` – `1.0m`, **`Is Trigger = false`** (*solid for raycasting*).
-   * Attach [SamplePoint.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/SamplePoint.cs):
-     * **Parameter**: `pH`
-     * **Point Name**: `Surface Water pH Point`
-     * **Required Tool Id**: `07_watersamplekit`
-     * **Sampling Duration**: `2.5`
-     * **Marker Renderer**: Drag the child sphere's `MeshRenderer` here (for cyan -> yellow -> green transition).
-2. Duplicate this to create additional points:
-   * Point 2: Set **Parameter** = `Salinity`
-   * Point 3: Set **Parameter** = `Temperature`
-
-#### Step 4: Wire the Inspector on `WaterSamplingChallenge`
-Select **`WaterSampling_Zone`**:
-* **Preplaced Points**: Drag all sample point GameObjects into this list.
-* **Balance Parameters**: Set to `true` (cycles evenly through pH, Salinity, Temperature).
+### Post-Sampling Safety Pop-up Modal
+When all sample points in a zone are successfully analyzed:
+1. `WaterSamplingChallenge` publishes completion with its unique `_zoneId`.
+2. A prominent oceanic modal appears on-screen:
+   * **Header**: `🌿 WATER AREA RESTORED & SAFE FOR REPLANTING!`
+   * **Scientific Status**: Verified pH (8.2), Salinity (35 PSU), and Temperature (27.5°C).
+   * **Next Directive**: `Equip Coral Replanting Kit [Press 2] and proceed to Coral Replanting!`
+   * **Dismissal**: Press `[Space]` or `[E]`, or click the continue button.
 
 ---
 
 ## 4. Challenge 3: Coral Replanting Challenge
 
-**Gameplay Flow**: Diver picks up scattered coral fragments with `E`. With the Coral Replanting Kit (`05_coralreplantingkit`) equipped, the diver swims to degraded substrate slots, aims at each slot, and holds `E` for 3.0 seconds to anchor the fragment. The bare substrate visual transforms into living coral upon completion.
+**Gameplay Flow**: Diver equips the Coral Replanting Kit (`05_coralreplantingkit` / Press `[2]`), enters the degraded reef bed, picks up scattered coral fragments with `E`, swims to substrate slots, aims, and holds `E` for 3.0 seconds to anchor each fragment. The bare substrate plug transforms into healthy living coral foliage upon completion.
 
 ```text
 Hierarchy Layout:
-▼ CoralReplanting_Zone                  [CoralReplantingChallenge.cs]
-   ├── ZoneTrigger_Entry               [BoxCollider (isTrigger), ZoneTrigger.cs]
-   ├── Fragments (Parent)
-       ├── CoralFragment_01            [Collider (solid), CoralFragment.cs, Layer: Interactable]
-       ├── CoralFragment_02            ...
-   └── Slots (Parent)
-       ├── CoralSlot_01                [Collider (solid), CoralSlot.cs, Layer: Interactable]
-       │   ├── EmptyVisual             [Bare Substrate Plug Mesh]
-       │   └── PlantedVisual           [Healthy Coral Branch Mesh (starts inactive)]
-       └── ...
+▼ CoralReplanting_Zone_01               [CoralReplantingChallenge.cs (_zoneId: luzon_zone_c)]
+   ├── ZoneTrigger_Entry               [BoxCollider (isTrigger), ZoneTrigger.cs (_zoneId: luzon_zone_c)]
+   ├── CoralSlot_01                    [SphereCollider (solid), CoralSlot.cs, Layer: Interactable]
+   │   ├── SubstratePlug               [Cylinder MeshRenderer (bare plug)]
+   │   └── Planted_SM_Plant_Coral_1    [Foliage Prefab Instance (starts inactive)]
+   ├── CoralSlot_02 ...
+   ├── CoralFragment_01                [SphereCollider, CoralFragment.cs, Miniature Coral Mesh]
+   └── CoralFragment_02 ...
 ```
 
-### Step-by-Step Setup
+### Foliage Prefab Variations by Zone
+The challenge utilizes the official ocean pack coral prefabs located at `Assets/Davis3D/LowpolyOceanPack/Prefabs/Foliage/`:
+* **Zone 01**: `SM_Plant_Coral_1 Variant.prefab` (Table / branch coral)
+* **Zone 02**: `SM_Plant_Coral_2 Variant.prefab` (Staghorn cluster coral)
+* **Zone 03**: `SM_Plant_Coral_1B Variant.prefab` (Sub-variant vibrant coral)
+* **Zone 04**: `SM_Plant_Coral_2B Variant.prefab` (Dense branch variant)
 
-#### Step 1: Create Zone Root
-1. In the Hierarchy, create an Empty GameObject named **`CoralReplanting_Zone`**.
-2. Attach [CoralReplantingChallenge.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralReplantingChallenge.cs).
+### 1-Click Generation (Recommended)
+1. Go to **`Tools > Lalim > Create Coral Replanting Zone (1-Click)`**.
+2. This automatically:
+   * Detects existing zones and creates `CoralReplanting_Zone_01`, `02`, `03`...
+   * Assigns unique IDs `luzon_zone_c`, `luzon_zone_c_2`, `luzon_zone_c_3`...
+   * Selects the respective `SM_Plant_Coral` foliage variation for that zone.
+   * Generates 4 substrate anchor slots with inactive coral instances ready to bloom.
+   * Scatters 6 collectible coral fragments using scaled models of the variant.
+   * Wires all slots and fragments into `CoralReplantingChallenge`.
+   * Enforces tool requirement `05_coralreplantingkit`.
 
-#### Step 2: Create Zone Trigger Entrance
-1. Create a child GameObject named **`ZoneTrigger_Entry`**.
-2. Add a **Box Collider** with **`Is Trigger = true`**.
-3. Add [ZoneTrigger.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Mechanics/ZoneTrigger.cs):
-   * **Zone Id**: `luzon_zone_c`
-   * **Region**: `Luzon`
-   * **Challenge Type**: `CoralReplanting`
-   * **Base Task Quantity**: `5`
-   * **Base Time Limit**: `150` seconds
-   * **Expected Completion Time**: `100` seconds
-   * **Required Tool Id**: `05_coralreplantingkit` (*or leave blank for testing*).
-
-#### Step 3: Create Coral Fragments (Collectibles)
-1. Create a child GameObject named **`CoralFragment_01`**:
-   * Visual: Small coral mesh or colored cylinder on the seabed.
-   * **Layer**: Set to **`Interactable`** (Layer 3).
-   * **Collider**: Add a Box/Capsule Collider with **`Is Trigger = false`**.
-   * Attach [CoralFragment.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralFragment.cs):
-     * **Fragment Name**: `Acropora Coral Fragment`
-2. Duplicate and scatter 6 to 8 fragments around the seafloor (provide 2 more fragments than slots for buffer).
-
-#### Step 4: Create Coral Slots (Substrate Anchor Points)
-1. Create a child GameObject named **`CoralSlot_01`** on the reef substrate:
-   * **Layer**: Set to **`Interactable`** (Layer 3).
-   * **Collider**: Add a Box or Sphere Collider (`~0.8m`), **`Is Trigger = false`**.
-   * Create two child objects under `CoralSlot_01`:
-     * **`EmptyVisual`**: A flat grey disc or substrate plug representing bare reef.
-     * **`PlantedVisual`**: A colorful coral branch mesh (uncheck its active box in Inspector so it starts disabled).
-   * Attach [CoralSlot.cs](file:///d:/UnityProj/Lalim_Capstone_Final/Assets/Lalim/Scripts/Challenges/CoralSlot.cs) to `CoralSlot_01`:
-     * **Slot Name**: `Reef Anchor Slot`
-     * **Required Tool Id**: `05_coralreplantingkit`
-     * **Planting Duration**: `3.0`
-     * **Empty Slot Visual**: Drag child `EmptyVisual`
-     * **Planted Coral Visual**: Drag child `PlantedVisual`
-     * **Slot Renderer**: Drag the `MeshRenderer` of `EmptyVisual`
-2. Duplicate to create 4–6 planting slots across the reef bedrock.
-
-#### Step 5: Wire the Inspector on `CoralReplantingChallenge`
-Select **`CoralReplanting_Zone`**:
-* **Preplaced Fragments**: Drag all `CoralFragment` objects into this list.
-* **Preplaced Slots**: Drag all `CoralSlot` objects into this list.
-* **Extra Fragments**: Set to `2`.
+### Planting Feedback & Real-Time HUD
+* **While Holding `[E]`**: A real-time green/cyan progress bar (`PLANTING CORAL FRAGMENT... XX%`) displays on screen.
+* **On Completion**: The substrate plug deactivates, the full `SM_Plant_Coral` blooms into place, and task progress increments towards full reef restoration!
 
 ---
 

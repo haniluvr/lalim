@@ -42,6 +42,10 @@ namespace Lalim.Mechanics
         [Tooltip("Prompt shown when player is in range")]
         [SerializeField] private string _interactionPrompt = "Press E to begin challenge";
 
+        [Header("Zone Visual Indicators")]
+        [Tooltip("Auto-generate a glowing particle aura and beacon marking this challenge area from afar")]
+        [SerializeField] private bool _enableZoneParticles = true;
+
         [Tooltip("Required tool item ID (empty = no tool required)")]
         [SerializeField] private string _requiredToolId = "";
 
@@ -55,6 +59,8 @@ namespace Lalim.Mechanics
         private float _alertMessageTime = 0f;
         private string _alertMessage = "";
         private static Texture2D _solidTex;
+        private ParticleSystem _zoneParticleVFX;
+        private Light _zoneLight;
 
         public string ZoneId => _zoneId;
         public Region Region => _region;
@@ -76,6 +82,84 @@ namespace Lalim.Mechanics
             // Ensure collider is a trigger
             Collider col = GetComponent<Collider>();
             col.isTrigger = true;
+
+            // Generate atmospheric zone particle aura
+            if (_enableZoneParticles && !_isCompleted)
+            {
+                SetupZoneParticles();
+            }
+        }
+
+        private void SetupZoneParticles()
+        {
+            if (_zoneParticleVFX != null) return;
+
+            GameObject pGO = new GameObject("[ZoneEntrance_Particles]");
+            pGO.transform.SetParent(transform, false);
+            pGO.transform.localPosition = Vector3.zero;
+
+            _zoneParticleVFX = pGO.AddComponent<ParticleSystem>();
+            var main = _zoneParticleVFX.main;
+            main.loop = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 6.0f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.0f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.28f);
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.gravityModifier = -0.06f;
+
+            Color zoneColor = GetZoneThemeColor();
+            main.startColor = zoneColor;
+
+            var emission = _zoneParticleVFX.emission;
+            emission.rateOverTime = 38f;
+
+            var shape = _zoneParticleVFX.shape;
+            Collider col = GetComponent<Collider>();
+            if (col is BoxCollider box)
+            {
+                shape.shapeType = ParticleSystemShapeType.Box;
+                shape.scale = box.size * 0.9f;
+            }
+            else if (col is SphereCollider sphere)
+            {
+                shape.shapeType = ParticleSystemShapeType.Sphere;
+                shape.radius = sphere.radius * 0.9f;
+            }
+            else
+            {
+                shape.shapeType = ParticleSystemShapeType.Sphere;
+                shape.radius = 6.0f;
+            }
+
+            var vel = _zoneParticleVFX.velocityOverLifetime;
+            vel.enabled = true;
+            vel.orbitalY = new ParticleSystem.MinMaxCurve(0.3f, 0.6f);
+
+            var renderer = pGO.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+
+            _zoneLight = pGO.AddComponent<Light>();
+            _zoneLight.type = LightType.Point;
+            _zoneLight.range = 14f;
+            _zoneLight.intensity = 1.5f;
+            _zoneLight.color = zoneColor;
+
+            _zoneParticleVFX.Play();
+        }
+
+        public Color GetZoneThemeColor()
+        {
+            switch (_challengeType)
+            {
+                case ChallengeType.WaterSampling:
+                    return new Color(0.25f, 0.90f, 1.0f, 0.75f); // Glowing Cyan
+                case ChallengeType.WasteSegregation:
+                    return new Color(1.0f, 0.75f, 0.25f, 0.75f); // Warning Amber
+                case ChallengeType.CoralReplanting:
+                    return new Color(1.0f, 0.35f, 0.70f, 0.75f); // Reef Magenta
+                default:
+                    return new Color(0.3f, 0.9f, 0.8f, 0.75f);
+            }
         }
 
         private void OnEnable()
@@ -92,6 +176,13 @@ namespace Lalim.Mechanics
 
         private void Update()
         {
+            // Gently pulse zone light to attract player from afar
+            if (_zoneLight != null && !_isCompleted)
+            {
+                float breath = (Mathf.Sin(Time.time * 2.0f) + 1f) * 0.5f;
+                _zoneLight.intensity = 1.0f + breath * 1.2f;
+            }
+
             if (!_playerInRange || _isCompleted || _challengeActive) return;
 
             // Sync interaction prompt with HUDController if available
@@ -346,6 +437,18 @@ namespace Lalim.Mechanics
             {
                 _isCompleted = true;
                 Debug.Log($"[ZoneTrigger] Zone completed: {_zoneId}");
+
+                // Calm down entrance particles and switch light to completed green
+                if (_zoneParticleVFX != null)
+                {
+                    var emission = _zoneParticleVFX.emission;
+                    emission.rateOverTime = 8f;
+                }
+                if (_zoneLight != null)
+                {
+                    _zoneLight.color = new Color(0.2f, 1.0f, 0.5f);
+                    _zoneLight.intensity = 0.8f;
+                }
 
                 // Notify region progress tracker
                 EventBus.Publish(new ZoneCompletedEvent
