@@ -875,11 +875,11 @@ PlayerSettings:
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
-  cloudProjectId: 2ba6f0a9-0325-4c71-bcbb-5cf170bf5115
+  cloudProjectId: 9185dac0-b6aa-4ffa-85bd-aef6df74ed1e
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Lalim_Capstone_Final
-  organizationId: qkshombre
+  projectName: My project
+  organizationId: hvniluvr
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
