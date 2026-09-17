@@ -19,7 +19,7 @@ namespace Lalim.Editor
             int createdCount = 0;
 
             // 1. [GameManager]
-            if (Object.FindObjectOfType<GameManager>() == null)
+            if (Object.FindAnyObjectByType<GameManager>() == null)
             {
                 GameObject gmObj = new GameObject("[GameManager]");
                 Undo.RegisterCreatedObjectUndo(gmObj, "Create [GameManager]");
@@ -28,7 +28,7 @@ namespace Lalim.Editor
             }
 
             // 2. [ChallengeManager]
-            if (Object.FindObjectOfType<ChallengeManager>() == null)
+            if (Object.FindAnyObjectByType<ChallengeManager>() == null)
             {
                 GameObject cmObj = new GameObject("[ChallengeManager]");
                 Undo.RegisterCreatedObjectUndo(cmObj, "Create [ChallengeManager]");
@@ -37,7 +37,7 @@ namespace Lalim.Editor
             }
 
             // 3. [InputManager]
-            if (Object.FindObjectOfType<InputManager>() == null)
+            if (Object.FindAnyObjectByType<InputManager>() == null)
             {
                 GameObject imObj = new GameObject("[InputManager]");
                 Undo.RegisterCreatedObjectUndo(imObj, "Create [InputManager]");
@@ -46,7 +46,7 @@ namespace Lalim.Editor
             }
 
             // 4. [InventoryManager]
-            if (Object.FindObjectOfType<InventoryManager>() == null)
+            if (Object.FindAnyObjectByType<InventoryManager>() == null)
             {
                 GameObject invObj = new GameObject("[InventoryManager]");
                 Undo.RegisterCreatedObjectUndo(invObj, "Create [InventoryManager]");
@@ -73,7 +73,7 @@ namespace Lalim.Editor
             }
 
             // 5. [ToolEquipSystem]
-            if (Object.FindObjectOfType<ToolEquipSystem>() == null)
+            if (Object.FindAnyObjectByType<ToolEquipSystem>() == null)
             {
                 GameObject toolObj = new GameObject("[ToolEquipSystem]");
                 Undo.RegisterCreatedObjectUndo(toolObj, "Create [ToolEquipSystem]");
@@ -82,7 +82,7 @@ namespace Lalim.Editor
             }
 
             // 6. [InventoryUI]
-            if (Object.FindObjectOfType<Lalim.UI.InventoryUI>() == null)
+            if (Object.FindAnyObjectByType<Lalim.UI.InventoryUI>() == null)
             {
                 GameObject uiObj = new GameObject("[InventoryUI]");
                 Undo.RegisterCreatedObjectUndo(uiObj, "Create [InventoryUI]");
@@ -115,14 +115,14 @@ namespace Lalim.Editor
         public static void CreateWaterSamplingZone()
         {
             // Determine zone index and unique zone ID
-            var existingChallenges = Object.FindObjectsOfType<Challenges.WaterSamplingChallenge>();
+            var existingChallenges = Object.FindObjectsByType<Challenges.WaterSamplingChallenge>();
             int zoneIndex = existingChallenges.Length + 1;
             string zoneName = $"WaterSampling_Zone_{zoneIndex:D2}";
             string zoneId = zoneIndex == 1 ? "luzon_zone_b" : $"luzon_zone_b_{zoneIndex}";
 
             // Determine spawn position (near SceneView camera or diver)
             Vector3 center = Vector3.zero;
-            PlayerController player = Object.FindObjectOfType<PlayerController>();
+            PlayerController player = Object.FindAnyObjectByType<PlayerController>();
             if (player != null)
             {
                 center = player.transform.position + player.transform.forward * 12f;
@@ -248,7 +248,7 @@ namespace Lalim.Editor
         public static void CreateCoralReplantingZone()
         {
             // Determine zone index and unique zone ID
-            var existingChallenges = Object.FindObjectsOfType<Challenges.CoralReplantingChallenge>();
+            var existingChallenges = Object.FindObjectsByType<Challenges.CoralReplantingChallenge>();
             int zoneIndex = existingChallenges.Length + 1;
             string zoneName = $"CoralReplanting_Zone_{zoneIndex:D2}";
             string zoneId = zoneIndex == 1 ? "luzon_zone_c" : $"luzon_zone_c_{zoneIndex}";
@@ -266,7 +266,7 @@ namespace Lalim.Editor
 
             // Determine spawn position (near SceneView camera or diver)
             Vector3 center = Vector3.zero;
-            PlayerController player = Object.FindObjectOfType<PlayerController>();
+            PlayerController player = Object.FindAnyObjectByType<PlayerController>();
             if (player != null)
             {
                 center = player.transform.position + player.transform.forward * 12f;
@@ -461,8 +461,8 @@ namespace Lalim.Editor
         public static void ValidateAndFixZoneIds()
         {
             int fixedCount = 0;
-            var waterChallenges = Object.FindObjectsOfType<Challenges.WaterSamplingChallenge>();
-            var coralChallenges = Object.FindObjectsOfType<Challenges.CoralReplantingChallenge>();
+            var waterChallenges = Object.FindObjectsByType<Challenges.WaterSamplingChallenge>();
+            var coralChallenges = Object.FindObjectsByType<Challenges.CoralReplantingChallenge>();
 
             // 1. Water Sampling Challenges & Triggers
             for (int i = 0; i < waterChallenges.Length; i++)

@@ -274,6 +274,7 @@ namespace Lalim.Challenges
             var vel = _bubbleVFX.velocityOverLifetime;
             vel.enabled = true;
             vel.x = new ParticleSystem.MinMaxCurve(-0.1f, 0.1f);
+            vel.y = new ParticleSystem.MinMaxCurve(0f);
             vel.z = new ParticleSystem.MinMaxCurve(-0.1f, 0.1f);
 
             var renderer = bubbleGO.GetComponent<ParticleSystemRenderer>();

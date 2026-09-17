@@ -171,7 +171,9 @@ namespace Lalim.Challenges
 
             var vel = _ambientParticleVFX.velocityOverLifetime;
             vel.enabled = true;
+            vel.orbitalX = new ParticleSystem.MinMaxCurve(0f);
             vel.orbitalY = new ParticleSystem.MinMaxCurve(0.15f, 0.35f);
+            vel.orbitalZ = new ParticleSystem.MinMaxCurve(0f);
 
             var renderer = pGO.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;

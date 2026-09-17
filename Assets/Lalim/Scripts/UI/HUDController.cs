@@ -20,6 +20,20 @@ namespace Lalim.UI
         [SerializeField] private Button _spiritSenseButton;
         [SerializeField] private Image _spiritSenseIcon;
 
+        [Header("Moon Tide Ability")]
+        [SerializeField] private Button _moonTideButton;
+        [SerializeField] private Image _moonTideCooldownFill;
+
+        [Header("HUD Action Buttons")]
+        [SerializeField] private Button _settingsButton;
+        [SerializeField] private Button _navigationButton;
+        [SerializeField] private Button _codexButton;
+        [SerializeField] private Button _inventoryButton;
+
+        [Header("Modals")]
+        [SerializeField] private MapModalUI _mapModal;
+        [SerializeField] private CodexModalUI _codexModal;
+
         [Header("Challenge Timer")]
         [SerializeField] private GameObject _timerGroup;
         [SerializeField] private TMP_Text _timerText;
@@ -92,6 +106,31 @@ namespace Lalim.UI
                 _spiritSenseButton.onClick.AddListener(OnSpiritSenseButtonPressed);
             }
 
+            if (_moonTideButton != null)
+            {
+                _moonTideButton.onClick.AddListener(OnMoonTideButtonPressed);
+            }
+
+            if (_settingsButton != null)
+            {
+                _settingsButton.onClick.AddListener(OnSettingsButtonPressed);
+            }
+
+            if (_navigationButton != null)
+            {
+                _navigationButton.onClick.AddListener(OnNavigationButtonPressed);
+            }
+
+            if (_codexButton != null)
+            {
+                _codexButton.onClick.AddListener(OnCodexButtonPressed);
+            }
+
+            if (_inventoryButton != null)
+            {
+                _inventoryButton.onClick.AddListener(OnInventoryButtonPressed);
+            }
+
             if (_hintButton != null)
             {
                 _hintButton.onClick.AddListener(OnHintButtonPressed);
@@ -107,6 +146,24 @@ namespace Lalim.UI
             if (_isInChallenge && _challengeTimeLimit > 0)
             {
                 UpdateTimer();
+            }
+
+            UpdateMoonTideDisplay();
+        }
+
+        private void UpdateMoonTideDisplay()
+        {
+            if (MoonTideAbility.Instance != null)
+            {
+                bool onCooldown = MoonTideAbility.Instance.IsOnCooldown;
+                if (_moonTideCooldownFill != null)
+                {
+                    _moonTideCooldownFill.fillAmount = 1f - MoonTideAbility.Instance.CooldownNormalized;
+                }
+                if (_moonTideButton != null)
+                {
+                    _moonTideButton.interactable = !onCooldown;
+                }
             }
         }
 
@@ -220,6 +277,58 @@ namespace Lalim.UI
             if (InputManager.Instance != null)
             {
                 InputManager.Instance.TriggerSpiritSense();
+            }
+        }
+
+        private void OnMoonTideButtonPressed()
+        {
+            if (MoonTideAbility.Instance != null)
+            {
+                MoonTideAbility.Instance.TriggerMoonTide();
+            }
+        }
+
+        private void OnSettingsButtonPressed()
+        {
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.ShowPause();
+            }
+            else
+            {
+                EventBus.Publish(new PauseRequestedEvent { IsPaused = true });
+            }
+        }
+
+        private void OnNavigationButtonPressed()
+        {
+            if (_mapModal != null)
+            {
+                _mapModal.ToggleModal();
+            }
+            else if (MapModalUI.Instance != null)
+            {
+                MapModalUI.Instance.ToggleModal();
+            }
+        }
+
+        private void OnCodexButtonPressed()
+        {
+            if (_codexModal != null)
+            {
+                _codexModal.ToggleModal();
+            }
+            else if (CodexModalUI.Instance != null)
+            {
+                CodexModalUI.Instance.ToggleModal();
+            }
+        }
+
+        private void OnInventoryButtonPressed()
+        {
+            if (InventoryUI.Instance != null)
+            {
+                InventoryUI.Instance.ToggleInventory();
             }
         }
 
