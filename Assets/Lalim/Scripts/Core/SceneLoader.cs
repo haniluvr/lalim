@@ -94,17 +94,38 @@ namespace Lalim.Core
             // 1. Fade out current scene to black
             yield return ScreenFader.Instance.FadeOut(0.5f);
 
-            // 2. Notify systems to show Loading Screen (UIManager listens to this)
+            // Notify UI Manager to hide its old loading overlay (or update progress bars)
             EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f });
 
-            // 3. Fade in from black to the Loading Screen (if applicable)
+            // 2. Load the intermediate scene
             if (showLoadingScreen)
             {
+                string intermediateScene = (sceneName == GameConstants.Scenes.MAIN_MENU) 
+                    ? GameConstants.Scenes.SPLASH 
+                    : GameConstants.Scenes.LOADING;
+
+                AsyncOperation interOp = SceneManager.LoadSceneAsync(intermediateScene);
+                if (interOp == null)
+                {
+                    Debug.LogError($"[SceneLoader] Failed to load intermediate scene '{intermediateScene}'. Please ensure it is added to your Build Settings.");
+                }
+                else
+                {
+                    yield return interOp;
+                }
+
+                // 3. Fade in from black to the Loading/Splash Scene
                 yield return ScreenFader.Instance.FadeIn(0.2f);
             }
 
-            // 4. Begin async load
+            // 4. Begin async load of the target scene
             AsyncOperation asyncOp = SceneManager.LoadSceneAsync(sceneName);
+            if (asyncOp == null)
+            {
+                Debug.LogError($"[SceneLoader] Failed to load target scene '{sceneName}'. Please ensure it is added to your Build Settings.");
+                IsLoading = false;
+                yield break; // Stop the coroutine so we don't crash
+            }
             asyncOp.allowSceneActivation = false;
 
             // Track progress until 90% (Unity holds at 0.9 until activation)

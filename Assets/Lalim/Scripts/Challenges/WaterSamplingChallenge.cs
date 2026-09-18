@@ -171,6 +171,9 @@ namespace Lalim.Challenges
 
             var vel = _ambientParticleVFX.velocityOverLifetime;
             vel.enabled = true;
+            vel.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            vel.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+            vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             vel.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
             vel.orbitalY = new ParticleSystem.MinMaxCurve(0.15f, 0.35f);
             vel.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);

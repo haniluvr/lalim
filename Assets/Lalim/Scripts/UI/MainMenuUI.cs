@@ -33,6 +33,8 @@ namespace Lalim.UI
         [SerializeField] private GameObject _creditsPanel;
         [SerializeField] private Button _closeCreditsButton;
 
+        private int _pendingNewGameSlot = -1;
+
         private void Start()
         {
             // Bind main menu buttons
@@ -113,16 +115,23 @@ namespace Lalim.UI
 
         private void OnNewGame(int slotIndex)
         {
-            Debug.Log($"[MainMenu] New Game on Slot {slotIndex + 1}");
-
+            Debug.Log($"[MainMenu] New Game on Slot {slotIndex + 1} - Routing to Name Input Scene");
+            
             if (SaveManager.Instance != null)
             {
                 SaveManager.Instance.DeleteSave(slotIndex); // Ensure it's clean
                 SaveManager.Instance.SetCurrentSlot(slotIndex);
-                SaveManager.Instance.SaveGame(); // Create new
+                SaveManager.Instance.SaveGame(); // Create new base save
             }
 
-            StartGame();
+            if (SceneLoader.Instance != null)
+            {
+                SceneLoader.Instance.LoadScene(GameConstants.Scenes.NAME_INPUT);
+            }
+            else
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(GameConstants.Scenes.NAME_INPUT);
+            }
         }
 
         private void OnContinue()

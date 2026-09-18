@@ -19,7 +19,7 @@ namespace Lalim.UI
         [SerializeField] private float _displayDuration = 2.0f;
 
         [Header("Next Scene")]
-        [SerializeField] private string _nextSceneName = "01_MainMenu";
+        [SerializeField] private string _nextSceneName = Lalim.Core.GameConstants.Scenes.MAIN_MENU;
 
         private float _currentAlpha = 0f;
         private Texture2D _activeTex = null;

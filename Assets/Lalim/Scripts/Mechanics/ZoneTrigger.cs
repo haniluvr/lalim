@@ -133,6 +133,9 @@ namespace Lalim.Mechanics
 
             var vel = _zoneParticleVFX.velocityOverLifetime;
             vel.enabled = true;
+            vel.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            vel.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+            vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             vel.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
             vel.orbitalY = new ParticleSystem.MinMaxCurve(0.3f, 0.6f);
             vel.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);

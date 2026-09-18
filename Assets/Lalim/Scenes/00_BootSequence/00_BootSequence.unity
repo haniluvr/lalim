@@ -524,7 +524,7 @@ MonoBehaviour:
   _teamLogoTex: {fileID: 2800000, guid: b99ae144fab8f4fff93cab0198ccf999, type: 3}
   _fadeDuration: 1
   _displayDuration: 2
-  _nextSceneName: 01_MainMenu
+  _nextSceneName: 02_MainMenu
 --- !u!4 &1093957649
 Transform:
   m_ObjectHideFlags: 0

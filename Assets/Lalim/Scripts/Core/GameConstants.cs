@@ -12,7 +12,12 @@ namespace Lalim.Core
         public static class Scenes
         {
             public const string BOOT = "00_BootSequence";
-            public const string MAIN_MENU = "01_MainMenu";
+            public const string SPLASH = "01_SplashScene";
+            public const string MAIN_MENU = "02_MainMenu";
+            public const string LOADING = "04_Loading";
+            public const string NAME_INPUT = "03_NameInput";
+            public const string CUTSCENE = "Cutscene";
+            public const string TUTORIAL = "Tutorial";
             public const string LUZON = "02_Luzon";
             public const string VISAYAS = "03_Visayas";
             public const string MINDANAO = "04_Mindanao";

@@ -282,6 +282,7 @@ namespace Lalim.Core
     public class SaveData
     {
         // Metadata
+        public string playerName = "Player";
         public string lastSaveTimestamp;
         public int lastRegion = -1; // -1 = none
 
