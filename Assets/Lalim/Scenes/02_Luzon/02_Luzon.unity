@@ -1794,7 +1794,7 @@ MonoBehaviour:
   _samplePointPrefab: {fileID: 0}
   _balanceParameters: 1
   _showPointsBeforeStart: 1
-  _enableZoneAmbientParticles: 1
+  _enableZoneAmbientParticles: 0
   _challengeStartSound: {fileID: 0}
   _challengeCompleteSound: {fileID: 0}
   _allSamplesCollectedSound: {fileID: 0}
@@ -3302,7 +3302,7 @@ MonoBehaviour:
   _samplePointPrefab: {fileID: 0}
   _balanceParameters: 1
   _showPointsBeforeStart: 1
-  _enableZoneAmbientParticles: 1
+  _enableZoneAmbientParticles: 0
   _challengeStartSound: {fileID: 0}
   _challengeCompleteSound: {fileID: 0}
   _allSamplesCollectedSound: {fileID: 0}
@@ -722217,7 +722217,7 @@ MonoBehaviour:
   _expectedCompletionTime: 90
   _challengeStartPoint: {fileID: 0}
   _interactionPrompt: Press E to begin challenge
-  _enableZoneParticles: 1
+  _enableZoneParticles: 0
   _requiredToolId: 
 --- !u!65 &1881568804
 BoxCollider:

@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 using Lalim.Core;
+using Lalim.UI;
 
 namespace Lalim.Mechanics
 {
@@ -86,6 +88,12 @@ namespace Lalim.Mechanics
         private bool _inputEnabled = true;
         private Vector2 _lastMousePosition;
         private bool _isRmbDragging;
+        private bool _isLmbDragging;
+        private Vector2 _lmbStartPosition;
+        private bool _lmbDragActivated; // Only true once drag exceeds threshold
+        private const float LMB_DRAG_THRESHOLD = 5f; // Pixels before LMB drag activates
+        private bool _wasKeyboardMoving;
+        private bool _wasKeyboardVertical;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoInitialize()
@@ -158,11 +166,13 @@ namespace Lalim.Mechanics
             if (keyboardMove.sqrMagnitude > 0f)
             {
                 MoveInput = keyboardMove.normalized;
+                _wasKeyboardMoving = true;
             }
-            else
+            else if (_wasKeyboardMoving || (!HasTouchInput && MoveInput.magnitude > 0 && !Application.isMobilePlatform))
             {
-                // Always reset on desktop when no keyboard movement keys are pressed
+                // Only reset on desktop when no keyboard movement keys are pressed AND no touch/joystick input is active
                 MoveInput = Vector2.zero;
+                _wasKeyboardMoving = false;
             }
 
             // --- Vertical Swim (Space = Up, Control / C = Down) ---
@@ -175,7 +185,16 @@ namespace Lalim.Mechanics
                 if (Keyboard.current.spaceKey.isPressed) verticalSwim += 1f;
                 if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed || Keyboard.current.cKey.isPressed) verticalSwim -= 1f;
             }
-            VerticalMoveInput = Mathf.Clamp(verticalSwim, -1f, 1f);
+            if (verticalSwim != 0f)
+            {
+                VerticalMoveInput = Mathf.Clamp(verticalSwim, -1f, 1f);
+                _wasKeyboardVertical = true;
+            }
+            else if (_wasKeyboardVertical || (!HasTouchInput && VerticalMoveInput != 0f && !Application.isMobilePlatform))
+            {
+                VerticalMoveInput = 0f;
+                _wasKeyboardVertical = false;
+            }
 
             // --- Swim Sprint (LeftShift) ---
             SwimSprintHeld = Input.GetKey(KeyCode.LeftShift) || (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed);
@@ -191,7 +210,7 @@ namespace Lalim.Mechanics
             }
             IsFreeLooking = mouse4Held;
 
-            // --- Camera Look: Free Look (Mouse 4) or Swipe Simulation (RMB Drag) ---
+            // --- Camera Look: Free Look (Mouse 4), LMB Hold+Drag (Mac-friendly), or RMB Drag ---
             if (mouse4Held)
             {
                 // Free look mode: mouse movement directly controls orbit camera
@@ -204,7 +223,82 @@ namespace Lalim.Mechanics
             }
             else
             {
-                // RMB Drag simulating look swipe (desktop camera look)
+                // --- LMB Hold+Drag (primary method for Mac) ---
+                // Only blocks if the click is on an actual interactive UI control
+                // (not transparent overlay panels like TouchLookHandler)
+                if (Input.GetMouseButtonDown(0))
+                {
+                    bool overInteractiveUI = false;
+                    if (EventSystem.current != null)
+                    {
+                        var pointerData = new PointerEventData(EventSystem.current)
+                        {
+                            position = Input.mousePosition
+                        };
+                        var raycastResults = new System.Collections.Generic.List<RaycastResult>();
+                        EventSystem.current.RaycastAll(pointerData, raycastResults);
+
+                        foreach (var result in raycastResults)
+                        {
+                            // Check if hit object has an interactive UI component
+                            var go = result.gameObject;
+                            if (go.GetComponent<UnityEngine.UI.Button>() != null ||
+                                go.GetComponent<UnityEngine.UI.Toggle>() != null ||
+                                go.GetComponent<UnityEngine.UI.Slider>() != null ||
+                                go.GetComponent<UnityEngine.UI.Scrollbar>() != null ||
+                                go.GetComponent<UnityEngine.UI.InputField>() != null ||
+                                go.GetComponent<VirtualJoystick>() != null)
+                            {
+                                overInteractiveUI = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!overInteractiveUI)
+                    {
+                        _isLmbDragging = true;
+                        _lmbDragActivated = false;
+                        _lmbStartPosition = Input.mousePosition;
+                        _lastMousePosition = Input.mousePosition;
+                    }
+                }
+
+                if (Input.GetMouseButton(0) && _isLmbDragging)
+                {
+                    Vector2 currentMousePos = Input.mousePosition;
+
+                    // Activate drag only after exceeding the threshold to avoid
+                    // stealing regular interaction clicks
+                    if (!_lmbDragActivated)
+                    {
+                        float dragDistance = Vector2.Distance(currentMousePos, _lmbStartPosition);
+                        if (dragDistance >= LMB_DRAG_THRESHOLD)
+                        {
+                            _lmbDragActivated = true;
+                            _lastMousePosition = currentMousePos; // Reset so first delta isn't a jump
+                        }
+                    }
+
+                    if (_lmbDragActivated)
+                    {
+                        Vector2 mouseDelta = currentMousePos - _lastMousePosition;
+                        _lastMousePosition = currentMousePos;
+                        SetLookDelta(mouseDelta);
+                    }
+                }
+
+                if (Input.GetMouseButtonUp(0))
+                {
+                    if (_isLmbDragging && _lmbDragActivated)
+                    {
+                        SetLookDelta(Vector2.zero);
+                    }
+                    _isLmbDragging = false;
+                    _lmbDragActivated = false;
+                }
+
+                // --- RMB Drag (still works as alternative) ---
                 if (Input.GetMouseButtonDown(1))
                 {
                     _isRmbDragging = true;
@@ -215,8 +309,6 @@ namespace Lalim.Mechanics
                     Vector2 currentMousePos = Input.mousePosition;
                     Vector2 mouseDelta = currentMousePos - _lastMousePosition;
                     _lastMousePosition = currentMousePos;
-
-                    // Pass delta through SetLookDelta so it uses the exact same sensitivity & deadzone as touch swipe
                     SetLookDelta(mouseDelta);
                 }
                 else if (Input.GetMouseButtonUp(1))
@@ -262,7 +354,10 @@ namespace Lalim.Mechanics
 
         private void LateUpdate()
         {
-            // Reset per-frame triggers
+            // Instead of resetting triggers here where they might be missed by early Updates next frame,
+            // we will let components consume them. 
+            // However, to keep it safe for existing code, we reset them. 
+            // SpiritSense logic will be updated directly to bypass this flag.
             SpiritSensePressed = false;
             InteractPressed = false;
             InventoryPressed = false;
@@ -408,6 +503,8 @@ namespace Lalim.Mechanics
                 SwimSprintHeld = false;
                 IsFreeLooking = false;
                 _isRmbDragging = false;
+                _isLmbDragging = false;
+                _lmbDragActivated = false;
             }
         }
 

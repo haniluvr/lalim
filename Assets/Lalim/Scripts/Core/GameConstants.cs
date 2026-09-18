@@ -78,8 +78,18 @@ namespace Lalim.Core
 
         public static class Save
         {
-            public const string SAVE_FILE_NAME = "lalim_save.json";
-            public const string SAVE_BACKUP_NAME = "lalim_save_backup.json";
+            public const string SAVE_FILE_PREFIX = "lalim_save_slot_";
+            public const string SAVE_FILE_EXT = ".json";
+            
+            public static string GetSaveFileName(int slot)
+            {
+                return $"{SAVE_FILE_PREFIX}{slot}{SAVE_FILE_EXT}";
+            }
+            
+            public static string GetBackupFileName(int slot)
+            {
+                return $"{SAVE_FILE_PREFIX}{slot}_backup{SAVE_FILE_EXT}";
+            }
         }
 
         // ─────────────────────────────────────────────

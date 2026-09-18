@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Lalim.UI;
 
 namespace Lalim.Core
 {
@@ -90,10 +91,19 @@ namespace Lalim.Core
 
             Debug.Log($"[SceneLoader] Loading scene: {sceneName}");
 
-            // Notify systems that loading has started
+            // 1. Fade out current scene to black
+            yield return ScreenFader.Instance.FadeOut(0.5f);
+
+            // 2. Notify systems to show Loading Screen (UIManager listens to this)
             EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f });
 
-            // Begin async load
+            // 3. Fade in from black to the Loading Screen (if applicable)
+            if (showLoadingScreen)
+            {
+                yield return ScreenFader.Instance.FadeIn(0.2f);
+            }
+
+            // 4. Begin async load
             AsyncOperation asyncOp = SceneManager.LoadSceneAsync(sceneName);
             asyncOp.allowSceneActivation = false;
 
@@ -120,7 +130,18 @@ namespace Lalim.Core
                 }
             }
 
-            // Activate the scene
+            // 5. Fade out Loading Screen to black
+            if (showLoadingScreen)
+            {
+                yield return ScreenFader.Instance.FadeOut(0.5f);
+            }
+            else
+            {
+                // Already black if we didn't show loading screen, but just ensure
+                yield return ScreenFader.Instance.FadeOut(0.1f);
+            }
+
+            // 6. Activate the new scene
             EventBus.Publish(new SceneLoadProgressEvent { Progress = 1f });
             asyncOp.allowSceneActivation = true;
 
@@ -131,11 +152,14 @@ namespace Lalim.Core
             }
 
             CurrentSceneName = sceneName;
-            IsLoading = false;
-
+            
             Debug.Log($"[SceneLoader] Scene loaded: {sceneName}");
-
             EventBus.Publish(new SceneLoadedEvent { SceneName = sceneName });
+
+            // 7. Fade in from black to the newly loaded scene
+            yield return ScreenFader.Instance.FadeIn(0.5f);
+
+            IsLoading = false;
         }
 
         // ─────────────────────────────────────────────

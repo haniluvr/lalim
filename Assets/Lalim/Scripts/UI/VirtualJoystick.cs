@@ -8,7 +8,9 @@ namespace Lalim.UI
     /// On-screen virtual joystick for player movement.
     /// Draggable thumb within a circular boundary, outputs normalized Vector2 direction.
     /// Attach to a UI Image that acts as the joystick background.
+    /// If no Graphic component exists, one will be added automatically to catch events.
     /// </summary>
+    [RequireComponent(typeof(UnityEngine.UI.Graphic))]
     public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
     {
         [Header("Components")]
@@ -43,6 +45,13 @@ namespace Lalim.UI
             {
                 _handle.anchoredPosition = Vector2.zero;
             }
+
+            // Ensure we have a raycast target so we can receive OnDrag events
+            UnityEngine.UI.Graphic graphic = GetComponent<UnityEngine.UI.Graphic>();
+            if (graphic != null && !graphic.raycastTarget)
+            {
+                graphic.raycastTarget = true;
+            }
         }
 
         // ─────────────────────────────────────────────
@@ -51,6 +60,10 @@ namespace Lalim.UI
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            if (InputManager.Instance != null)
+            {
+                InputManager.Instance.SetTouchActive(true);
+            }
             OnDrag(eventData);
         }
 
@@ -106,6 +119,7 @@ namespace Lalim.UI
             if (InputManager.Instance != null)
             {
                 InputManager.Instance.SetMoveInput(Vector2.zero);
+                InputManager.Instance.SetTouchActive(false);
             }
         }
     }

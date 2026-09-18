@@ -9,6 +9,7 @@ namespace Lalim.UI
     /// Outputs delta movement for camera rotation via InputManager.
     /// Ignores touches that originate on UI elements (joystick, buttons).
     /// </summary>
+    [RequireComponent(typeof(UnityEngine.UI.Graphic))]
     public class TouchLookHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
     {
         [Header("Settings")]
@@ -22,6 +23,15 @@ namespace Lalim.UI
         private int _activeTouchId = -1;
         private Vector2 _previousTouchPosition;
         private bool _isDragging;
+
+        private void Start()
+        {
+            UnityEngine.UI.Graphic graphic = GetComponent<UnityEngine.UI.Graphic>();
+            if (graphic != null && !graphic.raycastTarget)
+            {
+                graphic.raycastTarget = true;
+            }
+        }
 
         // ─────────────────────────────────────────────
         // Pointer Events

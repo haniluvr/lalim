@@ -17,16 +17,42 @@ namespace Lalim.Core
         [SerializeField] private bool _logSaveOperations = true;
 
         public SaveData CurrentSave { get; private set; }
-        public bool HasSaveFile => File.Exists(GetSavePath());
+        public int CurrentSlot { get; private set; } = 0;
+        
+        public const int MAX_SLOTS = 3;
 
-        private string GetSavePath()
+        public bool HasCurrentSave => File.Exists(GetSavePath(CurrentSlot));
+
+        private string GetSavePath(int slot)
         {
-            return Path.Combine(Application.persistentDataPath, GameConstants.Save.SAVE_FILE_NAME);
+            return Path.Combine(Application.persistentDataPath, GameConstants.Save.GetSaveFileName(slot));
         }
 
-        private string GetBackupPath()
+        private string GetBackupPath(int slot)
         {
-            return Path.Combine(Application.persistentDataPath, GameConstants.Save.SAVE_BACKUP_NAME);
+            return Path.Combine(Application.persistentDataPath, GameConstants.Save.GetBackupFileName(slot));
+        }
+        
+        public bool HasAnySave()
+        {
+            for (int i = 0; i < MAX_SLOTS; i++)
+            {
+                if (HasSave(i)) return true;
+            }
+            return false;
+        }
+
+        public bool HasSave(int slot)
+        {
+            return File.Exists(GetSavePath(slot));
+        }
+
+        public void SetCurrentSlot(int slot)
+        {
+            if (slot >= 0 && slot < MAX_SLOTS)
+            {
+                CurrentSlot = slot;
+            }
         }
 
         // ─────────────────────────────────────────────
@@ -48,7 +74,7 @@ namespace Lalim.Core
 
             if (_logSaveOperations)
             {
-                Debug.Log($"[SaveManager] Save path: {GetSavePath()}");
+                Debug.Log($"[SaveManager] Save directory: {Application.persistentDataPath}");
             }
         }
 
@@ -83,8 +109,8 @@ namespace Lalim.Core
                 string json = JsonUtility.ToJson(CurrentSave, true);
 
                 // Write backup first (in case write is interrupted)
-                string savePath = GetSavePath();
-                string backupPath = GetBackupPath();
+                string savePath = GetSavePath(CurrentSlot);
+                string backupPath = GetBackupPath(CurrentSlot);
 
                 if (File.Exists(savePath))
                 {
@@ -95,7 +121,7 @@ namespace Lalim.Core
 
                 if (_logSaveOperations)
                 {
-                    Debug.Log($"[SaveManager] Game saved successfully");
+                    Debug.Log($"[SaveManager] Game saved successfully to Slot {CurrentSlot + 1}");
                 }
             }
             catch (Exception e)
@@ -109,13 +135,13 @@ namespace Lalim.Core
         /// </summary>
         public bool LoadGame()
         {
-            string savePath = GetSavePath();
+            string savePath = GetSavePath(CurrentSlot);
 
             if (!File.Exists(savePath))
             {
                 if (_logSaveOperations)
                 {
-                    Debug.Log("[SaveManager] No save file found, starting fresh");
+                    Debug.Log($"[SaveManager] No save file found for Slot {CurrentSlot + 1}, starting fresh");
                 }
                 CurrentSave = new SaveData();
                 return false;
@@ -137,7 +163,7 @@ namespace Lalim.Core
             }
             catch (Exception e)
             {
-                Debug.LogError($"[SaveManager] Load failed: {e.Message}. Trying backup...");
+                Debug.LogError($"[SaveManager] Load failed for Slot {CurrentSlot + 1}: {e.Message}. Trying backup...");
                 return TryLoadBackup();
             }
         }
@@ -145,16 +171,19 @@ namespace Lalim.Core
         /// <summary>
         /// Delete save file and start fresh.
         /// </summary>
-        public void DeleteSave()
+        public void DeleteSave(int slot)
         {
-            string savePath = GetSavePath();
-            string backupPath = GetBackupPath();
+            string savePath = GetSavePath(slot);
+            string backupPath = GetBackupPath(slot);
 
             if (File.Exists(savePath)) File.Delete(savePath);
             if (File.Exists(backupPath)) File.Delete(backupPath);
 
-            CurrentSave = new SaveData();
-            Debug.Log("[SaveManager] Save data deleted");
+            if (slot == CurrentSlot)
+            {
+                CurrentSave = new SaveData();
+            }
+            Debug.Log($"[SaveManager] Save data deleted for Slot {slot + 1}");
         }
 
         // ─────────────────────────────────────────────
@@ -200,7 +229,7 @@ namespace Lalim.Core
 
         private bool TryLoadBackup()
         {
-            string backupPath = GetBackupPath();
+            string backupPath = GetBackupPath(CurrentSlot);
 
             if (!File.Exists(backupPath))
             {

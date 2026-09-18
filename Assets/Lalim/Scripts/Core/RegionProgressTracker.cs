@@ -47,7 +47,7 @@ namespace Lalim.Core
         private void Start()
         {
             // Restore from save if available
-            if (SaveManager.Instance != null && SaveManager.Instance.HasSaveFile)
+            if (SaveManager.Instance != null && SaveManager.Instance.HasCurrentSave)
             {
                 RestoreFromSave(SaveManager.Instance.CurrentSave);
             }

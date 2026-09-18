@@ -17,7 +17,7 @@ namespace Lalim.Core
         // ─────────────────────────────────────────────
 
         [Header("Current State")]
-        [SerializeField] private GameState _currentState = GameState.Boot;
+        [SerializeField] private GameState _currentState = GameState.Menu; // Start as Menu so Boot triggers a change
         public GameState CurrentState => _currentState;
 
         // Region progression: linear unlock (Luzon → Visayas → Mindanao)
@@ -79,12 +79,9 @@ namespace Lalim.Core
             // Only redirect to Main Menu if starting from the Boot scene
             if (activeScene == GameConstants.Scenes.BOOT)
             {
-                EventBus.Publish(new SceneLoadRequestedEvent
-                {
-                    SceneName = GameConstants.Scenes.MAIN_MENU,
-                    ShowLoadingScreen = true
-                });
-                SetState(GameState.Menu);
+                // Do nothing here! 
+                // BootSequenceUI will handle fading the logos and THEN it will load the Main Menu.
+                SetState(GameState.Boot);
             }
             else if (activeScene == GameConstants.Scenes.MAIN_MENU)
             {
@@ -124,6 +121,7 @@ namespace Lalim.Core
                     Time.timeScale = 0f;
                     break;
 
+                case GameState.Boot:
                 case GameState.Exploring:
                 case GameState.InChallenge:
                 case GameState.Menu:

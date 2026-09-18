@@ -18,6 +18,7 @@ namespace Lalim.UI
         [SerializeField] private GameObject _loadingPanel;
         [SerializeField] private GameObject _regionSelectPanel;
         [SerializeField] private GameObject _inventoryPanel;
+        [SerializeField] private GameObject _settingsPanel;
 
         // ─────────────────────────────────────────────
         // Panel Stack
@@ -140,6 +141,7 @@ namespace Lalim.UI
             SetPanelActive(_loadingPanel, false);
             SetPanelActive(_regionSelectPanel, false);
             SetPanelActive(_inventoryPanel, false);
+            SetPanelActive(_settingsPanel, false);
         }
 
         private void SetPanelActive(GameObject panel, bool active)
@@ -210,6 +212,14 @@ namespace Lalim.UI
             PushPanel(_pausePanel);
         }
 
+        /// <summary>
+        /// Show the settings menu.
+        /// </summary>
+        public void ShowSettings()
+        {
+            PushPanel(_settingsPanel);
+        }
+
         // ─────────────────────────────────────────────
         // Event Handlers
         // ─────────────────────────────────────────────
@@ -218,6 +228,11 @@ namespace Lalim.UI
         {
             switch (evt.NewState)
             {
+                case GameState.Boot:
+                    PopAll();
+                    HideHUD();
+                    break;
+
                 case GameState.Menu:
                     PopAll();
                     HideHUD();

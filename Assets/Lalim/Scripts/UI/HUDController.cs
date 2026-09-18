@@ -274,7 +274,11 @@ namespace Lalim.UI
 
         private void OnSpiritSenseButtonPressed()
         {
-            if (InputManager.Instance != null)
+            if (SpiritSense.Instance != null)
+            {
+                SpiritSense.Instance.TryActivateReveal();
+            }
+            else if (InputManager.Instance != null)
             {
                 InputManager.Instance.TriggerSpiritSense();
             }
@@ -296,6 +300,16 @@ namespace Lalim.UI
             }
             else
             {
+                // Fallback for direct scene testing without UIManager (Boot Sequence)
+                PauseMenu pauseMenu = FindObjectOfType<PauseMenu>(true);
+                if (pauseMenu != null)
+                {
+                    pauseMenu.gameObject.SetActive(true);
+                }
+                else
+                {
+                    Debug.LogWarning("[HUDController] No UIManager or PauseMenu found in scene! Cannot open settings.");
+                }
                 EventBus.Publish(new PauseRequestedEvent { IsPaused = true });
             }
         }

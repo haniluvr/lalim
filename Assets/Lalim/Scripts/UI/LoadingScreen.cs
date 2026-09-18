@@ -15,6 +15,7 @@ namespace Lalim.UI
         [SerializeField] private Slider _progressBar;
         [SerializeField] private TMP_Text _progressText;
         [SerializeField] private TMP_Text _tipText;
+        [SerializeField] private TMP_Text _statusText; // e.g. "Retrieving...", "Downloading..."
         [SerializeField] private Image _regionArtwork;
 
         [Header("Tips")]
@@ -24,8 +25,11 @@ namespace Lalim.UI
             "The spirits guide those who listen carefully.",
             "Conservation tools help preserve cultural heritage.",
             "Explore every corner — some secrets are well hidden.",
-            "Take your time. The land tells its own story."
         };
+
+        [Header("Status Text Cycling")]
+        [SerializeField] private string _baseLoadingText = "Loading";
+        [SerializeField] private float _statusCycleInterval = 0.4f;
 
         [Header("Animation")]
         [SerializeField] private float _barSmoothSpeed = 5f;
@@ -51,6 +55,11 @@ namespace Lalim.UI
             _displayProgress = 0f;
             UpdateProgressUI(0f);
             ShowRandomTip();
+            
+            if (_statusText != null)
+            {
+                StartCoroutine(CycleStatusTextRoutine());
+            }
         }
 
         private void OnDisable()
@@ -91,6 +100,20 @@ namespace Lalim.UI
             if (_tipText != null && _loadingTips.Length > 0)
             {
                 _tipText.text = _loadingTips[Random.Range(0, _loadingTips.Length)];
+            }
+        }
+
+        private System.Collections.IEnumerator CycleStatusTextRoutine()
+        {
+            int dots = 0;
+            while (true)
+            {
+                if (_statusText != null)
+                {
+                    _statusText.text = _baseLoadingText + new string('.', dots);
+                    dots = (dots + 1) % 4; // Cycles through 0, 1, 2, 3 dots
+                }
+                yield return new WaitForSeconds(_statusCycleInterval);
             }
         }
 
