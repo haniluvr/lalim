@@ -100,7 +100,7 @@ namespace Lalim.Challenges
             // Audio
             if (_collectSound != null)
             {
-                AudioSource.PlayClipAtPoint(_collectSound, transform.position);
+                GameAudio.PlayAt(_collectSound, transform.position);
             }
 
             // VFX

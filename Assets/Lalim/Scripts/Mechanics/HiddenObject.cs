@@ -24,6 +24,13 @@ namespace Lalim.Mechanics
 
         public bool IsRevealed { get; private set; }
 
+        private static readonly System.Collections.Generic.List<HiddenObject> _active = new System.Collections.Generic.List<HiddenObject>();
+        /// <summary>Every hidden object in the loaded scenes (SpiritSense reveals them by distance).</summary>
+        public static System.Collections.Generic.IReadOnlyList<HiddenObject> Active => _active;
+
+        private void OnEnable() => _active.Add(this);
+        private void OnDisable() => _active.Remove(this);
+
         private Renderer[] _renderers;
         private Collider[] _interactionColliders;
         private MaterialPropertyBlock _propBlock;
@@ -120,7 +127,7 @@ namespace Lalim.Mechanics
             // Play reveal sound
             if (_revealSound != null)
             {
-                AudioSource.PlayClipAtPoint(_revealSound, transform.position);
+                GameAudio.PlayAt(_revealSound, transform.position);
             }
         }
 
@@ -143,10 +150,10 @@ namespace Lalim.Mechanics
             {
                 _isFading = false;
 
-                // Reset to full opacity
+                // Back to the plain material (no override left behind)
                 foreach (var renderer in _renderers)
                 {
-                    SetRendererAlpha(renderer, 1f);
+                    renderer.SetPropertyBlock(null);
                 }
             }
         }
@@ -156,13 +163,10 @@ namespace Lalim.Mechanics
             renderer.GetPropertyBlock(_propBlock);
             _propBlock.SetFloat("_Alpha", alpha);
 
-            // Also try standard shader properties
-            Color color = _propBlock.GetColor("_BaseColor");
-            if (color == default)
-            {
-                color = Color.white;
-            }
-            color.a = alpha;
+            // Also try standard shader properties — keeping the material's own tint
+            Material mat = renderer.sharedMaterial;
+            Color color = mat != null && mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : Color.white;
+            color.a *= alpha;
             _propBlock.SetColor("_BaseColor", color);
 
             renderer.SetPropertyBlock(_propBlock);

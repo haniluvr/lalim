@@ -8,21 +8,17 @@ namespace Lalim.UI
 {
     /// <summary>
     /// HUD controller that displays gameplay information:
-    /// - SpiritSense cooldown indicator
     /// - Active challenge timer
     /// - Hint counter
     /// Automatically shows/hides elements based on game state.
     /// </summary>
     public class HUDController : MonoBehaviour
     {
-        [Header("SpiritSense Indicator")]
-        [SerializeField] private Image _spiritSenseCooldownFill;
-        [SerializeField] private Button _spiritSenseButton;
-        [SerializeField] private Image _spiritSenseIcon;
+        [Header("HUD Root")]
+        [Tooltip("CanvasGroup on this HUD root, used to hide/show instead of SetActive so event subscriptions in OnDisable never get lost.")]
+        [SerializeField] private CanvasGroup _rootCanvasGroup;
 
-        [Header("Moon Tide Ability")]
-        [SerializeField] private Button _moonTideButton;
-        [SerializeField] private Image _moonTideCooldownFill;
+        // Ability buttons, HP and stamina are driven by AbilityButtonUI / HealthBarUI / StaminaOrbsUI.
 
         [Header("HUD Action Buttons")]
         [SerializeField] private Button _settingsButton;
@@ -47,6 +43,7 @@ namespace Lalim.UI
         [Header("Interaction Prompt")]
         [SerializeField] private GameObject _interactionPromptGroup;
         [SerializeField] private TMP_Text _interactionPromptText;
+        [SerializeField] private Image _interactionPromptIcon;
 
         [Header("Colors")]
         [SerializeField] private Color _timerNormalColor = Color.white;
@@ -82,9 +79,10 @@ namespace Lalim.UI
             EventBus.Subscribe<ChallengeStartedEvent>(OnChallengeStarted);
             EventBus.Subscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
             EventBus.Subscribe<ChallengeFailedEvent>(OnChallengeFailed);
-            EventBus.Subscribe<SpiritSenseCooldownEvent>(OnSpiritSenseCooldown);
             EventBus.Subscribe<DifficultyChangedEvent>(OnDifficultyChanged);
             EventBus.Subscribe<HintRequestedEvent>(OnHintRequested);
+            EventBus.Subscribe<DialogueStartedEvent>(OnDialogueStarted);
+            EventBus.Subscribe<DialogueEndedEvent>(OnDialogueEnded);
         }
 
         private void OnDisable()
@@ -93,24 +91,15 @@ namespace Lalim.UI
             EventBus.Unsubscribe<ChallengeStartedEvent>(OnChallengeStarted);
             EventBus.Unsubscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
             EventBus.Unsubscribe<ChallengeFailedEvent>(OnChallengeFailed);
-            EventBus.Unsubscribe<SpiritSenseCooldownEvent>(OnSpiritSenseCooldown);
             EventBus.Unsubscribe<DifficultyChangedEvent>(OnDifficultyChanged);
             EventBus.Unsubscribe<HintRequestedEvent>(OnHintRequested);
+            EventBus.Unsubscribe<DialogueStartedEvent>(OnDialogueStarted);
+            EventBus.Unsubscribe<DialogueEndedEvent>(OnDialogueEnded);
         }
 
         private void Start()
         {
             // Wire up buttons
-            if (_spiritSenseButton != null)
-            {
-                _spiritSenseButton.onClick.AddListener(OnSpiritSenseButtonPressed);
-            }
-
-            if (_moonTideButton != null)
-            {
-                _moonTideButton.onClick.AddListener(OnMoonTideButtonPressed);
-            }
-
             if (_settingsButton != null)
             {
                 _settingsButton.onClick.AddListener(OnSettingsButtonPressed);
@@ -147,24 +136,6 @@ namespace Lalim.UI
             {
                 UpdateTimer();
             }
-
-            UpdateMoonTideDisplay();
-        }
-
-        private void UpdateMoonTideDisplay()
-        {
-            if (MoonTideAbility.Instance != null)
-            {
-                bool onCooldown = MoonTideAbility.Instance.IsOnCooldown;
-                if (_moonTideCooldownFill != null)
-                {
-                    _moonTideCooldownFill.fillAmount = 1f - MoonTideAbility.Instance.CooldownNormalized;
-                }
-                if (_moonTideButton != null)
-                {
-                    _moonTideButton.interactable = !onCooldown;
-                }
-            }
         }
 
         // ─────────────────────────────────────────────
@@ -173,26 +144,20 @@ namespace Lalim.UI
 
         private void UpdateTimer()
         {
-            _challengeTimeRemaining -= Time.deltaTime;
-            _challengeTimeRemaining = Mathf.Max(0, _challengeTimeRemaining);
+            // Fix: this used to keep its own countdown and publish a duplicate
+            // ChallengeFailedEvent with a hardcoded ChallengeType.WasteSegregation.
+            // ChallengeManager is the single source of truth for the timer and
+            // for timeout failure; the HUD now only displays its state.
+            if (Mechanics.ChallengeManager.Instance == null) return;
 
-            // Update timer text
+            _challengeTimeRemaining = Mechanics.ChallengeManager.Instance.TimeRemaining;
+
             if (_timerText != null)
             {
                 int minutes = Mathf.FloorToInt(_challengeTimeRemaining / 60f);
                 int seconds = Mathf.FloorToInt(_challengeTimeRemaining % 60f);
                 _timerText.text = $"{minutes:00}:{seconds:00}";
-            }
 
-            // Update fill bar
-            if (_timerFill != null && _challengeTimeLimit > 0)
-            {
-                _timerFill.fillAmount = _challengeTimeRemaining / _challengeTimeLimit;
-            }
-
-            // Color based on urgency
-            if (_timerText != null)
-            {
                 if (_challengeTimeRemaining <= _timerCriticalThreshold)
                 {
                     _timerText.color = _timerCriticalColor;
@@ -207,15 +172,9 @@ namespace Lalim.UI
                 }
             }
 
-            // Check timeout
-            if (_challengeTimeRemaining <= 0)
+            if (_timerFill != null && _challengeTimeLimit > 0)
             {
-                EventBus.Publish(new ChallengeFailedEvent
-                {
-                    ChallengeId = "",
-                    Type = ChallengeType.WasteSegregation,
-                    Reason = "timeout"
-                });
+                _timerFill.fillAmount = _challengeTimeRemaining / _challengeTimeLimit;
             }
         }
 
@@ -241,6 +200,10 @@ namespace Lalim.UI
             if (_interactionPromptText != null)
             {
                 _interactionPromptText.text = text;
+            }
+            if (_interactionPromptIcon != null)
+            {
+                _interactionPromptIcon.gameObject.SetActive(true);
             }
         }
 
@@ -272,46 +235,10 @@ namespace Lalim.UI
         // Button Handlers
         // ─────────────────────────────────────────────
 
-        private void OnSpiritSenseButtonPressed()
-        {
-            if (SpiritSense.Instance != null)
-            {
-                SpiritSense.Instance.TryActivateReveal();
-            }
-            else if (InputManager.Instance != null)
-            {
-                InputManager.Instance.TriggerSpiritSense();
-            }
-        }
-
-        private void OnMoonTideButtonPressed()
-        {
-            if (MoonTideAbility.Instance != null)
-            {
-                MoonTideAbility.Instance.TriggerMoonTide();
-            }
-        }
-
         private void OnSettingsButtonPressed()
         {
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.ShowPause();
-            }
-            else
-            {
-                // Fallback for direct scene testing without UIManager (Boot Sequence)
-                PauseMenu pauseMenu = FindObjectOfType<PauseMenu>(true);
-                if (pauseMenu != null)
-                {
-                    pauseMenu.gameObject.SetActive(true);
-                }
-                else
-                {
-                    Debug.LogWarning("[HUDController] No UIManager or PauseMenu found in scene! Cannot open settings.");
-                }
-                EventBus.Publish(new PauseRequestedEvent { IsPaused = true });
-            }
+            if (PauseModalUI.Instance != null) PauseModalUI.Instance.Open();
+            else EventBus.Publish(new PauseRequestedEvent { IsPaused = true });
         }
 
         private void OnNavigationButtonPressed()
@@ -338,12 +265,9 @@ namespace Lalim.UI
             }
         }
 
+        // The placeholder inventory window was removed; the button is kept for the real one.
         private void OnInventoryButtonPressed()
         {
-            if (InventoryUI.Instance != null)
-            {
-                InventoryUI.Instance.ToggleInventory();
-            }
         }
 
         private void OnHintButtonPressed()
@@ -364,10 +288,50 @@ namespace Lalim.UI
         // Event Handlers
         // ─────────────────────────────────────────────
 
+        private bool _stateAllowsHud = true;
+        private bool _dialogueOpen;
+        private readonly System.Collections.Generic.HashSet<object> _suppressors = new System.Collections.Generic.HashSet<object>();
+
+        /// <summary>Hide the game HUD while a full-screen minigame (scanner, coral site, ghost net) is up.</summary>
+        public void SetSuppressed(object source, bool suppressed)
+        {
+            if (suppressed) _suppressors.Add(source); else _suppressors.Remove(source);
+            ApplyHudVisibility();
+        }
+
+        // No game HUD while a dialogue is on screen.
+        private void OnDialogueStarted(DialogueStartedEvent evt) { _dialogueOpen = true; ApplyHudVisibility(); }
+        private void OnDialogueEnded(DialogueEndedEvent evt) { _dialogueOpen = false; ApplyHudVisibility(); }
+
         private void OnGameStateChanged(GameStateChangedEvent evt)
         {
-            bool showHUD = evt.NewState == GameState.Exploring || evt.NewState == GameState.InChallenge;
-            gameObject.SetActive(showHUD);
+            _stateAllowsHud = evt.NewState == GameState.Exploring || evt.NewState == GameState.InChallenge;
+            ApplyHudVisibility();
+        }
+
+        /// <summary>True while the game HUD is on screen (not in dialogue, menus or a full-screen minigame).</summary>
+        public bool IsShowing => _stateAllowsHud && !_dialogueOpen && _suppressors.Count == 0;
+
+        private void ApplyHudVisibility()
+        {
+            bool showHUD = IsShowing;
+
+            // Fix: this component used to SetActive(false) on itself, which meant OnDisable()
+            // unsubscribed it from GameStateChangedEvent — so it could never receive the event
+            // that would turn it back on again. Use a CanvasGroup instead so the object (and its
+            // subscriptions) stay alive at all times.
+            if (_rootCanvasGroup != null)
+            {
+                _rootCanvasGroup.alpha = showHUD ? 1f : 0f;
+                _rootCanvasGroup.interactable = showHUD;
+                _rootCanvasGroup.blocksRaycasts = showHUD;
+            }
+            else
+            {
+                Debug.LogWarning("[HUDController] No CanvasGroup assigned — falling back to SetActive, " +
+                                  "which will stop this component from receiving future show/hide events.");
+                gameObject.SetActive(showHUD);
+            }
         }
 
         private void OnChallengeStarted(ChallengeStartedEvent evt)
@@ -379,6 +343,8 @@ namespace Lalim.UI
 
             SetChallengeUIVisible(true);
             UpdateHintDisplay();
+            // First-person minigames lock movement: the swim controls only get in the way.
+            SetSwimControlsVisible(evt.Perspective != ChallengePerspective.FirstPerson);
 
             if (_timerText != null)
             {
@@ -390,24 +356,34 @@ namespace Lalim.UI
         {
             _isInChallenge = false;
             SetChallengeUIVisible(false);
+            SetSwimControlsVisible(true);
         }
 
         private void OnChallengeFailed(ChallengeFailedEvent evt)
         {
             _isInChallenge = false;
             SetChallengeUIVisible(false);
+            SetSwimControlsVisible(true);
         }
 
-        private void OnSpiritSenseCooldown(SpiritSenseCooldownEvent evt)
-        {
-            if (_spiritSenseCooldownFill != null)
-            {
-                _spiritSenseCooldownFill.fillAmount = 1f - (evt.RemainingTime / evt.TotalCooldown);
-            }
+        // The joystick, skill buttons, dugong card and action button (found by name, so hand edits to the HUD are kept).
+        private static readonly string[] SwimControls = { "Joystick_Movement", "BottomRight_Cluster", "Btn_SeagrassMend", "ActionButton" };
+        private readonly System.Collections.Generic.List<GameObject> _hiddenControls = new System.Collections.Generic.List<GameObject>();
 
-            if (_spiritSenseButton != null)
+        private void SetSwimControlsVisible(bool visible)
+        {
+            if (visible)
             {
-                _spiritSenseButton.interactable = evt.RemainingTime <= 0;
+                foreach (GameObject go in _hiddenControls) if (go != null) go.SetActive(true);
+                _hiddenControls.Clear();
+                return;
+            }
+            foreach (string name in SwimControls)
+            {
+                Transform t = transform.Find(name);
+                if (t == null || !t.gameObject.activeSelf) continue;
+                t.gameObject.SetActive(false);
+                _hiddenControls.Add(t.gameObject);
             }
         }
 

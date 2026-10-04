@@ -12,12 +12,13 @@ namespace Lalim.Core
         public static class Scenes
         {
             public const string BOOT = "00_BootSequence";
-            public const string SPLASH = "01_SplashScene";
+            public const string SPLASH = "01_Splash";
             public const string MAIN_MENU = "02_MainMenu";
             public const string LOADING = "04_Loading";
             public const string NAME_INPUT = "03_NameInput";
-            public const string CUTSCENE = "Cutscene";
-            public const string TUTORIAL = "Tutorial";
+            public const string CUTSCENE = "01_Cutscene";   // Scenes/Cutscene/01_Cutscene.unity
+            public const string TUTORIAL = "01_Tutorial";
+            public const string TELEPORT = "TeleportScene";
             public const string LUZON = "02_Luzon";
             public const string VISAYAS = "03_Visayas";
             public const string MINDANAO = "04_Mindanao";
@@ -62,6 +63,8 @@ namespace Lalim.Core
             public const string SPIRIT_HIDDEN = "SpiritHidden";
             public const string CHALLENGE_TRIGGER = "ChallengeTrigger";
             public const string OBJECTIVE = "Objective";
+            public const string TOXIC_WATER = "ToxicWater";
+            public const string CHECKPOINT = "Checkpoint";
         }
 
         // ─────────────────────────────────────────────
@@ -75,6 +78,7 @@ namespace Lalim.Core
             public const string PLAYER = "Player";
             public const string INTERACTABLE = "Interactable";
             public const string HIDDEN = "Hidden";
+            public const string HAZARD = "Hazard";
         }
 
         // ─────────────────────────────────────────────
@@ -154,6 +158,17 @@ namespace Lalim.Core
         }
 
         // ─────────────────────────────────────────────
+        // Relics (ItemData.itemId) — earned from Level 1's deities, used in Level 2
+        // ─────────────────────────────────────────────
+
+        public static class Relics
+        {
+            public const string RADIANT_CONCH = "00_radiantconch";            // Amansinaya
+            public const string COMPASS = "01_compass";                       // Haik
+            public const string WOVEN_NET_FRAGMENT = "02_wovennetfragment";   // Neguno
+        }
+
+        // ─────────────────────────────────────────────
         // Player Defaults
         // ─────────────────────────────────────────────
 
@@ -171,9 +186,59 @@ namespace Lalim.Core
 
         public static class SpiritSense
         {
-            public const float REVEAL_RADIUS = 15.0f;
-            public const float COOLDOWN_SECONDS = 10.0f;
+            public const float REVEAL_RADIUS = 40.0f;
+            public const float COOLDOWN_SECONDS = 20.0f;
             public const float COMPASS_UPDATE_INTERVAL = 0.25f;
+        }
+
+        // ─────────────────────────────────────────────
+        // Ability Defaults (fallbacks when no AbilityConfig is assigned)
+        // ─────────────────────────────────────────────
+
+        public static class Abilities
+        {
+            // Fallback values if AbilityConfig asset is not assigned.
+            public const int MAX_STAMINA_ORBS = 4;
+            public const int STARTING_STAMINA_ORBS = 2; // new game / new level (respawns refill to full)
+            public const float ORB_REGEN_SECONDS = 15.0f;
+            public const float ORB_REGEN_DELAY_SECONDS = 1.0f;
+
+            public const float PLAYER_MAX_HP = 100f;
+
+            public const float SURGE_DASH_DISTANCE = 8f;
+            public const float SURGE_DASH_DURATION = 0.35f;
+            public const float SURGE_COOLDOWN = 7f;
+            public const int SURGE_COST_ORBS = 0; // basic skill: cooldown only, never costs stamina
+            public const int SURGE_COMBO_CHARGES = 3;
+            public const float SURGE_COMBO_WINDOW = 1.5f;
+
+            public const float RIPTIDE_DURATION = 60f;
+            public const float RIPTIDE_COOLDOWN = 30f;
+            public const int RIPTIDE_COST_ORBS = 0; // basic skill: cooldown only, never costs stamina
+            public const float RIPTIDE_SPEED_MULTIPLIER = 1.75f;
+
+            public const int SPIRIT_SENSE_COST_ORBS = 1;
+            public const float SPIRIT_SENSE_DURATION = 15f;
+
+            public const float TIDEBOND_FATIGUE_SECONDS = 45f;
+            public const float TIDEBOND_COOLDOWN = 30f;
+            public const int TIDEBOND_COST_ORBS = 2;
+            public const float TIDEBOND_SPEED_MULTIPLIER = 2.25f;
+
+            public const float SEAGRASS_MEND_HEAL_DURATION = 3f;
+            public const float SEAGRASS_MEND_COOLDOWN = 40f;
+            public const float SEAGRASS_MEND_HEAL_AMOUNT = 30f;
+
+            public const float BUBBLE_BARRIER_DURATION = 20f;
+            public const float BUBBLE_BARRIER_COOLDOWN = 0f; // charges from activity instead
+            public const int BUBBLE_BARRIER_COST_ORBS = 0; // charge-based ultimate: no stamina
+            public const float BUBBLE_BARRIER_RADIUS_SOLO = 3f;
+            public const float BUBBLE_BARRIER_RADIUS_WITH_DUGONG = 5f;
+            public const float BUBBLE_BARRIER_DUGONG_PROXIMITY = 6f;
+
+            public const float TOXIC_LIGHT_DPS = 3f;
+            public const float TOXIC_HEAVY_DPS = 6f;
+            public const float CONTACT_HAZARD_DAMAGE = 10f;
         }
 
         // ─────────────────────────────────────────────

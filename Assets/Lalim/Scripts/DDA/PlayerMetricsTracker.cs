@@ -58,9 +58,15 @@ namespace Lalim.DDA
             DontDestroyOnLoad(gameObject);
         }
 
-        private void OnEnable()
+private void OnEnable()
         {
-            EventBus.Subscribe<ChallengeStartedEvent>(OnChallengeStarted);
+            // Fix: ChallengeManager now independently tracks hesitation/errors/completion time
+            // and is the single source of truth publishing ChallengeCompletedEvent. This tracker
+            // used to also subscribe and track the same challenge in parallel, double-counting
+            // metrics if anything still called its StartTracking/StopTracking directly.
+            // Left disabled-by-default; call StartTracking/StopTracking explicitly if you need
+            // a standalone metrics session outside the challenge lifecycle.
+            // EventBus.Subscribe<ChallengeStartedEvent>(OnChallengeStarted);
         }
 
         private void OnDisable()

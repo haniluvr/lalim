@@ -23,10 +23,10 @@ MonoBehaviour:
   smoothingFactor: 0.3
   tooEasyThreshold: 0.75
   strugglingThreshold: 0.35
-  minTaskMultiplier: 0.6
-  maxTaskMultiplier: 2
-  minTimerMultiplier: 1.5
-  maxTimerMultiplier: 0.6
+  minTaskMultiplier: 0.8
+  maxTaskMultiplier: 1.4
+  minTimerMultiplier: 1.3
+  maxTimerMultiplier: 0.8
   maxHints: 5
   minHints: 1
   complexityTiers: 3

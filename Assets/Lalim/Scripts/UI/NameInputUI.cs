@@ -7,7 +7,8 @@ namespace Lalim.UI
 {
     /// <summary>
     /// Handles the standalone Name Input Scene flow.
-    /// Updates the SaveManager and transitions to the Cutscene.
+    /// Updates the SaveManager and goes straight on to the tutorial (a fade, no loading screen).
+    /// P skips the scene (SceneSkipKey) unless the player is typing in the name box.
     /// </summary>
     public class NameInputUI : MonoBehaviour
     {
@@ -21,12 +22,7 @@ namespace Lalim.UI
             {
                 _submitButton.onClick.AddListener(OnSubmit);
             }
-            
-            // Auto-focus the input field when the scene starts
-            if (_nameInputField != null)
-            {
-                _nameInputField.Select();
-            }
+            // The name box isn't auto-focused, so P (skip) works until the player taps the box to type.
         }
 
         private void OnSubmit()
@@ -37,22 +33,23 @@ namespace Lalim.UI
                 playerName = _nameInputField.text.Trim();
             }
 
-            // Save the player name into the newly created save slot
+            // Keep the name on the current save; it's written when the player first saves
+            // (a new game only claims a slot once the player picks one in the pause menu).
             if (SaveManager.Instance != null && SaveManager.Instance.CurrentSave != null)
             {
                 SaveManager.Instance.CurrentSave.playerName = playerName;
-                SaveManager.Instance.SaveGame();
+                SaveManager.Instance.AutoSave();
                 Debug.Log($"[NameInput] Player name saved as: {playerName}");
             }
 
-            // Move to the cutscene
+            // Straight into the tutorial: a fade, no loading screen.
             if (SceneLoader.Instance != null)
             {
-                SceneLoader.Instance.LoadScene(GameConstants.Scenes.CUTSCENE);
+                SceneLoader.Instance.LoadScene(GameConstants.Scenes.TUTORIAL, showLoadingScreen: false);
             }
             else
             {
-                UnityEngine.SceneManagement.SceneManager.LoadScene(GameConstants.Scenes.CUTSCENE);
+                UnityEngine.SceneManagement.SceneManager.LoadScene(GameConstants.Scenes.TUTORIAL);
             }
         }
     }

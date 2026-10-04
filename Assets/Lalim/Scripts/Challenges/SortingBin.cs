@@ -172,7 +172,7 @@ namespace Lalim.Challenges
             // Audio feedback
             if (_correctSound != null && _audioSource != null)
             {
-                _audioSource.PlayOneShot(_correctSound);
+                GameAudio.PlayOneShot(_audioSource, _correctSound);
             }
 
             // Sort the debris (destroys it)
@@ -202,7 +202,7 @@ namespace Lalim.Challenges
             // Audio feedback
             if (_wrongSound != null && _audioSource != null)
             {
-                _audioSource.PlayOneShot(_wrongSound);
+                GameAudio.PlayOneShot(_audioSource, _wrongSound);
             }
 
             // Drop the debris back
@@ -233,7 +233,7 @@ namespace Lalim.Challenges
         private DebrisItem FindCarriedDebris()
         {
             // Look through all active debris items for the carried one
-            DebrisItem[] allDebris = FindObjectsOfType<DebrisItem>();
+            DebrisItem[] allDebris = FindObjectsByType<DebrisItem>(FindObjectsInactive.Exclude);
             foreach (var debris in allDebris)
             {
                 if (debris.IsCarried) return debris;

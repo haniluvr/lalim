@@ -181,7 +181,7 @@ namespace Lalim.Challenges
             // Play start sound
             if (_challengeStartSound != null)
             {
-                AudioSource.PlayClipAtPoint(_challengeStartSound, transform.position);
+                GameAudio.PlayAt(_challengeStartSound, transform.position);
             }
 
             Debug.Log($"[WasteSegregation] Challenge started with {_totalDebris} debris items. Time limit: {_timeLimit:F0}s");
@@ -322,7 +322,7 @@ namespace Lalim.Challenges
 
             if (evt.Success && _challengeCompleteSound != null)
             {
-                AudioSource.PlayClipAtPoint(_challengeCompleteSound, transform.position);
+                GameAudio.PlayAt(_challengeCompleteSound, transform.position);
             }
 
             CleanupDebris();

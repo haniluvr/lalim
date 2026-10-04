@@ -47,6 +47,12 @@ namespace Lalim.Core
         public string SceneName;
     }
 
+    /// <summary>
+    /// SaveManager.CurrentSave was replaced (a save was loaded, or a new game started). The
+    /// persistent systems (inventory, zone progress, DDA) reload from it so nothing carries over.
+    /// </summary>
+    public struct SaveDataReplacedEvent { }
+
     // ─────────────────────────────────────────────
     // Challenge System (Perspective Switching)
     // ─────────────────────────────────────────────
@@ -69,7 +75,17 @@ namespace Lalim.Core
         // Mindanao-specific
         HazardDefusal,          // Locate and defuse underwater explosives
         FrequencyMatching,      // Sound-match to calm whale shark
-        TrenchDescent           // Manage pressure during deep dive
+        TrenchDescent,          // Manage pressure during deep dive
+
+        // Level 1 (Luzon) additions — appended so serialized enum values stay stable
+        TrashCollection         // 3rd-person swim-and-pickup before segregation
+    }
+
+    /// <summary>Camera perspective a challenge runs in. FirstPerson is the default (value 0).</summary>
+    public enum ChallengePerspective
+    {
+        FirstPerson,
+        ThirdPerson
     }
 
     public struct ChallengeStartedEvent
@@ -79,6 +95,7 @@ namespace Lalim.Core
         public int TaskQuantity;       // Adjusted by DDA (e.g., number of trash items)
         public float TimeLimit;         // Adjusted by DDA (seconds, 0 = no timer)
         public int HintBudget;          // Adjusted by DDA
+        public ChallengePerspective Perspective; // Default FirstPerson
     }
 
     public struct ChallengeCompletedEvent
@@ -92,6 +109,14 @@ namespace Lalim.Core
         public int ErrorCount;
         public float CompletionTime;
         public float ExpectedTime;      // Baseline for deviation calculation
+
+        // "Pickup rate": how quickly the player worked out what to do
+        public float FirstActionLatency;    // seconds from start to the first correct action (-1 = none)
+        public float ExpectedFirstAction;   // baseline for the above (0 = unknown)
+
+        // Reliance on help
+        public int HintsUsed;
+        public int HintBudget;
     }
 
     public struct ChallengeFailedEvent
@@ -108,7 +133,7 @@ namespace Lalim.Core
     public enum ItemType
     {
         Relic,              // Cultural artifacts (Radiant Conch, Woven Net Fragment, Tide Lens)
-        Tool,               // Reusable conservation tools (Water Sample Kit, Coral Replanting Kit)
+        Tool,               // Reusable conservation tools (Water Sample Kit, Coral Seed)
         ConsumableKit,      // Single-use items (Waste Segregation Bag)
         QuestItem,          // Key progression items (Recycled Coral Stone, Ritual Offering)
         CompanionItem       // Dugong-related (Bioluminescent Pearl)
@@ -184,12 +209,6 @@ namespace Lalim.Core
         public string ObjectId;
     }
 
-    public struct SpiritSenseCooldownEvent
-    {
-        public float RemainingTime;
-        public float TotalCooldown;
-    }
-
     // ─────────────────────────────────────────────
     // Audio Navigation
     // ─────────────────────────────────────────────
@@ -241,23 +260,6 @@ namespace Lalim.Core
     }
 
     // ─────────────────────────────────────────────
-    // Moon Tides
-    // ─────────────────────────────────────────────
-
-    public enum TideLevel
-    {
-        Low,
-        Mid,
-        High
-    }
-
-    public struct TideChangedEvent
-    {
-        public TideLevel NewTide;
-        public TideLevel PreviousTide;
-    }
-
-    // ─────────────────────────────────────────────
     // Marine Species Codex
     // ─────────────────────────────────────────────
 
@@ -280,4 +282,167 @@ namespace Lalim.Core
     {
         public int RemainingHints;
     }
+
+    // ─────────────────────────────────────────────
+    // Abilities (Surge, Riptide, Spirit Sense, Tidebond, Seagrass Mend, Bubble Barrier)
+    // ─────────────────────────────────────────────
+
+    public enum AbilityId
+    {
+        Surge,
+        Riptide,
+        SpiritSense,
+        Tidebond,
+        SeagrassMend,
+        BubbleBarrier
+    }
+
+    public enum AbilityBlockReason
+    {
+        None,
+        NotEnoughStamina,
+        OnCooldown,
+        NotAllowedHere,
+        AlreadyActive,
+        Busy,           // e.g. Surge while Riptide is running, or mid-dash
+        NotCharged,     // charge-based skill (Bubble Barrier) isn't full yet
+        AtFullHealth,
+        Mounted,
+        NotMounted
+    }
+
+    public struct AbilityActivatedEvent
+    {
+        public AbilityId Ability;
+    }
+
+    public struct AbilityEndedEvent
+    {
+        public AbilityId Ability;
+        public bool Cancelled;
+    }
+
+    public struct AbilityBlockedEvent
+    {
+        public AbilityId Ability;
+        public AbilityBlockReason Reason;
+    }
+
+    // ─────────────────────────────────────────────
+    // Stamina
+    // ─────────────────────────────────────────────
+
+    public struct StaminaChangedEvent
+    {
+        public float Current;      // 0..MaxOrbs, fractional
+        public int FullOrbs;       // usable orbs (floor)
+        public int MaxOrbs;
+    }
+
+    public struct StaminaInsufficientEvent
+    {
+        public AbilityId Ability;
+        public int Needed;
+        public int Have;
+    }
+
+    // ─────────────────────────────────────────────
+    // Health / Hazards
+    // ─────────────────────────────────────────────
+
+    public enum DamageKind
+    {
+        Toxic,
+        Contact,
+        Other
+    }
+
+    public enum ToxicSeverity
+    {
+        None,
+        Light,
+        Heavy
+    }
+
+    public struct SettingsChangedEvent
+    {
+        public GameSettings Settings;
+    }
+
+    public struct PlayerHealthChangedEvent
+    {
+        public float Current;
+        public float Max;
+        public float Delta; // negative = damage, positive = heal
+    }
+
+    public struct PlayerDiedEvent
+    {
+        public Vector3 Position;
+        public string SectionId;
+    }
+
+    public struct PlayerRespawnedEvent
+    {
+        public string CheckpointId;
+        public bool IsResume; // placed at a checkpoint when loading a save — not a death
+    }
+
+    public struct CheckpointReachedEvent
+    {
+        public string CheckpointId;
+        public string SectionId;
+    }
+
+    public struct ToxicExposureChangedEvent
+    {
+        public ToxicSeverity Severity;
+        public bool SlowsStaminaRegen; // false for level-wide zone pollution (only local toxic pockets slow regen)
+    }
+
+    // ─────────────────────────────────────────────
+    // Dugong Companion
+    // ─────────────────────────────────────────────
+
+    public struct DugongMountChangedEvent
+    {
+        public bool Mounted;
+    }
+
+    // ─────────────────────────────────────────────
+    // Dialogue
+    // ─────────────────────────────────────────────
+
+    public struct DialogueStartedEvent { }
+
+    public struct DialogueEndedEvent { }
+
+    // ─────────────────────────────────────────────
+    // Level Flow / Navigation
+    // ─────────────────────────────────────────────
+
+    /// <summary>The "where to go next" target changed (null Target = no objective).</summary>
+    public struct ObjectiveChangedEvent
+    {
+        public Transform Target;
+    }
+
+    public struct QuestStepCompletedEvent
+    {
+        public string StepId;
+        public string ZoneId;
+    }
+
+    /// <summary>Level-wide cleanliness (0 = fully polluted, 1 = fully clean) target changed.</summary>
+    public struct CleanlinessChangedEvent
+    {
+        public float Target;
+        public bool Instant;
+    }
+
+    public struct LevelCompletedEvent
+    {
+        public Region Region;
+    }
+
 }

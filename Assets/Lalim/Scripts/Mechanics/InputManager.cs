@@ -21,7 +21,7 @@ namespace Lalim.Mechanics
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<InputManager>();
+                    _instance = FindAnyObjectByType<InputManager>();
                     if (_instance == null)
                     {
                         GameObject go = new GameObject("[InputManager]");
@@ -46,8 +46,22 @@ namespace Lalim.Mechanics
         /// <summary>Look delta from swipe gesture (raw pixel delta per frame).</summary>
         public Vector2 LookDelta { get; private set; }
 
-        /// <summary>Whether sprint / fast swim is held (LeftShift).</summary>
-        public bool SwimSprintHeld { get; private set; }
+        // Fix: the free LeftShift sprint flag is gone — Shift is now the
+        // tap(Surge)/hold(Riptide) input, exposed below via SurgeRiptideKeyDown/Held/Up.
+
+        /// <summary>Whether the Surge/Riptide key (LeftShift) is currently held down.</summary>
+        public bool SurgeRiptideKeyHeld { get; private set; }
+        /// <summary>True on the frame the Surge/Riptide key was pressed.</summary>
+        public bool SurgeRiptideKeyDown { get; private set; }
+        /// <summary>True on the frame the Surge/Riptide key was released.</summary>
+        public bool SurgeRiptideKeyUp { get; private set; }
+
+        /// <summary>True on the frame the Tidebond key (F) was pressed.</summary>
+        public bool TidebondPressed { get; private set; }
+        /// <summary>True on the frame the Seagrass Mend key (R) was pressed.</summary>
+        public bool SeagrassMendPressed { get; private set; }
+        /// <summary>True on the frame the Bubble Barrier key (G) was pressed.</summary>
+        public bool BubbleBarrierPressed { get; private set; }
 
         /// <summary>Whether free look is active (holding Mouse Button 4 or Alt).</summary>
         public bool IsFreeLooking { get; private set; }
@@ -81,11 +95,21 @@ namespace Lalim.Mechanics
         [SerializeField] private float _lookSensitivity = 0.15f;
         [SerializeField] private float _lookDeadZone = 2.0f; // Minimum pixel movement to register
 
+        [Header("Gamepad")]
+        [Tooltip("Right-stick camera speed at full tilt, in degrees per second.")]
+        [SerializeField] private float _gamepadLookSpeed = 180f;
+        [Tooltip("Stick deflection ignored around the centre (0–1).")]
+        [SerializeField, Range(0f, 0.5f)] private float _gamepadDeadZone = 0.15f;
+
         // ─────────────────────────────────────────────
         // Internal State
         // ─────────────────────────────────────────────
 
         private bool _inputEnabled = true;
+
+        /// <summary>False while dialogue, cutscenes or menus have taken input away.</summary>
+        public bool InputEnabled => _inputEnabled;
+        private bool _touchSurgeHeld;
         private Vector2 _lastMousePosition;
         private bool _isRmbDragging;
         private bool _isLmbDragging;
@@ -124,8 +148,8 @@ namespace Lalim.Mechanics
             // still read whatever gets set during this Update.
             LookDelta = Vector2.zero;
 
-            // Only use keyboard/mouse fallback on non-touch platforms (Editor, Standalone)
-            if (Application.isMobilePlatform) return;
+            // Allow keyboard/mouse fallback even on mobile platforms for easier testing in the Unity Simulator
+            // if (Application.isMobilePlatform) return;
 
             // --- Always-Active UI Shortcuts (Available even when movement/gameplay is disabled) ---
             bool iDown = Input.GetKeyDown(KeyCode.I);
@@ -163,9 +187,25 @@ namespace Lalim.Mechanics
                 if (Keyboard.current.dKey.isPressed) keyboardMove.x += 1f;
             }
 
+            // --- Gamepad left stick (movement), used when no movement keys are held ---
+            Gamepad pad = Gamepad.current;
+            if (keyboardMove.sqrMagnitude <= 0f && pad != null)
+            {
+                Vector2 stick = pad.leftStick.ReadValue();
+                if (stick.magnitude > _gamepadDeadZone) keyboardMove = Vector2.ClampMagnitude(stick, 1f);
+            }
+
+            // --- Gamepad right stick (look): degrees per second, bypasses the pixel dead zone ---
+            if (pad != null)
+            {
+                Vector2 look = pad.rightStick.ReadValue();
+                if (look.magnitude > _gamepadDeadZone)
+                    LookDelta += look * (_gamepadLookSpeed / GameConstants.Player.LOOK_SENSITIVITY) * Time.deltaTime;
+            }
+
             if (keyboardMove.sqrMagnitude > 0f)
             {
-                MoveInput = keyboardMove.normalized;
+                MoveInput = keyboardMove.sqrMagnitude > 1f ? keyboardMove.normalized : keyboardMove;
                 _wasKeyboardMoving = true;
             }
             else if (_wasKeyboardMoving || (!HasTouchInput && MoveInput.magnitude > 0 && !Application.isMobilePlatform))
@@ -196,8 +236,12 @@ namespace Lalim.Mechanics
                 _wasKeyboardVertical = false;
             }
 
-            // --- Swim Sprint (LeftShift) ---
-            SwimSprintHeld = Input.GetKey(KeyCode.LeftShift) || (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed);
+            // --- Surge / Riptide key (LeftShift): tap vs hold is resolved by AbilityController ---
+            // Keyboard and the touch button are OR'd so polling Shift never overrides a held touch.
+            bool shiftHeldNow = _touchSurgeHeld || Input.GetKey(KeyCode.LeftShift) || (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed);
+            SurgeRiptideKeyDown = shiftHeldNow && !SurgeRiptideKeyHeld;
+            SurgeRiptideKeyUp = !shiftHeldNow && SurgeRiptideKeyHeld;
+            SurgeRiptideKeyHeld = shiftHeldNow;
 
             // --- Free Look (Mouse Button 4 / KeyCode.Mouse3 / Alt) ---
             bool mouse4Held = Input.GetMouseButton(3) || Input.GetMouseButton(4) ||
@@ -340,6 +384,22 @@ namespace Lalim.Mechanics
             {
                 TriggerSpiritSense();
             }
+
+            // --- New ability keys: Tidebond (F), Seagrass Mend (R), Bubble Barrier (G) ---
+            bool fDown = Input.GetKeyDown(KeyCode.F);
+            bool rDown = Input.GetKeyDown(KeyCode.R);
+            bool gDown = Input.GetKeyDown(KeyCode.G);
+
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.fKey.wasPressedThisFrame) fDown = true;
+                if (Keyboard.current.rKey.wasPressedThisFrame) rDown = true;
+                if (Keyboard.current.gKey.wasPressedThisFrame) gDown = true;
+            }
+
+            if (fDown) TriggerTidebond();
+            if (rDown) TriggerSeagrassMend();
+            if (gDown) TriggerBubbleBarrier();
         }
 
         private void OnEnable()
@@ -362,6 +422,11 @@ namespace Lalim.Mechanics
             InteractPressed = false;
             InventoryPressed = false;
             PausePressed = false;
+            TidebondPressed = false;
+            SeagrassMendPressed = false;
+            BubbleBarrierPressed = false;
+            SurgeRiptideKeyDown = false;
+            SurgeRiptideKeyUp = false;
         }
 
         // ─────────────────────────────────────────────
@@ -408,6 +473,38 @@ namespace Lalim.Mechanics
             }
         }
 
+        /// <summary>Called by the Tidebond button UI.</summary>
+        public void TriggerTidebond()
+        {
+            if (_inputEnabled) TidebondPressed = true;
+        }
+
+        /// <summary>Called by the Seagrass Mend button UI.</summary>
+        public void TriggerSeagrassMend()
+        {
+            if (_inputEnabled) SeagrassMendPressed = true;
+        }
+
+        /// <summary>Called by the Bubble Barrier button UI.</summary>
+        public void TriggerBubbleBarrier()
+        {
+            if (_inputEnabled) BubbleBarrierPressed = true;
+        }
+
+        /// <summary>Called by the Surge/Riptide button UI on pointer down (touch equivalent of Shift-down).</summary>
+        public void TriggerSurgeRiptideDown()
+        {
+            if (!_inputEnabled) return;
+            _touchSurgeHeld = true;
+        }
+
+        /// <summary>Called by the Surge/Riptide button UI on pointer up (touch equivalent of Shift-up).</summary>
+        public void TriggerSurgeRiptideUp()
+        {
+            _touchSurgeHeld = false;
+        }
+
+
         /// <summary>
         /// Called by interact button UI (single press).
         /// </summary>
@@ -445,10 +542,6 @@ namespace Lalim.Mechanics
         public void TriggerInventory()
         {
             InventoryPressed = true;
-            if (Lalim.UI.InventoryUI.Instance != null)
-            {
-                Lalim.UI.InventoryUI.Instance.ToggleInventory();
-            }
         }
 
         /// <summary>
@@ -458,6 +551,13 @@ namespace Lalim.Mechanics
         {
             // Pause is always available (even when other input is disabled)
             PausePressed = true;
+
+            // Escape / Android back: the pause modal steps back out of sub-panels or toggles pause.
+            if (PauseModalUI.Instance != null) PauseModalUI.Instance.OnPauseKey();
+            else if (GameManager.Instance != null)
+            {
+                EventBus.Publish(new PauseRequestedEvent { IsPaused = GameManager.Instance.CurrentState != GameState.Paused });
+            }
         }
 
         /// <summary>
@@ -500,7 +600,8 @@ namespace Lalim.Mechanics
                 MoveInput = Vector2.zero;
                 VerticalMoveInput = 0f;
                 LookDelta = Vector2.zero;
-                SwimSprintHeld = false;
+                SurgeRiptideKeyHeld = false;
+                _touchSurgeHeld = false;
                 IsFreeLooking = false;
                 _isRmbDragging = false;
                 _isLmbDragging = false;

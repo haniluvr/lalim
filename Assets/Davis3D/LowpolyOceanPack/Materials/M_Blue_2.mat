@@ -138,8 +138,8 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - View_BufferSizeAndInvSize: {r: 1920, g: 1080, b: 0.00052, a: 0.00092}
-    - _BaseColor: {r: 0.464, g: 0.401, b: 1, a: 1}
-    - _Color: {r: 0.464, g: 0.40099996, b: 1, a: 1}
+    - _BaseColor: {r: 0.21528226, g: 0.17101279, b: 0.5943396, a: 1}
+    - _Color: {r: 0.21528223, g: 0.17101276, b: 0.5943396, a: 1}
     - _Color2: {r: 0.10555837, g: 0, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _EmissiveColor: {r: 0, g: 0, b: 0, a: 0}

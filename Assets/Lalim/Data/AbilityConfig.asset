@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43924aa0949bf4c61aa5f44ae51b9a9e, type: 3}
+  m_Name: AbilityConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Abilities.AbilityConfig
+  maxHealth: 100
+  maxStaminaOrbs: 4
+  orbRegenSecondsNormal: 15
+  orbRegenDelaySeconds: 1
+  regenMultiplierMounted: 1.2
+  regenMultiplierToxic: 0.5
+  surgeDashDistance: 8
+  surgeDashDuration: 0.35
+  surgeCooldown: 7
+  surgeCostOrbs: 0
+  surgeComboCharges: 3
+  surgeComboWindow: 1.5
+  surgeExitVelocityRetain: 0.4
+  tapHoldThreshold: 0.25
+  holdActivateThreshold: 0.6
+  riptideDuration: 60
+  riptideCooldown: 30
+  riptideCostOrbs: 0
+  riptideSpeedMultiplier: 1.75
+  spiritSenseDurationNormal: 15
+  spiritSenseCooldown: 20
+  spiritSenseCostOrbs: 1
+  spiritSenseExplorationRadius: 40
+  spiritSenseWispTriggerDistance: 40
+  tidebondFatigueSeconds: 45
+  tidebondCooldown: 30
+  tidebondCostOrbs: 2
+  tidebondSpeedMultiplier: 2.25
+  dugongRecallTeleportDistance: 25
+  seagrassMendHealDuration: 3
+  seagrassMendCooldown: 40
+  seagrassMendHealAmountNormal: 30
+  seagrassMendStartCharge: 0
+  bubbleBarrierDuration: 20
+  bubbleBarrierCooldown: 0
+  bubbleBarrierCostOrbs: 0
+  bubbleBarrierStartCharge: 0.5
+  bubbleBarrierRadiusSolo: 3
+  bubbleBarrierRadiusWithDugong: 5
+  bubbleBarrierDugongProximity: 6
+  bubbleBarrierContactCharges: 1
+  toxicLightDpsNormal: 3
+  toxicHeavyDpsNormal: 6
+  contactHazardDamage: 10
+  contactHazardReTriggerDelay: 1
+  orbRegenSecondsAssist: 12
+  toxicDamageMultiplierAssist: 0.7
+  seagrassMendHealAssist: 40
+  spiritSenseDurationAssist: 20
+  spiritGlowIntensityAssist: 1.5
+  orbRegenSecondsChallenge: 18
+  toxicDamageMultiplierChallenge: 1.25
+  seagrassMendHealChallenge: 25
+  spiritSenseDurationChallenge: 12
+  spiritGlowIntensityChallenge: 0.6
+  bubbleBarrierChargePerSecondMoving: 0.011111111
+  bubbleBarrierMinMoveSpeed: 0.5
+  bubbleBarrierMountedChargeFactor: 0.5
+  bubbleBarrierChargeOnSurge: 0.015
+  bubbleBarrierChargeOnRiptide: 0.04
+  bubbleBarrierChargeOnSpiritSense: 0.06
+  bubbleBarrierChargeOnTidebond: 0.06
+  bubbleBarrierChargeOnSeagrassMend: 0.05

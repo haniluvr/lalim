@@ -20,6 +20,10 @@ namespace Lalim.Mechanics
         public bool IsChallengeActive { get; private set; }
         public string ActiveChallengeId { get; private set; }
         public ChallengeType ActiveChallengeType { get; private set; }
+        public ChallengePerspective ActivePerspective { get; private set; }
+
+        /// <summary>True while a first-person challenge is running (navigation guides and toxic drain pause).</summary>
+        public bool IsFirstPersonChallengeActive => IsChallengeActive && ActivePerspective == ChallengePerspective.FirstPerson;
 
         // Task Progress
         public int TotalTasks { get; private set; }
@@ -42,6 +46,9 @@ namespace Lalim.Mechanics
 
         private float _challengeStartTime;
         private float _expectedCompletionTime;
+        private float _expectedFirstActionTime;
+        private float _firstCorrectActionTime = -1f;
+
         private float _totalHesitationTime;
         private float _lastActionTime;
         private int _errorCount;
@@ -116,6 +123,7 @@ namespace Lalim.Mechanics
             IsChallengeActive = true;
             ActiveChallengeId = evt.ChallengeId;
             ActiveChallengeType = evt.Type;
+            ActivePerspective = evt.Perspective;
             TotalTasks = evt.TaskQuantity;
             CompletedTasks = 0;
             TimeLimit = evt.TimeLimit;
@@ -124,16 +132,18 @@ namespace Lalim.Mechanics
             HintsUsed = 0;
 
             // Reset performance tracking
+            _expectedCompletionTime = 0f;
+            _expectedFirstActionTime = 0f;
+            _firstCorrectActionTime = -1f;
             _challengeStartTime = Time.time;
             _lastActionTime = Time.time;
             _totalHesitationTime = 0f;
             _errorCount = 0;
 
-            // Load hesitation threshold from DDA config if available
-            if (DDA.DDAManager.Instance != null)
+            // Hesitation threshold comes from the DDA config when there is one
+            if (DDA.DDAManager.Instance != null && DDA.DDAManager.Instance.Config != null)
             {
-                // Use the DDA config's hesitation threshold if it has one
-                // Otherwise fall back to the serialized value
+                _hesitationThreshold = DDA.DDAManager.Instance.Config.hesitationThreshold;
             }
 
             Debug.Log($"[ChallengeManager] Challenge started: {evt.ChallengeId} " +
@@ -160,6 +170,7 @@ namespace Lalim.Mechanics
 
             CompletedTasks++;
             _lastActionTime = Time.time;
+            MarkFirstCorrectAction();
 
             Debug.Log($"[ChallengeManager] Task completed: {CompletedTasks}/{TotalTasks}");
 
@@ -191,6 +202,28 @@ namespace Lalim.Mechanics
         public void ReportPlayerAction()
         {
             _lastActionTime = Time.time;
+        }
+
+        /// <summary>
+        /// Report a correct step that isn't a whole task (e.g. the needle first enters the green band,
+        /// a knot move that removes a crossing). The first one measures the "pickup rate".
+        /// </summary>
+        public void ReportCorrectAction()
+        {
+            if (!IsChallengeActive) return;
+            _lastActionTime = Time.time;
+            MarkFirstCorrectAction();
+        }
+
+        private void MarkFirstCorrectAction()
+        {
+            if (_firstCorrectActionTime < 0f) _firstCorrectActionTime = Time.time - _challengeStartTime;
+        }
+
+        /// <summary>Baseline for how quickly a player should make their first correct move (DDA "pickup rate").</summary>
+        public void SetExpectedFirstActionTime(float seconds)
+        {
+            _expectedFirstActionTime = seconds;
         }
 
         /// <summary>
@@ -239,7 +272,11 @@ namespace Lalim.Mechanics
                 HesitationTime = _totalHesitationTime,
                 ErrorCount = _errorCount,
                 CompletionTime = completionTime,
-                ExpectedTime = _expectedCompletionTime
+                ExpectedTime = _expectedCompletionTime,
+                FirstActionLatency = _firstCorrectActionTime,
+                ExpectedFirstAction = _expectedFirstActionTime,
+                HintsUsed = HintsUsed,
+                HintBudget = HintBudget
             });
 
             // Restore game state

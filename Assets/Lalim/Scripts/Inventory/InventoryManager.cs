@@ -17,7 +17,7 @@ namespace Lalim.Inventory
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<InventoryManager>();
+                    _instance = FindAnyObjectByType<InventoryManager>();
                     if (_instance == null)
                     {
                         GameObject go = new GameObject("[InventoryManager]");
@@ -38,7 +38,6 @@ namespace Lalim.Inventory
         [SerializeField] private List<string> _starterItemIds = new List<string>
         {
             "07_watersamplekit",
-            "05_coralreplantingkit",
             "04_wastesegregationbag"
         };
 
@@ -99,6 +98,15 @@ namespace Lalim.Inventory
             }
         }
 
+        private void OnEnable() => EventBus.Subscribe<SaveDataReplacedEvent>(OnSaveReplaced);
+
+        private void OnDisable() => EventBus.Unsubscribe<SaveDataReplacedEvent>(OnSaveReplaced);
+
+        private void OnSaveReplaced(SaveDataReplacedEvent evt)
+        {
+            if (SaveManager.Instance != null && SaveManager.Instance.CurrentSave != null) RestoreFromSave(SaveManager.Instance.CurrentSave);
+        }
+
         private void Start()
         {
             // Restore from save if available
@@ -106,17 +114,15 @@ namespace Lalim.Inventory
             {
                 RestoreFromSave(SaveManager.Instance.CurrentSave);
             }
-            else
+            
+            // Auto-grant starter items for rapid testing (always run this during development)
+            if (_starterItemIds != null)
             {
-                // Auto-grant starter items for rapid testing
-                if (_starterItemIds != null)
+                foreach (string id in _starterItemIds)
                 {
-                    foreach (string id in _starterItemIds)
+                    if (!string.IsNullOrEmpty(id) && !HasItem(id))
                     {
-                        if (!string.IsNullOrEmpty(id) && !HasItem(id))
-                        {
-                            AddItem(id);
-                        }
+                        AddItem(id);
                     }
                 }
             }

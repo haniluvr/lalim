@@ -72,31 +72,13 @@ namespace Lalim.Editor
                 createdCount++;
             }
 
-            // 5. [ToolEquipSystem]
-            if (Object.FindAnyObjectByType<ToolEquipSystem>() == null)
-            {
-                GameObject toolObj = new GameObject("[ToolEquipSystem]");
-                Undo.RegisterCreatedObjectUndo(toolObj, "Create [ToolEquipSystem]");
-                toolObj.AddComponent<ToolEquipSystem>();
-                createdCount++;
-            }
-
-            // 6. [InventoryUI]
-            if (Object.FindAnyObjectByType<Lalim.UI.InventoryUI>() == null)
-            {
-                GameObject uiObj = new GameObject("[InventoryUI]");
-                Undo.RegisterCreatedObjectUndo(uiObj, "Create [InventoryUI]");
-                uiObj.AddComponent<Lalim.UI.InventoryUI>();
-                createdCount++;
-            }
-
             if (createdCount > 0)
             {
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
                 EditorUtility.DisplayDialog(
                     "Scene Managers Setup",
                     $"Successfully created {createdCount} missing manager(s) at the root of your scene:\n\n" +
-                    "• [GameManager]\n• [ChallengeManager]\n• [InputManager]\n• [InventoryManager]\n• [ToolEquipSystem]\n• [InventoryUI]\n\n" +
+                    "• [GameManager]\n• [ChallengeManager]\n• [InputManager]\n• [InventoryManager]\n\n" +
                     "Press Ctrl + S to save your scene.",
                     "OK"
                 );
@@ -307,7 +289,7 @@ namespace Lalim.Editor
             ztSO.FindProperty("_challengeType").enumValueIndex = (int)ChallengeType.CoralReplanting;
             ztSO.FindProperty("_baseTaskQuantity").intValue = 4;
             ztSO.FindProperty("_baseTimeLimit").floatValue = 150f;
-            ztSO.FindProperty("_requiredToolId").stringValue = "05_coralreplantingkit";
+            ztSO.FindProperty("_requiredToolId").stringValue = "09_coralseed";
             ztSO.ApplyModifiedProperties();
 
             int interactableLayer = LayerMask.NameToLayer("Interactable");
@@ -367,7 +349,7 @@ namespace Lalim.Editor
                 Challenges.CoralSlot cs = slotObj.AddComponent<Challenges.CoralSlot>();
                 SerializedObject csSO = new SerializedObject(cs);
                 csSO.FindProperty("_slotName").stringValue = $"Reef Anchor Slot 0{i + 1}";
-                csSO.FindProperty("_requiredToolId").stringValue = "05_coralreplantingkit";
+                csSO.FindProperty("_requiredToolId").stringValue = "09_coralseed";
                 csSO.FindProperty("_plantingDuration").floatValue = 3.0f;
                 csSO.FindProperty("_emptySlotVisual").objectReferenceValue = emptyVisual;
                 csSO.FindProperty("_plantedCoralVisual").objectReferenceValue = plantedCoral;
@@ -448,7 +430,7 @@ namespace Lalim.Editor
                 "Coral Replanting Challenge Created",
                 $"Successfully created [{zoneName}] using '{prefabName}':\n\n" +
                 $"• Unique Zone ID: '{zoneId}'\n" +
-                "• Zone Trigger Entry (Requires Coral Replanting Kit [2])\n" +
+                "• Zone Trigger Entry (Requires Coral Seed [2])\n" +
                 $"• 4x Substrate Planting Slots (featuring {prefabName})\n" +
                 $"• 6x Scattered Coral Fragments to collect\n" +
                 "• Real-time hold-to-plant HUD progress meter\n\n" +

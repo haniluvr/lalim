@@ -31,6 +31,10 @@ namespace Lalim.DDA
         public int HintBudget { get; private set; }
         public int PuzzleComplexityTier { get; private set; }
 
+        // Score of every scored minigame so far (saved), for "this and all prior minigames".
+        private readonly System.Collections.Generic.List<float> _minigameScores = new System.Collections.Generic.List<float>();
+        public System.Collections.Generic.IReadOnlyList<float> MinigameScores => _minigameScores;
+
         // Cumulative metrics (for save/load)
         private float _cumulativeHesitation;
         private int _cumulativeErrors;
@@ -57,11 +61,21 @@ namespace Lalim.DDA
         private void OnEnable()
         {
             EventBus.Subscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
+            EventBus.Subscribe<ChallengeFailedEvent>(OnChallengeFailed);
+            EventBus.Subscribe<SaveDataReplacedEvent>(OnSaveReplaced);
         }
 
         private void OnDisable()
         {
             EventBus.Unsubscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
+            EventBus.Unsubscribe<ChallengeFailedEvent>(OnChallengeFailed);
+            EventBus.Unsubscribe<SaveDataReplacedEvent>(OnSaveReplaced);
+        }
+
+        // A save was loaded or a new game started: reload, so nothing carries over from the last one.
+        private void OnSaveReplaced(SaveDataReplacedEvent evt)
+        {
+            if (SaveManager.Instance != null && SaveManager.Instance.CurrentSave != null) RestoreFromSave(SaveManager.Instance.CurrentSave);
         }
 
         private void Start()
@@ -111,58 +125,119 @@ namespace Lalim.DDA
             _cumulativeErrors += evt.ErrorCount;
             _challengesCompleted++;
 
-            // Step 1: Normalize each metric to a 0-1 "performance" score
-            // Higher score = player did well (less hesitation, fewer errors, faster)
-            float hesitationScore = CalculateHesitationScore(evt.HesitationTime, evt.ExpectedTime);
-            float errorScore = CalculateErrorScore(evt.ErrorCount);
-            float timeScore = CalculateTimeScore(evt.CompletionTime, evt.ExpectedTime);
+            // Score this minigame, then blend it with every earlier minigame's score.
+            float raw = ScorePerformance(_config, evt, out string breakdown);
+            float history = _minigameScores.Count > 0 ? Average(_minigameScores) : raw;
+            float blended = BlendWithHistory(raw, _minigameScores, _config.historyWeight);
+            _minigameScores.Add(raw);
 
-            // Step 2: Weighted combination
-            float totalWeight = _config.hesitationWeight + _config.errorWeight + _config.completionTimeWeight;
-            float performanceScore = (
-                hesitationScore * _config.hesitationWeight +
-                errorScore * _config.errorWeight +
-                timeScore * _config.completionTimeWeight
-            ) / totalWeight;
+            Debug.Log($"[DDA] {evt.ChallengeId}: raw={raw:F2} ({breakdown}) history={history:F2} blended={blended:F2}");
 
-            Debug.Log($"[DDA] Performance: {performanceScore:F2} " +
-                      $"(hesitation={hesitationScore:F2}, errors={errorScore:F2}, time={timeScore:F2})");
+            ApplyScore(blended, 1f, smoothed: true, source: $"{evt.ChallengeId} raw={raw:F2} hist={history:F2}");
+        }
 
-            // Step 3: Determine adjustment direction
+        /// <summary>
+        /// 0..1 performance for one minigame: hesitation, errors, completion time, pickup rate
+        /// (time to first correct action) and hint reliance, weighted by the config.
+        /// Metrics without a baseline (expected time 0, no first action recorded) are left out.
+        /// </summary>
+        public static float ScorePerformance(DDAConfig config, ChallengeCompletedEvent evt, out string breakdown)
+        {
+            float sum = 0f, weights = 0f;
+            var parts = new System.Text.StringBuilder();
+
+            void Add(string name, float score, float weight)
+            {
+                if (weight <= 0f) return;
+                sum += score * weight;
+                weights += weight;
+                parts.Append($"{name}={score:F2} ");
+            }
+
+            Add("hesitation", CalculateHesitationScore(evt.HesitationTime, evt.ExpectedTime), config.hesitationWeight);
+            Add("errors", CalculateErrorScore(evt.ErrorCount), config.errorWeight);
+            if (evt.ExpectedTime > 0f) Add("time", CalculateTimeScore(evt.CompletionTime, evt.ExpectedTime), config.completionTimeWeight);
+            if (evt.ExpectedFirstAction > 0f && evt.FirstActionLatency >= 0f)
+                Add("pickup", CalculateTimeScore(evt.FirstActionLatency, evt.ExpectedFirstAction), config.firstActionWeight);
+            if (evt.HintBudget > 0) Add("hints", CalculateHintScore(evt.HintsUsed, evt.HintBudget), config.hintWeight);
+
+            breakdown = parts.ToString().TrimEnd();
+            return weights > 0f ? sum / weights : 0.5f;
+        }
+
+        /// <summary>lerp(latest, mean of all earlier scores, historyWeight). With no history the latest stands.</summary>
+        public static float BlendWithHistory(float latest, System.Collections.Generic.IReadOnlyList<float> earlier, float historyWeight)
+        {
+            if (earlier == null || earlier.Count == 0) return latest;
+            return Mathf.Lerp(latest, Average(earlier), Mathf.Clamp01(historyWeight));
+        }
+
+        private static float Average(System.Collections.Generic.IReadOnlyList<float> values)
+        {
+            float total = 0f;
+            foreach (float v in values) total += v;
+            return values.Count > 0 ? total / values.Count : 0f;
+        }
+
+        /// <summary>No hints = 1.0; using the whole budget = 0.2.</summary>
+        public static float CalculateHintScore(int used, int budget)
+        {
+            if (budget <= 0) return 1f;
+            return Mathf.Lerp(1f, 0.2f, Mathf.Clamp01((float)used / budget));
+        }
+
+        /// <summary>
+        /// Feeds any performance signal (minigame failure, death, exploration section report) through
+        /// the same thresholds and smoothing as minigame results. At most one adjustment per call.
+        /// Only call at evaluation points — checkpoints, minigame end, respawn — never mid-action.
+        /// </summary>
+        /// <param name="score">0 = struggling … 1 = excelling.</param>
+        /// <param name="stepScale">Multiplier on the configured step size (2 = double step).</param>
+        public void ProcessSignal(float score, float stepScale, string source)
+        {
+            if (_config == null) return;
+            ApplyScore(score, stepScale, smoothed: true, source: source);
+        }
+
+        /// <summary>Guaranteed, unsmoothed step down. Used once a player keeps dying in the same section.</summary>
+        public void ForceStepDown(float stepScale, string source)
+        {
+            if (_config == null) return;
+            ApplyScore(0f, stepScale, smoothed: false, source: source);
+        }
+
+        /// <summary>Last signal that moved (or tried to move) difficulty — shown in the F9 debug readout.</summary>
+        public string LastSignal { get; private set; } = "";
+
+        private void ApplyScore(float performanceScore, float stepScale, bool smoothed, string source)
+        {
             float adjustment = 0f;
 
             if (performanceScore > _config.tooEasyThreshold)
             {
-                // Player is doing well — increase difficulty
-                adjustment = _config.difficultyStepSize;
-                Debug.Log("[DDA] Player excelling → increasing difficulty");
+                adjustment = _config.difficultyStepSize * stepScale;
             }
             else if (performanceScore < _config.strugglingThreshold)
             {
-                // Player is struggling — decrease difficulty
-                adjustment = -_config.difficultyStepSize;
-                Debug.Log("[DDA] Player struggling → decreasing difficulty");
-            }
-            else
-            {
-                Debug.Log("[DDA] Player in sweet spot → no adjustment");
+                adjustment = -_config.difficultyStepSize * stepScale;
             }
 
-            // Step 4: Apply with exponential moving average smoothing
+            LastSignal = $"{source} score={performanceScore:F2} step={adjustment:+0.000;-0.000;0}";
+            Debug.Log($"[DDA] {LastSignal}");
+
             if (Mathf.Abs(adjustment) > 0.001f)
             {
                 float targetDifficulty = DifficultyLevel + adjustment;
-                DifficultyLevel = Mathf.Lerp(targetDifficulty, DifficultyLevel, _config.smoothingFactor);
+                DifficultyLevel = smoothed
+                    ? Mathf.Lerp(targetDifficulty, DifficultyLevel, _config.smoothingFactor)
+                    : targetDifficulty;
                 DifficultyLevel = Mathf.Clamp(DifficultyLevel, _config.minDifficulty, _config.maxDifficulty);
 
                 Debug.Log($"[DDA] Difficulty adjusted to: {DifficultyLevel:F3}");
             }
 
-            // Step 5: Update derived values and publish
             UpdateDerivedValues();
             PublishDifficultyChanged();
-
-            // Update save data
             UpdateSaveData();
         }
 
@@ -173,7 +248,7 @@ namespace Lalim.DDA
         /// <summary>
         /// Score hesitation: less hesitation = higher score (player was decisive).
         /// </summary>
-        private float CalculateHesitationScore(float hesitationTime, float expectedTime)
+        public static float CalculateHesitationScore(float hesitationTime, float expectedTime)
         {
             if (expectedTime <= 0) return 0.5f;
 
@@ -187,7 +262,7 @@ namespace Lalim.DDA
         /// <summary>
         /// Score errors: fewer errors = higher score.
         /// </summary>
-        private float CalculateErrorScore(int errorCount)
+        public static float CalculateErrorScore(int errorCount)
         {
             // Diminishing returns: 0 errors = 1.0, 1 = 0.7, 2 = 0.5, 5+ = ~0.1
             return Mathf.Clamp01(1f / (1f + errorCount * 0.5f));
@@ -196,7 +271,7 @@ namespace Lalim.DDA
         /// <summary>
         /// Score completion time: faster than expected = higher score.
         /// </summary>
-        private float CalculateTimeScore(float completionTime, float expectedTime)
+        public static float CalculateTimeScore(float completionTime, float expectedTime)
         {
             if (expectedTime <= 0) return 0.5f;
 
@@ -274,7 +349,10 @@ namespace Lalim.DDA
             DifficultyLevel = Mathf.Clamp01(level);
             UpdateDerivedValues();
             PublishDifficultyChanged();
+            UpdateSaveData();
         }
+
+        public DDAConfig Config => _config;
 
         // ─────────────────────────────────────────────
         // Save / Load
@@ -282,7 +360,7 @@ namespace Lalim.DDA
 
         private void UpdateSaveData()
         {
-            if (SaveManager.Instance == null) return;
+            if (SaveManager.Instance == null || SaveManager.Instance.CurrentSave == null) return;
 
             var save = SaveManager.Instance.CurrentSave;
             save.difficultyLevel = DifficultyLevel;
@@ -293,6 +371,7 @@ namespace Lalim.DDA
             save.cumulativeHesitationTime = _cumulativeHesitation;
             save.cumulativeErrors = _cumulativeErrors;
             save.challengesCompleted = _challengesCompleted;
+            save.minigameScores = new System.Collections.Generic.List<float>(_minigameScores);
         }
 
         private void RestoreFromSave(SaveData save)
@@ -301,8 +380,15 @@ namespace Lalim.DDA
             _cumulativeHesitation = save.cumulativeHesitationTime;
             _cumulativeErrors = save.cumulativeErrors;
             _challengesCompleted = save.challengesCompleted;
+            _minigameScores.Clear();
+            if (save.minigameScores != null) _minigameScores.AddRange(save.minigameScores);
 
             UpdateDerivedValues();
+
+            // Fix: previously never published, so listeners (HUD, abilities) kept default
+            // values until the next challenge completed. Ensure everyone re-syncs on load.
+            PublishDifficultyChanged();
+
             Debug.Log($"[DDAManager] Restored from save: difficulty={DifficultyLevel:F3}");
         }
 
@@ -316,6 +402,16 @@ namespace Lalim.DDA
             {
                 ProcessChallengeMetrics(evt);
             }
+            else if (_config != null)
+            {
+                // Previously ignored. A failed/abandoned minigame is a clear "struggling" signal.
+                ProcessSignal(_config.failedChallengeScore, 1f, $"challenge-failed:{evt.ChallengeId}");
+            }
+        }
+
+        private void OnChallengeFailed(ChallengeFailedEvent evt)
+        {
+            if (_config != null) ProcessSignal(_config.failedChallengeScore, 1f, $"challenge-failed:{evt.ChallengeId} ({evt.Reason})");
         }
     }
 }

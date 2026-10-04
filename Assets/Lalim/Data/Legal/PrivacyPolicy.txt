@@ -1,0 +1,20 @@
+<b>DRAFT — replace with your final text before release.</b>
+
+<b>Lalim — Privacy Policy</b>
+
+<b>What Lalim stores</b>
+• Your save files: the name you enter, your story progress, collected items and completed challenges.
+• Gameplay statistics used to adjust difficulty (for example, how many times a section was retried).
+• Your settings (volume, graphics, controls).
+
+<b>Where it is stored</b>
+Everything stays on this device. Lalim has no accounts, no ads, and does not send your data to the internet.
+
+<b>Deleting your data</b>
+Use Settings ▸ System ▸ Erase Save Data from the main menu, or uninstall the game.
+
+<b>Children</b>
+Lalim does not knowingly collect any personal information from anyone, including children.
+
+<b>Contact</b>
+Questions about privacy: [add the team's contact here].

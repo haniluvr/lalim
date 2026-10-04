@@ -170,7 +170,7 @@ namespace Lalim.Challenges
             // Play start sound
             if (_challengeStartSound != null)
             {
-                AudioSource.PlayClipAtPoint(_challengeStartSound, transform.position);
+                GameAudio.PlayAt(_challengeStartSound, transform.position);
             }
 
             Debug.Log($"[CoralReplanting] Challenge started: {_totalSlots} slots, " +
@@ -340,7 +340,7 @@ namespace Lalim.Challenges
 
             if (evt.Success && _challengeCompleteSound != null)
             {
-                AudioSource.PlayClipAtPoint(_challengeCompleteSound, transform.position);
+                GameAudio.PlayAt(_challengeCompleteSound, transform.position);
             }
 
             Cleanup();

@@ -1,0 +1,20 @@
+<b>DRAFT — replace with your final text before release.</b>
+
+<b>Lalim — User Agreement</b>
+
+Lalim is a student capstone game about restoring the seas of the Philippines. By playing, you agree to the following:
+
+<b>1. Use of the game</b>
+Lalim is provided for personal, non-commercial play and for academic evaluation. Please don't copy, resell or redistribute the game or its assets.
+
+<b>2. Content</b>
+The characters, art, music and story in Lalim belong to the development team, except for third-party assets used under their own licences (listed in the credits).
+
+<b>3. Your progress</b>
+Your saves are stored only on this device. Uninstalling the game or using "Erase Save Data" deletes them permanently.
+
+<b>4. No warranty</b>
+Lalim is provided "as is". We work hard to make it stable, but we can't promise it will be free of bugs.
+
+<b>5. Contact</b>
+Questions or feedback: [add the team's contact here].

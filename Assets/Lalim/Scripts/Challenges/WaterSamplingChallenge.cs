@@ -36,10 +36,6 @@ namespace Lalim.Challenges
         [SerializeField] private List<Transform> _spawnPoints = new List<Transform>();
         [SerializeField] private SamplePoint _samplePointPrefab;
 
-        [Header("Parameter Distribution")]
-        [Tooltip("If true, spawned points cycle through pH → Salinity → Temperature. " +
-                 "If false, all spawned points use a random parameter.")]
-        [SerializeField] private bool _balanceParameters = true;
 
         [Header("Zone Visual Indicators (Pre-Challenge)")]
         [Tooltip("Keep sample points and bubble plumes visible before challenge starts so players can spot the anomaly area")]
@@ -226,7 +222,7 @@ namespace Lalim.Challenges
             // Play start sound
             if (_challengeStartSound != null)
             {
-                AudioSource.PlayClipAtPoint(_challengeStartSound, transform.position);
+                GameAudio.PlayAt(_challengeStartSound, transform.position);
             }
 
             Debug.Log($"[WaterSampling] Zone '{_zoneId}' started with {_totalSamples} sample points");
@@ -344,7 +340,7 @@ namespace Lalim.Challenges
             {
                 if (_allSamplesCollectedSound != null)
                 {
-                    AudioSource.PlayClipAtPoint(_allSamplesCollectedSound, transform.position);
+                    GameAudio.PlayAt(_allSamplesCollectedSound, transform.position);
                 }
 
                 Debug.Log($"[WaterSampling] All samples collected in '{_zoneId}'! " +
@@ -409,7 +405,7 @@ namespace Lalim.Challenges
 
             if (evt.Success && _challengeCompleteSound != null)
             {
-                AudioSource.PlayClipAtPoint(_challengeCompleteSound, transform.position);
+                GameAudio.PlayAt(_challengeCompleteSound, transform.position);
             }
 
             // Trigger Post-Sampling Water Safety Pop-up Modal
@@ -463,7 +459,7 @@ namespace Lalim.Challenges
 
             if (Lalim.UI.HUDController.Instance != null)
             {
-                Lalim.UI.HUDController.Instance.ShowInteractionPrompt("🌿 Water is now safe for replanting! Equip Coral Replanting Kit [2].");
+                Lalim.UI.HUDController.Instance.ShowInteractionPrompt("🌿 Water is now safe for replanting! Equip Coral Seed [2].");
             }
         }
 
@@ -570,7 +566,7 @@ namespace Lalim.Challenges
                 alignment = TextAnchor.MiddleCenter
             };
             calloutStyle.normal.textColor = new Color(1.0f, 0.95f, 0.35f);
-            GUI.Label(calloutRect, "👉 NEXT MISSION: Equip Coral Replanting Kit [Press 2] & Proceed to Reef Bed!", calloutStyle);
+            GUI.Label(calloutRect, "👉 NEXT MISSION: Equip Coral Seed [Press 2] & Proceed to Reef Bed!", calloutStyle);
 
             // Dismiss Button / Prompt
             Rect buttonRect = new Rect(modalRect.x + (modalRect.width - 240f) * 0.5f, modalRect.y + 194f, 240f, 36f);

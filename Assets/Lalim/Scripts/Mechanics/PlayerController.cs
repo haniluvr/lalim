@@ -28,8 +28,9 @@ namespace Lalim.Mechanics
         [Tooltip("Vertical swim speed when pressing Space (ascend) or Control/C (descend)")]
         [SerializeField] private float _swimVerticalSpeed = 3.5f;
 
-        [Tooltip("Speed multiplier when holding sprint (LeftShift)")]
-        [SerializeField] private float _sprintMultiplier = 1.5f;
+        // Speed multipliers registered by abilities (Riptide, Tidebond). Highest active value wins —
+        // multipliers never stack multiplicatively, even if two sources are active at once due to a bug.
+        private readonly Dictionary<object, float> _speedMultipliers = new Dictionary<object, float>();
 
         [Tooltip("Acceleration rate to reach target swim speed (fluid buildup)")]
         [SerializeField] private float _swimAcceleration = 8.0f;
@@ -76,15 +77,25 @@ namespace Lalim.Mechanics
         private Quaternion _targetYaw = Quaternion.identity;
 
         private bool _movementEnabled = true;
+        // True only for FIRST-person challenges. A 3rd-person challenge (trash collection) keeps
+        // full exploration movement, facing and auto-swim.
         private bool _isInChallenge = false;
         private IInteractable _currentLookTarget;
         private string _currentPromptText = "";
         public string CurrentPromptText => _currentPromptText;
 
-        // Free look heading lock
-        private bool _wasFreeLooking;
-        private Vector3 _freeLookForward;
-        private Vector3 _freeLookRight;
+        /// <summary>The interactable the player is currently targeting (drives the HUD action button).</summary>
+        public IInteractable CurrentInteractable => string.IsNullOrEmpty(_currentPromptText) ? null : _currentLookTarget;
+
+        /// <summary>True while a HUD or floating prompt is drawing the target, so the debug OnGUI prompt stays off.</summary>
+        public static bool HudPromptPresent => _hudPromptCount > 0;
+        private static int _hudPromptCount;
+
+        public static void RegisterHudPrompt(bool present) => _hudPromptCount = Mathf.Max(0, _hudPromptCount + (present ? 1 : -1));
+
+        // Yaw the diver's body turns toward: the direction they last swam (or dashed).
+        private float _facingYaw;
+        private bool _facingInitialized;
 
         public bool IsGrounded => _characterController != null && _characterController.isGrounded;
         public bool IsMoving => _currentVelocity.sqrMagnitude > 0.05f || 
@@ -128,16 +139,27 @@ namespace Lalim.Mechanics
             }
             else
             {
-                CameraController cam = FindObjectOfType<CameraController>();
+                CameraController cam = FindAnyObjectByType<CameraController>();
                 if (cam != null)
                 {
                     _cameraTransform = cam.transform;
                 }
                 else
                 {
-                    Camera anyCam = FindObjectOfType<Camera>();
+                    Camera anyCam = FindAnyObjectByType<Camera>();
                     if (anyCam != null) _cameraTransform = anyCam.transform;
                 }
+            }
+
+            // Initialize movement state based on current game state, in case we missed the event
+            if (Core.GameManager.Instance != null)
+            {
+                var state = Core.GameManager.Instance.CurrentState;
+                _movementEnabled = (state == Core.GameState.Exploring || state == Core.GameState.InChallenge);
+            }
+            else
+            {
+                _movementEnabled = true; // Fallback: always allow movement if no GameManager
             }
         }
 
@@ -147,6 +169,7 @@ namespace Lalim.Mechanics
             EventBus.Subscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
             EventBus.Subscribe<ChallengeFailedEvent>(OnChallengeFailed);
             EventBus.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+            EventBus.Subscribe<PlayerRespawnedEvent>(OnPlayerRespawned);
         }
 
         private void OnDisable()
@@ -155,6 +178,7 @@ namespace Lalim.Mechanics
             EventBus.Unsubscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
             EventBus.Unsubscribe<ChallengeFailedEvent>(OnChallengeFailed);
             EventBus.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
+            EventBus.Unsubscribe<PlayerRespawnedEvent>(OnPlayerRespawned);
         }
 
         private void Update()
@@ -185,41 +209,27 @@ namespace Lalim.Mechanics
                 }
             }
 
-            // --- Free Look Heading Management ---
-            bool isFreeLooking = InputManager.Instance.IsFreeLooking;
-            if (isFreeLooking)
-            {
-                if (!_wasFreeLooking)
-                {
-                    // Snapshot camera heading at the instant free-look begins
-                    _freeLookForward = _cameraTransform != null ? _cameraTransform.forward : transform.forward;
-                    _freeLookRight = _cameraTransform != null ? _cameraTransform.right : transform.right;
-                    _wasFreeLooking = true;
-                }
-            }
-            else
-            {
-                _wasFreeLooking = false;
-            }
+            if (!_facingInitialized) SyncFacingToTransform();
 
-            // --- Determine Movement Reference Vectors ---
-            Vector3 camForward;
-            Vector3 camRight;
+            // --- Movement basis: the CAMERA ---
+            // The joystick moves relative to where the camera looks: up = away from the camera,
+            // down = toward it, left/right = sideways, diagonals = diagonal.
+            //  - BehindBack camera: the body keeps facing the camera direction, so sideways and
+            //    diagonal input strafe and you always see the diver's back.
+            //  - FreeOrbit camera: the diver turns to face the way they swim.
+            float cameraYaw = CameraController.Instance != null
+                ? CameraController.Instance.OrbitYaw
+                : (_cameraTransform != null ? _cameraTransform.eulerAngles.y : transform.eulerAngles.y);
+            Quaternion basis = Quaternion.Euler(0f, cameraYaw, 0f);
 
-            if (_wasFreeLooking)
+            Vector3 camForward = basis * Vector3.forward;
+            Vector3 camRight = basis * Vector3.right;
+
+            // Keep the camera's pitch so looking up/down still swims diagonally.
+            if (_cameraTransform != null)
             {
-                camForward = _freeLookForward;
-                camRight = _freeLookRight;
-            }
-            else if (_cameraTransform != null)
-            {
-                camForward = _cameraTransform.forward;
-                camRight = _cameraTransform.right;
-            }
-            else
-            {
-                camForward = transform.forward;
-                camRight = transform.right;
+                float pitchY = Mathf.Clamp(_cameraTransform.forward.y, -0.95f, 0.95f);
+                camForward = camForward * Mathf.Sqrt(1f - pitchY * pitchY) + Vector3.up * pitchY;
             }
 
             // Strafe is always purely horizontal
@@ -237,18 +247,34 @@ namespace Lalim.Mechanics
 
             // --- Read Inputs ---
             Vector2 moveInput = InputManager.Instance.MoveInput;
-            float verticalInput = InputManager.Instance.VerticalMoveInput; // +1 = Space (Up), -1 = Ctrl/C (Down)
-            bool isSprinting = InputManager.Instance.SwimSprintHeld;
 
-            float currentSwimSpeed = _moveSpeed * (isSprinting ? _sprintMultiplier : 1.0f);
+            // Settings ▸ Auto-Swim: keep swimming forward while the joystick is idle
+            // (exploring only — never inside challenges or while input is taken away).
+            if (moveInput.sqrMagnitude <= 0.01f && SettingsManager.Active.autoSwim && !_isInChallenge &&
+                InputManager.Instance.InputEnabled &&
+                GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Exploring)
+            {
+                moveInput = Vector2.up;
+            }
+
+            float verticalInput = InputManager.Instance.VerticalMoveInput; // +1 = Space (Up), -1 = Ctrl/C (Down)
+            // Fix: removed the free LeftShift sprint multiplier — Shift now drives
+            // Surge (tap) / Riptide (hold) via AbilityController, which calls
+            // SetSpeedMultiplier(this, ...) instead of a hardcoded sprint flag.
+            float currentSwimSpeed = _moveSpeed * GetHighestSpeedMultiplier();
 
             // --- Compute Target 3D Velocity ---
             Vector3 targetVelocity = Vector3.zero;
 
-            // Forward/backward and strafe swimming
+            // Camera-relative swimming (diagonals included).
             if (moveInput.sqrMagnitude > 0.01f)
             {
-                targetVelocity += (camForward * moveInput.y + camRight * moveInput.x) * currentSwimSpeed;
+                Vector3 moveDir = Vector3.ClampMagnitude(camForward * moveInput.y + camRight * moveInput.x, 1f);
+                targetVelocity += moveDir * currentSwimSpeed;
+
+                Vector3 flat = new Vector3(moveDir.x, 0f, moveDir.z);
+                if (flat.sqrMagnitude > 0.0004f && !_isInChallenge && !BodyLockedToCamera)
+                    _facingYaw = Mathf.Atan2(flat.x, flat.z) * Mathf.Rad2Deg;
             }
 
             // Direct vertical thrust (Space / Control / C)
@@ -263,8 +289,12 @@ namespace Lalim.Mechanics
                 targetVelocity.y += _buoyancyDrift;
             }
 
-            // --- Fluid Acceleration & Water Drag ---
-            if (targetVelocity.sqrMagnitude > 0.01f)
+            // --- Fluid Acceleration & Water Drag (overridden while dashing) ---
+            if (IsDashing)
+            {
+                _currentVelocity = TickDash();
+            }
+            else if (targetVelocity.sqrMagnitude > 0.01f)
             {
                 _currentVelocity = Vector3.MoveTowards(_currentVelocity, targetVelocity, _swimAcceleration * Time.deltaTime);
             }
@@ -309,24 +339,43 @@ namespace Lalim.Mechanics
 
         private void UpdateDiverOrientation()
         {
-            // Horizontal yaw: align with movement direction
-            Vector3 horizontalVel = new Vector3(_currentVelocity.x, 0f, _currentVelocity.z);
-
-            if (horizontalVel.sqrMagnitude > 0.1f && !_wasFreeLooking)
-            {
-                _targetYaw = Quaternion.LookRotation(horizontalVel.normalized, Vector3.up);
-            }
-
             // Vertical pitch: tilt diver body up when ascending, down when descending
+            // (swim motion only — looking up/down never pitches the body).
             float normalizedVertical = Mathf.Clamp(_currentVelocity.y / _swimVerticalSpeed, -1f, 1f);
             float targetPitch = -normalizedVertical * _swimPitchTilt;
-
             _currentPitchAngle = Mathf.Lerp(_currentPitchAngle, targetPitch, _pitchSmoothSpeed * Time.deltaTime);
-            Quaternion pitchRotation = Quaternion.Euler(_currentPitchAngle, 0f, 0f);
 
-            // Combine yaw and pitch smoothly
-            Quaternion desiredRotation = _targetYaw * pitchRotation;
+            if (BodyLockedToCamera)
+            {
+                // BehindBack: yaw is exactly the camera's — no turning lag, the back always faces the camera.
+                _facingYaw = CameraController.Instance.OrbitYaw;
+                ApplyBodyRotation();
+                return;
+            }
+
+            // FreeOrbit: turn smoothly toward the direction the diver last swam (kept while idle).
+            _targetYaw = Quaternion.Euler(0f, _facingYaw, 0f);
+            Quaternion desiredRotation = _targetYaw * Quaternion.Euler(_currentPitchAngle, 0f, 0f);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, _rotationSpeed * Time.deltaTime);
+        }
+
+        /// <summary>True when the camera owns the body's yaw (BehindBack style, third-person, not in a challenge).</summary>
+        private bool BodyLockedToCamera =>
+            !_isInChallenge && CameraController.Instance != null && CameraController.Instance.LocksBodyToCamera;
+
+        private void ApplyBodyRotation() =>
+            transform.rotation = Quaternion.Euler(0f, _facingYaw, 0f) * Quaternion.Euler(_currentPitchAngle, 0f, 0f);
+
+        /// <summary>
+        /// Called by CameraController right after it applies look input, so the body turns in the
+        /// same frame as the camera (BehindBack style). Pitch from swimming is kept.
+        /// </summary>
+        public void SnapBodyYaw(float yaw)
+        {
+            if (!BodyLockedToCamera || !_movementEnabled) return;
+            _facingYaw = yaw;
+            _facingInitialized = true;
+            ApplyBodyRotation();
         }
 
         // ─────────────────────────────────────────────
@@ -393,7 +442,7 @@ namespace Lalim.Mechanics
                 if (Camera.main != null) _cameraTransform = Camera.main.transform;
                 else
                 {
-                    CameraController cam = FindObjectOfType<CameraController>();
+                    CameraController cam = FindAnyObjectByType<CameraController>();
                     if (cam != null) _cameraTransform = cam.transform;
                 }
             }
@@ -444,7 +493,9 @@ namespace Lalim.Mechanics
                 if (hit.collider.transform.root == transform) continue;
 
                 IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
-                if (interactable != null)
+                // Skip things with nothing to offer right now (e.g. the coral station sharing the
+                // water station's spot): otherwise they hide the one that's actually active.
+                if (interactable != null && HasPrompt(interactable))
                 {
                     return interactable;
                 }
@@ -460,7 +511,7 @@ namespace Lalim.Mechanics
                 if (col.transform.root == transform) continue;
 
                 IInteractable interactable = col.GetComponentInParent<IInteractable>();
-                if (interactable != null)
+                if (interactable != null && HasPrompt(interactable))
                 {
                     Vector3 toTarget = col.transform.position - transform.position;
                     float dist = toTarget.sqrMagnitude;
@@ -475,9 +526,11 @@ namespace Lalim.Mechanics
             return bestTarget;
         }
 
+        private static bool HasPrompt(IInteractable interactable) => !string.IsNullOrEmpty(interactable.GetInteractionPrompt());
+
         private void OnGUI()
         {
-            if (string.IsNullOrEmpty(_currentPromptText)) return;
+            if (HudPromptPresent || string.IsNullOrEmpty(_currentPromptText)) return;
 
             // Render on-screen prompt overlay (works even if HUD Canvas isn't set up yet)
             GUIStyle style = new GUIStyle(GUI.skin.box);
@@ -491,7 +544,8 @@ namespace Lalim.Mechanics
             float width = Mathf.Max(size.x + 40f, 260f);
             float height = 44f;
             float x = (Screen.width - width) * 0.5f;
-            float y = Screen.height - 110f;
+            // Sit above the bottom-centre HP bar + stamina orbs (~150px tall at 1080p).
+            float y = Screen.height - (44f + 170f) * (Screen.height / 1080f);
 
             GUI.backgroundColor = new Color(0.04f, 0.12f, 0.22f, 0.85f);
             GUI.Box(new Rect(x, y, width, height), _currentPromptText, style);
@@ -512,6 +566,110 @@ namespace Lalim.Mechanics
             _currentVelocity = Vector3.zero;
         }
 
+        /// <summary>Makes the diver keep facing its current rotation (after a teleport / respawn / cutscene).</summary>
+        public void SyncFacingToTransform()
+        {
+            _facingYaw = transform.eulerAngles.y;
+            _facingInitialized = true;
+        }
+
+        /// <summary>Current world-space velocity, exposed for abilities (Bubble Barrier proximity checks, VFX, etc).</summary>
+        public Vector3 Velocity => _currentVelocity;
+
+        /// <summary>True while riding the dugong via Tidebond.</summary>
+        public bool IsMounted { get; private set; }
+
+        /// <summary>True while player-driven movement is currently allowed.</summary>
+        public bool IsMovementEnabled => _movementEnabled;
+
+        /// <summary>
+        /// Registers a speed multiplier from an ability (Riptide, Tidebond). Multipliers never
+        /// stack multiplicatively — the HIGHEST currently-registered value wins, so Riptide and
+        /// Tidebond can never combine into an unintended super-speed even if both are active
+        /// due to a bug elsewhere.
+        /// </summary>
+        public void SetSpeedMultiplier(object source, float value)
+        {
+            _speedMultipliers[source] = value;
+        }
+
+        /// <summary>Removes a previously-registered speed multiplier. Call when an ability ends or is cancelled.</summary>
+        public void ClearSpeedMultiplier(object source)
+        {
+            _speedMultipliers.Remove(source);
+        }
+
+        private float GetHighestSpeedMultiplier()
+        {
+            float highest = 1.0f;
+            foreach (var kvp in _speedMultipliers)
+            {
+                if (kvp.Value > highest) highest = kvp.Value;
+            }
+            return highest;
+        }
+
+        // Dash state — while dashing, HandleUnderwaterMovement uses the dash velocity instead of
+        // the normal acceleration/drag, but still moves through the CharacterController so walls
+        // and UnderwaterBounds clamping keep working.
+        private Vector3 _dashDir;
+        private float _dashDuration;
+        private float _dashElapsed;
+        private float _dashPeakSpeed;
+        private float _dashExitSpeed;
+
+        public bool IsDashing => _dashDuration > 0f;
+
+        /// <summary>
+        /// Dashes 'distance' meters along world-space 'dir' over 'duration' seconds with a linear
+        /// ease-out. When the dash ends, the player keeps exitVelocityRetain × the dash's AVERAGE
+        /// speed as glide velocity so it flows into normal swimming instead of stopping dead.
+        /// </summary>
+        public void Dash(Vector3 dir, float distance, float duration, float exitVelocityRetain = 0.4f)
+        {
+            if (!_movementEnabled) return;
+            if (dir.sqrMagnitude < 0.0001f) dir = transform.forward;
+
+            duration = Mathf.Max(duration, 0.01f);
+            _dashDir = dir.normalized;
+            if (new Vector2(_dashDir.x, _dashDir.z).sqrMagnitude > 0.0004f)
+                _facingYaw = Mathf.Atan2(_dashDir.x, _dashDir.z) * Mathf.Rad2Deg;
+            _dashDuration = duration;
+            _dashElapsed = 0f;
+            _dashPeakSpeed = 2f * distance / duration; // linear ease-out: avg = peak / 2
+            _dashExitSpeed = (distance / duration) * exitVelocityRetain;
+        }
+
+        public void CancelDash()
+        {
+            _dashDuration = 0f;
+        }
+
+        /// <summary>Advances the dash and returns the velocity to use this frame.</summary>
+        private Vector3 TickDash()
+        {
+            _dashElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(_dashElapsed / _dashDuration);
+            if (t >= 1f)
+            {
+                _dashDuration = 0f;
+                return _dashDir * _dashExitSpeed;
+            }
+            return _dashDir * (_dashPeakSpeed * (1f - t));
+        }
+
+        /// <summary>
+        /// Mounts/dismounts the player onto the dugong. The player's own CharacterController
+        /// keeps doing all the movement (reusing already-tuned collisions/bounds) — the dugong
+        /// model just snaps to a seat offset under the player and plays its swim animation.
+        /// </summary>
+        public void SetMounted(bool mounted)
+        {
+            if (IsMounted == mounted) return;
+            IsMounted = mounted;
+            EventBus.Publish(new DugongMountChangedEvent { Mounted = mounted });
+        }
+
         /// <summary>
         /// Enable or disable player movement.
         /// </summary>
@@ -521,6 +679,7 @@ namespace Lalim.Mechanics
             if (!enabled)
             {
                 _currentVelocity = Vector3.zero;
+                CancelDash();
             }
         }
 
@@ -530,8 +689,9 @@ namespace Lalim.Mechanics
 
         private void OnChallengeStarted(ChallengeStartedEvent evt)
         {
-            _isInChallenge = true;
+            _isInChallenge = evt.Perspective == ChallengePerspective.FirstPerson;
             _movementEnabled = IsMoveableChallenge(evt.Type);
+            if (!_movementEnabled) CancelDash();
         }
 
         private void OnChallengeCompleted(ChallengeCompletedEvent evt)
@@ -546,7 +706,8 @@ namespace Lalim.Mechanics
             _movementEnabled = true;
         }
 
-        private bool IsMoveableChallenge(ChallengeType type)
+        /// <summary>True for challenges where the player swims freely (abilities that move the player are allowed).</summary>
+        public static bool IsMoveableChallenge(ChallengeType type)
         {
             switch (type)
             {
@@ -556,6 +717,7 @@ namespace Lalim.Mechanics
                 case ChallengeType.PollutionScan:
                 case ChallengeType.HazardDefusal:
                 case ChallengeType.GhostNetRescue:
+                case ChallengeType.TrashCollection:
                     return true;
 
                 case ChallengeType.SustainableFishing:
@@ -566,6 +728,8 @@ namespace Lalim.Mechanics
                     return false;
             }
         }
+
+        private void OnPlayerRespawned(PlayerRespawnedEvent evt) => SyncFacingToTransform();
 
         private void OnGameStateChanged(GameStateChangedEvent evt)
         {

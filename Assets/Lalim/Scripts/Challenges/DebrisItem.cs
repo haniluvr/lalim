@@ -103,22 +103,11 @@ namespace Lalim.Challenges
         {
             if (IsCarried || IsSorted) return;
 
-            if (ToolEquipSystem.Instance != null && !ToolEquipSystem.Instance.IsToolEquipped("04_wastesegregationbag"))
-            {
-                Debug.LogWarning("[DebrisItem] Waste Segregation Bag must be equipped to pick up debris! Press [3] or [I].");
-                return;
-            }
-
             PickUp();
         }
 
         public string GetInteractionPrompt()
         {
-            if (ToolEquipSystem.Instance != null && !ToolEquipSystem.Instance.IsToolEquipped("04_wastesegregationbag"))
-            {
-                return $"⚠ [3] Equip Waste Bag to collect {_debrisName}";
-            }
-
             return $"Pick up {_debrisName}";
         }
 
@@ -151,15 +140,15 @@ namespace Lalim.Challenges
             Transform carryParent = Camera.main != null ? Camera.main.transform : null;
             if (carryParent == null)
             {
-                CameraController cam = FindObjectOfType<CameraController>();
+                CameraController cam = FindAnyObjectByType<CameraController>();
                 if (cam != null) carryParent = cam.transform;
                 else
                 {
-                    Camera anyCam = FindObjectOfType<Camera>();
+                    Camera anyCam = FindAnyObjectByType<Camera>();
                     if (anyCam != null) carryParent = anyCam.transform;
                     else
                     {
-                        PlayerController p = FindObjectOfType<PlayerController>();
+                        PlayerController p = FindAnyObjectByType<PlayerController>();
                         if (p != null) carryParent = p.transform;
                     }
                 }

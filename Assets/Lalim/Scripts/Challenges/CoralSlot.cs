@@ -14,8 +14,7 @@ namespace Lalim.Challenges
     ///   3. Attach this script
     ///   4. Optionally assign a visual mesh for the empty slot and the planted coral
     ///
-    /// The player must have the Coral Replanting Kit equipped (ToolEquipSystem)
-    /// and be carrying a CoralFragment to interact.
+    /// The player must be carrying a CoralFragment to interact.
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class CoralSlot : MonoBehaviour, IInteractable
@@ -24,8 +23,8 @@ namespace Lalim.Challenges
         [Tooltip("Display name for this planting spot")]
         [SerializeField] private string _slotName = "Coral Slot";
 
-        [Tooltip("Item ID of the required tool (Coral Replanting Kit)")]
-        [SerializeField] private string _requiredToolId = "05_coralreplantingkit";
+        [Tooltip("Item ID of the required tool (Coral Seed)")]
+        [SerializeField] private string _requiredToolId = "09_coralseed";
 
         [Header("Planting Animation")]
         [Tooltip("Time in seconds the planting process takes")]
@@ -157,26 +156,6 @@ namespace Lalim.Challenges
         {
             if (IsPlanted || IsPlanting) return;
 
-            // Check if player has the required tool equipped
-            if (ToolEquipSystem.Instance == null ||
-                !ToolEquipSystem.Instance.IsToolEquipped(_requiredToolId))
-            {
-                Debug.Log($"[CoralSlot] Player needs {_requiredToolId} equipped to plant");
-
-                if (_noToolSound != null && _audioSource != null)
-                {
-                    _audioSource.PlayOneShot(_noToolSound);
-                }
-
-                // Brief flash of no-tool color
-                if (_slotMaterial != null)
-                {
-                    _slotMaterial.color = _noToolColor;
-                    Invoke(nameof(ResetColor), 0.5f);
-                }
-                return;
-            }
-
             // Check if the parent challenge has fragments available
             if (_challenge != null && !_challenge.HasFragmentsAvailable())
             {
@@ -190,12 +169,6 @@ namespace Lalim.Challenges
         public string GetInteractionPrompt()
         {
             if (IsPlanted) return $"{_slotName} — Coral planted ✓";
-
-            if (ToolEquipSystem.Instance == null ||
-                !ToolEquipSystem.Instance.IsToolEquipped(_requiredToolId))
-            {
-                return "Equip Coral Replanting Kit to plant coral";
-            }
 
             if (_challenge != null && !_challenge.HasFragmentsAvailable())
             {
@@ -248,7 +221,7 @@ namespace Lalim.Challenges
             // Play planted sound
             if (_plantedSound != null && _audioSource != null)
             {
-                _audioSource.PlayOneShot(_plantedSound);
+                GameAudio.PlayOneShot(_audioSource, _plantedSound);
             }
 
             // Swap visuals

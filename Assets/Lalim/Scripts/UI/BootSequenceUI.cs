@@ -38,7 +38,16 @@ namespace Lalim.UI
 
         private void OnGUI()
         {
-            if (_isComplete || _activeTex == null || _currentAlpha <= 0f) return;
+            if (_isComplete)
+            {
+                // Just draw black so it seamlessly blends into the SceneLoader's fade without flashing the skybox
+                GUI.color = Color.black;
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+                return;
+            }
+
+            if (_activeTex == null || _currentAlpha <= 0f) return;
 
             // Draw a solid black background first
             GUI.color = Color.black;

@@ -374,19 +374,6 @@ namespace Lalim.Challenges
                 return;
             }
 
-            // Check if player has Water Sample Kit equipped
-            if (ToolEquipSystem.Instance == null ||
-                !ToolEquipSystem.Instance.IsToolEquipped(_requiredToolId))
-            {
-                Debug.Log($"[SamplePoint] Player needs {_requiredToolId} equipped to sample");
-
-                if (_noToolSound != null && _audioSource != null)
-                {
-                    _audioSource.PlayOneShot(_noToolSound);
-                }
-                return;
-            }
-
             BeginSampling();
         }
 
@@ -397,12 +384,6 @@ namespace Lalim.Challenges
             if (_challenge != null && !_challenge.IsActive)
             {
                 return $"⚠ Start Water Sampling Challenge at Zone Entrance [E] first";
-            }
-
-            if (ToolEquipSystem.Instance == null ||
-                !ToolEquipSystem.Instance.IsToolEquipped(_requiredToolId))
-            {
-                return $"⚠ [1] Equip Water Sample Kit to test {_parameter}";
             }
 
             return $"Hold [E] to sample {_parameter} at {_pointName}";
@@ -449,7 +430,7 @@ namespace Lalim.Challenges
             // Play complete sound
             if (_sampleCompleteSound != null && _audioSource != null)
             {
-                _audioSource.PlayOneShot(_sampleCompleteSound);
+                GameAudio.PlayOneShot(_audioSource, _sampleCompleteSound);
             }
 
             SetColor(_completedColor);
@@ -621,7 +602,6 @@ namespace Lalim.Challenges
 
         private void OnGUI()
         {
-            if (InventoryUI.Instance != null && InventoryUI.Instance.IsOpen) return;
             EnsureGuiTextures();
 
             // 1. In-World Floating Tag (Distance & Parameter Badge)

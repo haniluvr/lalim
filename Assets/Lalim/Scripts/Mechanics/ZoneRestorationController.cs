@@ -127,7 +127,7 @@ namespace Lalim.Mechanics
             // 2. Play audio fanfare
             if (_restorationFanfare != null && _audioSource != null)
             {
-                _audioSource.PlayOneShot(_restorationFanfare);
+                GameAudio.PlayOneShot(_audioSource, _restorationFanfare);
             }
 
             // 3. Optional dramatic pause

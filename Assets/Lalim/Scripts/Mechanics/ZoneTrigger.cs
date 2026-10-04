@@ -31,16 +31,11 @@ namespace Lalim.Mechanics
         [Tooltip("Base time limit in seconds (0 = no timer)")]
         [SerializeField] private float _baseTimeLimit = 120f;
 
-        [Tooltip("Expected completion time for DDA deviation calculation")]
-        [SerializeField] private float _expectedCompletionTime = 90f;
 
         [Header("Player Positioning")]
         [Tooltip("Where to place the player when the challenge starts")]
         [SerializeField] private Transform _challengeStartPoint;
 
-        [Header("Interaction")]
-        [Tooltip("Prompt shown when player is in range")]
-        [SerializeField] private string _interactionPrompt = "Press E to begin challenge";
 
         [Header("Zone Visual Indicators")]
         [Tooltip("Auto-generate a glowing particle aura and beacon marking this challenge area from afar")]
@@ -299,7 +294,7 @@ namespace Lalim.Mechanics
             switch (toolId)
             {
                 case "07_watersamplekit": return "1";
-                case "05_coralreplantingkit": return "2";
+                case "09_coralseed": return "2";
                 case "04_wastesegregationbag": return "3";
                 default: return "I";
             }
@@ -322,7 +317,7 @@ namespace Lalim.Mechanics
                 case ChallengeType.WaterSampling:
                     return "07_watersamplekit";
                 case ChallengeType.CoralReplanting:
-                    return "05_coralreplantingkit";
+                    return "09_coralseed";
                 default:
                     return "";
             }
@@ -334,17 +329,15 @@ namespace Lalim.Mechanics
             {
                 case "04_wastesegregationbag": return "Waste Segregation Bag";
                 case "07_watersamplekit": return "Water Sample Kit";
-                case "05_coralreplantingkit": return "Coral Replanting Kit";
+                case "09_coralseed": return "Coral Seed";
                 default: return "Required Conservation Tool";
             }
         }
 
         public bool IsRequiredToolEquipped()
         {
-            string reqTool = GetEffectiveRequiredToolId();
-            if (string.IsNullOrEmpty(reqTool)) return true;
-
-            return ToolEquipSystem.Instance != null && ToolEquipSystem.Instance.IsToolEquipped(reqTool);
+            // Tool equipping was a placeholder system and has been removed.
+            return true;
         }
 
         private void TryStartChallenge()
@@ -395,7 +388,7 @@ namespace Lalim.Mechanics
             // Position player at challenge start point
             if (_challengeStartPoint != null)
             {
-                PlayerController player = FindObjectOfType<PlayerController>();
+                PlayerController player = FindAnyObjectByType<PlayerController>();
                 if (player != null)
                 {
                     player.SetPosition(_challengeStartPoint.position);
@@ -514,8 +507,6 @@ namespace Lalim.Mechanics
 
         private void OnGUI()
         {
-            if (InventoryUI.Instance != null && InventoryUI.Instance.IsOpen) return;
-
             bool showAlert = Time.time < _alertMessageTime && !string.IsNullOrEmpty(_alertMessage);
             if (!_playerInRange && !showAlert) return;
             if (_challengeActive || _isCompleted) return;
@@ -527,7 +518,9 @@ namespace Lalim.Mechanics
             float boxWidth = 470f;
             float boxHeight = 58f;
             float x = (Screen.width - boxWidth) * 0.5f;
-            float y = hasPlayerPrompt ? Screen.height - 185f : Screen.height - 120f;
+            // Above the bottom-centre HP bar + stamina orbs, and above PlayerController's prompt when it shows.
+            float scale = Screen.height / 1080f;
+            float y = hasPlayerPrompt ? Screen.height - (170f + 44f + 10f + boxHeight) * scale : Screen.height - (170f + boxHeight) * scale;
             Rect boxRect = new Rect(x, y, boxWidth, boxHeight);
 
             if (showAlert)

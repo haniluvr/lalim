@@ -16,7 +16,8 @@ namespace Lalim.Inventory
         [SerializeField] private ItemData _itemData;
 
         [Header("Interaction")]
-        [SerializeField] private string _interactionPrompt = "Pick up";
+        [SerializeField] private string _interactionPrompt = "Collect";
+
         [SerializeField] private float _bobSpeed = 2.0f;
         [SerializeField] private float _bobHeight = 0.15f;
         [SerializeField] private float _rotateSpeed = 45.0f;
@@ -96,7 +97,7 @@ namespace Lalim.Inventory
             // Play collect sound
             if (_itemData.collectSound != null)
             {
-                AudioSource.PlayClipAtPoint(_itemData.collectSound, transform.position);
+                GameAudio.PlayAt(_itemData.collectSound, transform.position);
             }
 
             // Play particle effect

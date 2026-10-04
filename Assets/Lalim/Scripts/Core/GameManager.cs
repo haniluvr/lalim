@@ -55,6 +55,7 @@ namespace Lalim.Core
             EventBus.Subscribe<ChallengeFailedEvent>(OnChallengeFailed);
             EventBus.Subscribe<RegionCompletedEvent>(OnRegionCompleted);
             EventBus.Subscribe<PauseRequestedEvent>(OnPauseRequested);
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnDisable()
@@ -64,6 +65,19 @@ namespace Lalim.Core
             EventBus.Unsubscribe<ChallengeFailedEvent>(OnChallengeFailed);
             EventBus.Unsubscribe<RegionCompletedEvent>(OnRegionCompleted);
             EventBus.Unsubscribe<PauseRequestedEvent>(OnPauseRequested);
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name != GameConstants.Scenes.BOOT && 
+                scene.name != GameConstants.Scenes.MAIN_MENU && 
+                scene.name != GameConstants.Scenes.LOADING && 
+                scene.name != GameConstants.Scenes.SPLASH)
+            {
+                CurrentRegion = GameConstants.Scenes.GetRegionForScene(scene.name) ?? Region.Luzon;
+                SetState(GameState.Exploring);
+            }
         }
 
         private void Start()
@@ -76,11 +90,22 @@ namespace Lalim.Core
 
             string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
-            // Only redirect to Main Menu if starting from the Boot scene
+            Debug.Log($"[GameManager] Start! Active: {activeScene}, DevTestScene: {PlayerPrefs.GetString("DevTestScene", "NONE")}");
             if (activeScene == GameConstants.Scenes.BOOT)
             {
-                // Do nothing here! 
-                // BootSequenceUI will handle fading the logos and THEN it will load the Main Menu.
+                // Check if we are testing a specific scene via DevBootstrapper
+                if (PlayerPrefs.HasKey("DevTestScene"))
+                {
+                    string testScene = PlayerPrefs.GetString("DevTestScene");
+                    PlayerPrefs.DeleteKey("DevTestScene"); // Clean up
+                    PlayerPrefs.Save();
+                    
+                    Debug.Log($"[GameManager] DevBootstrapper detected. Loading test scene: {testScene}");
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(testScene);
+                    return;
+                }
+
+                // Normal boot behavior
                 SetState(GameState.Boot);
             }
             else if (activeScene == GameConstants.Scenes.MAIN_MENU)
@@ -257,10 +282,10 @@ namespace Lalim.Core
         {
             SetState(GameState.Exploring);
 
-            // Auto-save after challenge completion
+            // Auto-save after challenge completion (only once the session has a slot)
             if (SaveManager.Instance != null)
             {
-                SaveManager.Instance.SaveGame();
+                SaveManager.Instance.AutoSave();
             }
         }
 
@@ -273,23 +298,26 @@ namespace Lalim.Core
         {
             UnlockNextRegion(evt.CompletedRegion);
 
-            // Auto-save after region completion
+            // Auto-save after region completion (only once the session has a slot)
             if (SaveManager.Instance != null)
             {
-                SaveManager.Instance.SaveGame();
+                SaveManager.Instance.AutoSave();
             }
         }
+
+        private GameState _stateBeforePause = GameState.Exploring;
 
         private void OnPauseRequested(PauseRequestedEvent evt)
         {
             if (evt.IsPaused && _currentState != GameState.Paused)
             {
+                _stateBeforePause = _currentState;
                 SetState(GameState.Paused);
             }
             else if (!evt.IsPaused && _currentState == GameState.Paused)
             {
-                // Return to whichever state we were in before pausing
-                SetState(CurrentRegion.HasValue ? GameState.Exploring : GameState.Menu);
+                // Return to exactly where we were (exploring OR mid-challenge).
+                SetState(_stateBeforePause == GameState.Paused ? GameState.Exploring : _stateBeforePause);
             }
         }
     }

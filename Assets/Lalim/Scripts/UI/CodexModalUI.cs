@@ -155,7 +155,7 @@ namespace Lalim.UI
 
             if (_openSound != null)
             {
-                AudioSource.PlayClipAtPoint(_openSound, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+                GameAudio.PlayAt(_openSound, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
             }
 
             if (PlayerController.Instance != null)
@@ -179,7 +179,7 @@ namespace Lalim.UI
 
             if (_closeSound != null)
             {
-                AudioSource.PlayClipAtPoint(_closeSound, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+                GameAudio.PlayAt(_closeSound, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
             }
 
             if (PlayerController.Instance != null)

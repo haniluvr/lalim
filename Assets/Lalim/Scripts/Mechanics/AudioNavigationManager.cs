@@ -71,6 +71,61 @@ namespace Lalim.Mechanics
             EventBus.Subscribe<DifficultyChangedEvent>(OnDifficultyChanged);
             EventBus.Subscribe<ItemCollectedEvent>(OnProgress);
             EventBus.Subscribe<ChallengeCompletedEvent>(OnChallengeProgress);
+            EventBus.Subscribe<ChallengeStartedEvent>(OnChallengeStarted);
+            EventBus.Subscribe<DialogueStartedEvent>(OnDialogueStarted);
+            EventBus.Subscribe<DialogueEndedEvent>(OnDialogueEnded);
+        }
+
+        private void Start()
+        {
+            // Hint sources sit at the target, so they must be 3D. Created here if the scene didn't assign them.
+            if (_ambientCueSource == null) _ambientCueSource = CreateSource("[NavCue_Ambient]", AudioChannel.Ambient, true);
+            if (_pingSource == null) _pingSource = CreateSource("[NavCue_Ping]", AudioChannel.Sfx, true);
+            if (_voiceSource == null) _voiceSource = CreateSource("[NavCue_Voice]", AudioChannel.Voice, false);
+
+            GameState state = GameManager.Instance != null ? GameManager.Instance.CurrentState : GameState.Exploring;
+            RefreshActive(state);
+        }
+
+        private AudioSource CreateSource(string name, AudioChannel channel, bool spatial)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+            var src = go.AddComponent<AudioSource>();
+            src.playOnAwake = false;
+            src.spatialBlend = spatial ? 1f : 0f;
+            src.rolloffMode = AudioRolloffMode.Linear;
+            src.minDistance = 5f;
+            src.maxDistance = 150f;
+            GameAudio.Bind(src, 1f, channel);
+            return src;
+        }
+
+        private bool _dialogueOpen;
+
+        private void RefreshActive(GameState state)
+        {
+            bool firstPerson = ChallengeManager.Instance != null && ChallengeManager.Instance.IsFirstPersonChallengeActive;
+            // Hints run while exploring and during 3rd-person challenges (trash collection), never in
+            // dialogue or 1st-person minigames.
+            _isActive = !_dialogueOpen && (state == GameState.Exploring || (state == GameState.InChallenge && !firstPerson));
+            if (!_isActive) StopAllHints();
+        }
+
+        private void OnChallengeStarted(ChallengeStartedEvent evt) =>
+            RefreshActive(GameManager.Instance != null ? GameManager.Instance.CurrentState : GameState.InChallenge);
+
+        private void OnDialogueStarted(DialogueStartedEvent evt)
+        {
+            _dialogueOpen = true;
+            RefreshActive(GameManager.Instance != null ? GameManager.Instance.CurrentState : GameState.Exploring);
+        }
+
+        private void OnDialogueEnded(DialogueEndedEvent evt)
+        {
+            _dialogueOpen = false;
+            ResetProgress();
+            RefreshActive(GameManager.Instance != null ? GameManager.Instance.CurrentState : GameState.Exploring);
         }
 
         private void OnDisable()
@@ -78,6 +133,9 @@ namespace Lalim.Mechanics
             EventBus.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
             EventBus.Unsubscribe<DifficultyChangedEvent>(OnDifficultyChanged);
             EventBus.Unsubscribe<ItemCollectedEvent>(OnProgress);
+            EventBus.Unsubscribe<ChallengeStartedEvent>(OnChallengeStarted);
+            EventBus.Unsubscribe<DialogueStartedEvent>(OnDialogueStarted);
+            EventBus.Unsubscribe<DialogueEndedEvent>(OnDialogueEnded);
             EventBus.Unsubscribe<ChallengeCompletedEvent>(OnChallengeProgress);
         }
 
@@ -150,7 +208,7 @@ namespace Lalim.Mechanics
             if (_ambientCueSource == null || _subtleAmbientClip == null) return;
 
             _ambientCueSource.clip = _subtleAmbientClip;
-            _ambientCueSource.volume = 0.3f;
+            GameAudio.Bind(_ambientCueSource, 0.3f, AudioChannel.Ambient);
             _ambientCueSource.loop = true;
             _ambientCueSource.Play();
         }
@@ -160,7 +218,7 @@ namespace Lalim.Mechanics
             if (_pingSource == null || _distinctPingClip == null) return;
 
             _pingSource.clip = _distinctPingClip;
-            _pingSource.volume = 0.7f;
+            GameAudio.Bind(_pingSource, 0.7f, AudioChannel.Sfx);
             _pingSource.loop = false;
             _pingSource.Play();
 
@@ -174,7 +232,7 @@ namespace Lalim.Mechanics
             // Pick a random voice hint
             AudioClip clip = _voiceHintClips[Random.Range(0, _voiceHintClips.Length)];
             _voiceSource.clip = clip;
-            _voiceSource.volume = 1.0f;
+            GameAudio.Bind(_voiceSource, 1.0f, AudioChannel.Voice);
             _voiceSource.spatialBlend = 0.5f; // Mix of 2D and 3D
             _voiceSource.Play();
         }
@@ -252,12 +310,7 @@ namespace Lalim.Mechanics
 
         private void OnGameStateChanged(GameStateChangedEvent evt)
         {
-            _isActive = evt.NewState == GameState.Exploring;
-
-            if (!_isActive)
-            {
-                StopAllHints();
-            }
+            RefreshActive(evt.NewState);
         }
 
         private void OnDifficultyChanged(DifficultyChangedEvent evt)

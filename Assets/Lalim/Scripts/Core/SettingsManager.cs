@@ -1,43 +1,74 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 
 namespace Lalim.Core
 {
     /// <summary>
-    /// Global manager for saving, loading, and applying user settings via PlayerPrefs.
+    /// Owns the player's settings (GameSettings), persists them in PlayerPrefs and applies them:
+    ///
+    ///  Audio     volumes / mutes / 3D spatial / headphone mode → GameAudio
+    ///  Quality   preset → project quality level; per-row overrides:
+    ///            Texture (mip limit), Mapping (anisotropic filtering + LOD detail),
+    ///            Shadow (off / hard / soft), Ambient Effect (post-processing, caustics, god rays),
+    ///            SFX (overlapping sounds, in GameAudio), Resolution (render scale), frame rate.
+    ///            SSS is stored for a future subsurface-scattering shader; nothing uses it yet.
+    ///  Controls  read directly by CameraController (speed, invert, gyro), PlayerController
+    ///            (auto-swim) and HudHandedness (right-handed mode); haptics pulse from here.
+    ///
+    /// Created automatically before the first scene loads. The settings modal edits a copy:
+    /// Preview() applies it live, Save() persists it, Revert() restores the saved copy.
+    /// In the editor, quality/pipeline changes made during Play mode are undone on exit.
     /// </summary>
     public class SettingsManager : MonoBehaviour
     {
+        private const string PrefsKey = "Lalim.Settings.v1";
+
+        /// <summary>Preset index → project quality level name (see Project Settings ▸ Quality).</summary>
+        private static readonly string[] PresetQualityNames = { "Low", "Medium", "High", "Ultra" };
+
+        private static readonly int[] TextureMipLimit = { 2, 1, 0 };
+        private static readonly AnisotropicFiltering[] Anisotropic =
+            { AnisotropicFiltering.Disable, AnisotropicFiltering.Enable, AnisotropicFiltering.ForceEnable };
+        private static readonly float[] LodDetail = { 0.7f, 1f, 1.5f };
+        private static readonly float[] RenderScale = { 0.7f, 0.85f, 1f };
+
         public static SettingsManager Instance { get; private set; }
 
-        // ─────────────────────────────────────────────
-        // Audio Settings
-        // ─────────────────────────────────────────────
-        public float MusicVolume { get; private set; }
-        public float VoiceVolume { get; private set; }
-        public float SfxVolume { get; private set; }
-        public float AmbientVolume { get; private set; }
-        public bool SpatialAudio { get; private set; }
-        public bool HeadphoneOptimization { get; private set; }
+        /// <summary>What's stored in PlayerPrefs.</summary>
+        public GameSettings Saved { get; private set; }
 
-        // ─────────────────────────────────────────────
-        // Quality Settings
-        // ─────────────────────────────────────────────
-        public int GraphicsQuality { get; private set; } // 0=Smooth, 1=Medium, 2=High, 3=Ultra, 4=Customize
-        public int TextureQuality { get; private set; }  // 0=C, 1=B, 2=A
-        public int MappingQuality { get; private set; }
-        public int ShadowQuality { get; private set; }
-        public int AmbientQuality { get; private set; }
-        public int SfxQuality { get; private set; }
-        public int ResolutionLevel { get; private set; }
-        public bool SssQuality { get; private set; }
+        /// <summary>What's applied right now (differs from Saved while the modal previews changes).</summary>
+        public GameSettings Current { get; private set; }
 
-        // ─────────────────────────────────────────────
-        // Controls Settings
-        // ─────────────────────────────────────────────
-        public bool Gyroscope { get; private set; }
-        public bool RightHandedMode { get; private set; }
-        public bool AutoSwim { get; private set; }
-        public bool HapticFeedback { get; private set; }
+        private static GameSettings _fallback;
+
+        /// <summary>The applied settings, or defaults when no manager exists (edit-mode tests).</summary>
+        public static GameSettings Active => Instance != null ? Instance.Current : (_fallback ??= new GameSettings());
+
+        private int _appliedQualityLevel = -1;
+
+        // Authored render scale of each pipeline asset we scale (Resolution row multiplies it).
+        private readonly Dictionary<UniversalRenderPipelineAsset, float> _authoredRenderScale =
+            new Dictionary<UniversalRenderPipelineAsset, float>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Bootstrap()
+        {
+#if UNITY_EDITOR
+            EditorQualitySnapshot.Capture();
+#endif
+            Ensure();
+        }
+
+        public static SettingsManager Ensure()
+        {
+            if (Instance != null) return Instance;
+            var go = new GameObject("[SettingsManager]");
+            return go.AddComponent<SettingsManager>();
+        }
 
         private void Awake()
         {
@@ -49,103 +80,261 @@ namespace Lalim.Core
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            LoadSettings();
+            Load();
         }
 
-        public void LoadSettings()
+        private void OnEnable()
         {
-            // Audio (Default values based on screenshots)
-            MusicVolume = PlayerPrefs.GetFloat("MusicVolume", 2f);
-            VoiceVolume = PlayerPrefs.GetFloat("VoiceVolume", 10f);
-            SfxVolume = PlayerPrefs.GetFloat("SfxVolume", 5f);
-            AmbientVolume = PlayerPrefs.GetFloat("AmbientVolume", 8f);
-            SpatialAudio = PlayerPrefs.GetInt("SpatialAudio", 1) == 1;
-            HeadphoneOptimization = PlayerPrefs.GetInt("HeadphoneOptimization", 1) == 1;
-
-            // Quality
-            GraphicsQuality = PlayerPrefs.GetInt("GraphicsQuality", 4); 
-            TextureQuality = PlayerPrefs.GetInt("TextureQuality", 2); 
-            MappingQuality = PlayerPrefs.GetInt("MappingQuality", 2);
-            ShadowQuality = PlayerPrefs.GetInt("ShadowQuality", 2);
-            AmbientQuality = PlayerPrefs.GetInt("AmbientQuality", 1);
-            SfxQuality = PlayerPrefs.GetInt("SfxQuality", 1);
-            ResolutionLevel = PlayerPrefs.GetInt("ResolutionLevel", 1);
-            SssQuality = PlayerPrefs.GetInt("SssQuality", 1) == 1;
-
-            // Controls
-            Gyroscope = PlayerPrefs.GetInt("Gyroscope", 1) == 1;
-            RightHandedMode = PlayerPrefs.GetInt("RightHandedMode", 1) == 1;
-            AutoSwim = PlayerPrefs.GetInt("AutoSwim", 1) == 1;
-            HapticFeedback = PlayerPrefs.GetInt("HapticFeedback", 1) == 1;
-
-            ApplySettings();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            EventBus.Subscribe<PlayerHealthChangedEvent>(OnPlayerHealthChanged);
+            EventBus.Subscribe<PlayerDiedEvent>(OnPlayerDied);
         }
 
-        public void SaveSettings()
+        private void OnDisable()
         {
-            PlayerPrefs.SetFloat("MusicVolume", MusicVolume);
-            PlayerPrefs.SetFloat("VoiceVolume", VoiceVolume);
-            PlayerPrefs.SetFloat("SfxVolume", SfxVolume);
-            PlayerPrefs.SetFloat("AmbientVolume", AmbientVolume);
-            PlayerPrefs.SetInt("SpatialAudio", SpatialAudio ? 1 : 0);
-            PlayerPrefs.SetInt("HeadphoneOptimization", HeadphoneOptimization ? 1 : 0);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            EventBus.Unsubscribe<PlayerHealthChangedEvent>(OnPlayerHealthChanged);
+            EventBus.Unsubscribe<PlayerDiedEvent>(OnPlayerDied);
+        }
 
-            PlayerPrefs.SetInt("GraphicsQuality", GraphicsQuality);
-            PlayerPrefs.SetInt("TextureQuality", TextureQuality);
-            PlayerPrefs.SetInt("MappingQuality", MappingQuality);
-            PlayerPrefs.SetInt("ShadowQuality", ShadowQuality);
-            PlayerPrefs.SetInt("AmbientQuality", AmbientQuality);
-            PlayerPrefs.SetInt("SfxQuality", SfxQuality);
-            PlayerPrefs.SetInt("ResolutionLevel", ResolutionLevel);
-            PlayerPrefs.SetInt("SssQuality", SssQuality ? 1 : 0);
+        private void OnDestroy()
+        {
+            if (Instance != this) return;
+            // Put pipeline assets back the way they were authored (matters in the editor).
+            foreach (var kv in _authoredRenderScale)
+                if (kv.Key != null) kv.Key.renderScale = kv.Value;
+        }
 
-            PlayerPrefs.SetInt("Gyroscope", Gyroscope ? 1 : 0);
-            PlayerPrefs.SetInt("RightHandedMode", RightHandedMode ? 1 : 0);
-            PlayerPrefs.SetInt("AutoSwim", AutoSwim ? 1 : 0);
-            PlayerPrefs.SetInt("HapticFeedback", HapticFeedback ? 1 : 0);
+        // ─────────────────────────────────────────────
+        // Load / Save
+        // ─────────────────────────────────────────────
 
+        public void Load()
+        {
+            GameSettings loaded = null;
+            string json = PlayerPrefs.GetString(PrefsKey, null);
+            if (!string.IsNullOrEmpty(json))
+            {
+                try { loaded = JsonUtility.FromJson<GameSettings>(json); }
+                catch (System.Exception e) { Debug.LogWarning($"[SettingsManager] Couldn't read saved settings, using defaults: {e.Message}"); }
+            }
+            loaded ??= new GameSettings();
+            loaded.Sanitize();
+
+            Saved = loaded;
+            Current = loaded.Clone();
+            Apply();
+        }
+
+        /// <summary>Apply without persisting (live preview while the modal is open).</summary>
+        public void Preview(GameSettings settings)
+        {
+            Current = settings.Clone();
+            Current.Sanitize();
+            Apply();
+        }
+
+        /// <summary>Persist and apply.</summary>
+        public void Save(GameSettings settings)
+        {
+            Saved = settings.Clone();
+            Saved.Sanitize();
+            Current = Saved.Clone();
+            PlayerPrefs.SetString(PrefsKey, JsonUtility.ToJson(Saved));
             PlayerPrefs.Save();
-            ApplySettings();
+            Apply();
         }
 
-        public void SetAudioSettings(float music, float voice, float sfx, float amb, bool spatial, bool headphone)
+        /// <summary>Throw away previewed changes.</summary>
+        public void Revert() => Preview(Saved);
+
+        public bool HasUnsavedPreview => !Current.SameAs(Saved);
+
+        // ─────────────────────────────────────────────
+        // Apply
+        // ─────────────────────────────────────────────
+
+        private void Apply()
         {
-            MusicVolume = music;
-            VoiceVolume = voice;
-            SfxVolume = sfx;
-            AmbientVolume = amb;
-            SpatialAudio = spatial;
-            HeadphoneOptimization = headphone;
-            SaveSettings();
+            ApplyQualityLevel();
+
+            GameSettings s = Current;
+            QualitySettings.globalTextureMipmapLimit = TextureMipLimit[s.textureQuality];
+            QualitySettings.anisotropicFiltering = Anisotropic[s.mappingQuality];
+            QualitySettings.lodBias = LodDetail[s.mappingQuality];
+            ApplyRenderScale();
+
+            // Mobile ignores vSync; on desktop vSync would override the frame-rate cap.
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = s.TargetFrameRate;
+
+            ApplyToScene();
+            GameAudio.RefreshBoundSources();
+            EventBus.Publish(new SettingsChangedEvent { Settings = Current });
         }
 
-        public void SetQualitySettings(int graphics, int texture, int mapping, int shadow, int ambient, int sfxQ, int res, bool sss)
+        private void ApplyQualityLevel()
         {
-            GraphicsQuality = graphics;
-            TextureQuality = texture;
-            MappingQuality = mapping;
-            ShadowQuality = shadow;
-            AmbientQuality = ambient;
-            SfxQuality = sfxQ;
-            ResolutionLevel = res;
-            SssQuality = sss;
-            SaveSettings();
+            int level = QualityLevelForPreset(Current.EffectivePreset);
+            if (level < 0 || level == _appliedQualityLevel) return;
+            _appliedQualityLevel = level;
+            if (QualitySettings.GetQualityLevel() != level)
+                QualitySettings.SetQualityLevel(level, true);
         }
 
-        public void SetControlsSettings(bool gyro, bool rightHanded, bool autoSwim, bool haptic)
+        /// <summary>Finds the quality level by name, or spreads the presets across whatever levels exist.</summary>
+        public static int QualityLevelForPreset(int preset)
         {
-            Gyroscope = gyro;
-            RightHandedMode = rightHanded;
-            AutoSwim = autoSwim;
-            HapticFeedback = haptic;
-            SaveSettings();
+            string[] names = QualitySettings.names;
+            if (names.Length == 0) return -1;
+            preset = Mathf.Clamp(preset, 0, PresetQualityNames.Length - 1);
+
+            for (int i = 0; i < names.Length; i++)
+                if (string.Equals(names[i], PresetQualityNames[preset], System.StringComparison.OrdinalIgnoreCase))
+                    return i;
+
+            float t = preset / (float)(PresetQualityNames.Length - 1);
+            return Mathf.RoundToInt(t * (names.Length - 1));
         }
 
-        private void ApplySettings()
+        /// <summary>Resolution row: scales the active pipeline's authored render scale.</summary>
+        private void ApplyRenderScale()
         {
-            // TODO: Hook into Unity's AudioMixer and QualitySettings here.
-            // Example: AudioListener.volume = MusicVolume / 10f;
-            // Example: QualitySettings.SetQualityLevel(GraphicsQuality);
+            if (!(GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)) return;
+            if (!_authoredRenderScale.TryGetValue(urp, out float authored))
+            {
+                authored = urp.renderScale;
+                _authoredRenderScale[urp] = authored;
+            }
+            float target = authored * RenderScale[Current.resolutionQuality];
+            if (!Mathf.Approximately(urp.renderScale, target)) urp.renderScale = target;
         }
+
+        /// <summary>Per-camera and per-scene switches: shadows, post-processing, ambient effects.</summary>
+        private void ApplyToScene()
+        {
+            GameSettings s = Current;
+
+            Camera cam = Camera.main;
+            if (cam != null && cam.TryGetComponent(out UniversalAdditionalCameraData data))
+            {
+                data.renderShadows = s.shadowQuality > 0;
+                data.renderPostProcessing = s.ambientQuality > 0;
+            }
+
+            // Shadow B = hard shadows, A = soft shadows (only on lights that cast shadows at all).
+            foreach (Light light in FindObjectsByType<Light>(FindObjectsSortMode.None))
+            {
+                if (light.type != LightType.Directional) continue;
+                if (!_lightShadows.TryGetValue(light, out LightShadows authored))
+                {
+                    authored = light.shadows;
+                    _lightShadows[light] = authored;
+                }
+                if (authored == LightShadows.None) continue;
+                light.shadows = s.shadowQuality == 0 ? LightShadows.None
+                              : s.shadowQuality == 1 ? LightShadows.Hard
+                              : authored;
+            }
+
+            AmbientEffect.ApplyTier(s.ambientQuality);
+        }
+
+        private readonly Dictionary<Light, LightShadows> _lightShadows = new Dictionary<Light, LightShadows>();
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            _lightShadows.Clear();
+            AmbientEffect.TagKnownObjects(scene);
+            ApplyRenderScale(); // quality level may have swapped the pipeline asset
+            ApplyToScene();
+        }
+
+        // ─────────────────────────────────────────────
+        // Haptics
+        // ─────────────────────────────────────────────
+
+        private float _lastPulseTime = -10f;
+
+        /// <summary>Short vibration if haptics are on (phones only; ignored in the editor).</summary>
+        public static void Pulse()
+        {
+            if (Instance == null || !Instance.Current.haptics) return;
+            if (Time.unscaledTime - Instance._lastPulseTime < 0.35f) return;
+            Instance._lastPulseTime = Time.unscaledTime;
+#if (UNITY_IOS || UNITY_ANDROID) && !UNITY_EDITOR
+            Handheld.Vibrate();
+#endif
+        }
+
+        // Only real hits buzz — per-frame toxic damage is far below this.
+        private void OnPlayerHealthChanged(PlayerHealthChangedEvent evt)
+        {
+            if (evt.Delta <= -5f) Pulse();
+        }
+
+        private void OnPlayerDied(PlayerDiedEvent evt) => Pulse();
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// QualitySettings changed during Play mode stick in the editor. Snapshot them when Play
+        /// starts and put them back when it ends, so testing settings never edits the project.
+        /// </summary>
+        private static class EditorQualitySnapshot
+        {
+            private struct Level
+            {
+                public int MipLimit;
+                public AnisotropicFiltering Aniso;
+                public float LodBias;
+                public int VSync;
+            }
+
+            private static int _level = -1;
+            private static Level[] _levels;
+            private static bool _hooked;
+
+            public static void Capture()
+            {
+                _level = QualitySettings.GetQualityLevel();
+                int count = QualitySettings.names.Length;
+                _levels = new Level[count];
+                for (int i = 0; i < count; i++)
+                {
+                    QualitySettings.SetQualityLevel(i, false);
+                    _levels[i] = new Level
+                    {
+                        MipLimit = QualitySettings.globalTextureMipmapLimit,
+                        Aniso = QualitySettings.anisotropicFiltering,
+                        LodBias = QualitySettings.lodBias,
+                        VSync = QualitySettings.vSyncCount,
+                    };
+                }
+                QualitySettings.SetQualityLevel(_level, false);
+
+                if (_hooked) return;
+                _hooked = true;
+                UnityEditor.EditorApplication.playModeStateChanged += state =>
+                {
+                    if (state == UnityEditor.PlayModeStateChange.EnteredEditMode) Restore();
+                };
+            }
+
+            private static void Restore()
+            {
+                if (_levels == null || _level < 0) return;
+                for (int i = 0; i < _levels.Length && i < QualitySettings.names.Length; i++)
+                {
+                    QualitySettings.SetQualityLevel(i, false);
+                    QualitySettings.globalTextureMipmapLimit = _levels[i].MipLimit;
+                    QualitySettings.anisotropicFiltering = _levels[i].Aniso;
+                    QualitySettings.lodBias = _levels[i].LodBias;
+                    QualitySettings.vSyncCount = _levels[i].VSync;
+                }
+                QualitySettings.SetQualityLevel(_level, true);
+                _levels = null;
+            }
+        }
+#endif
     }
 }

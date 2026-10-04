@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: 07_WaterSampleKit
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemData
   itemId: 07_watersamplekit
-  displayName: Water Sample Kit
-  description: 
+  displayName: Water Sampling Kit
+  description: Reads the water's pH, salinity and temperature. A gift from Amansinaya.
   itemType: 1
   regionOrigin: 0
   isKeyItem: 0
   icon: {fileID: 0}
-  worldModelPrefab: {fileID: 0}
+  worldModelPrefab: {fileID: 919132149155446097, guid: 3a19f1b34836f45f5973928ae9d8128c,
+    type: 3}
   collectSound: {fileID: 0}

@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemData
   itemId: 00_radiantconch
   displayName: Radiant Conch
-  description: 
+  description: The fisherfolk blew conches like this one to call each other home
+    across the water. A gift from Amansinaya.
   itemType: 0
   regionOrigin: 0
   isKeyItem: 1
   icon: {fileID: 0}
-  worldModelPrefab: {fileID: 0}
+  worldModelPrefab: {fileID: 6323266086554692179, guid: 280345b2e83f54020874170688c31c9e,
+    type: 3}
   collectSound: {fileID: 0}

@@ -29,11 +29,12 @@ namespace Lalim.UI
         [SerializeField] private List<Button> _slotButtons;
         [SerializeField] private List<TMP_Text> _slotTexts;
 
+        [Header("Settings")]
+        [SerializeField] private SettingsModalUI _settingsModal;
+
         [Header("Credits Sub-Menu")]
         [SerializeField] private GameObject _creditsPanel;
         [SerializeField] private Button _closeCreditsButton;
-
-        private int _pendingNewGameSlot = -1;
 
         private void Start()
         {
@@ -44,6 +45,11 @@ namespace Lalim.UI
             if (_closeLoadGameButton != null) _closeLoadGameButton.onClick.AddListener(OnLoadGameMenuClosed);
 
             if (_settingsButton != null) _settingsButton.onClick.AddListener(OnSettingsMenuOpened);
+            if (_settingsModal != null)
+            {
+                _settingsModal.gameObject.SetActive(false);
+                _settingsModal.SaveDataErased += SetupMenuState; // Play / Load buttons change once saves are gone
+            }
 
             if (_creditsButton != null) _creditsButton.onClick.AddListener(OnCreditsMenuOpened);
             if (_closeCreditsButton != null) _closeCreditsButton.onClick.AddListener(OnCreditsMenuClosed);
@@ -65,6 +71,11 @@ namespace Lalim.UI
             }
 
             SetupMenuState();
+        }
+
+        private void OnDestroy()
+        {
+            if (_settingsModal != null) _settingsModal.SaveDataErased -= SetupMenuState;
         }
 
         private void SetupMenuState()
@@ -101,17 +112,10 @@ namespace Lalim.UI
             if (_loadGameButton != null) _loadGameButton.gameObject.SetActive(hasAnySave);
         }
 
-        private void OnPlayClicked()
-        {
-            if (SaveManager.Instance != null && SaveManager.Instance.HasAnySave())
-            {
-                OnContinue();
-            }
-            else
-            {
-                OnNewGame(0); // Default to slot 0 for fresh new game
-            }
-        }
+        // The play button is labelled NEW GAME: it always starts a fresh game (loading → name input →
+        // tutorial …). Existing saves are only resumed from Load Game. Nothing is overwritten here —
+        // a new game only claims a slot once the player saves from the pause menu.
+        private void OnPlayClicked() => OnNewGame(0);
 
         private void OnNewGame(int slotIndex)
         {
@@ -119,9 +123,8 @@ namespace Lalim.UI
             
             if (SaveManager.Instance != null)
             {
-                SaveManager.Instance.DeleteSave(slotIndex); // Ensure it's clean
-                SaveManager.Instance.SetCurrentSlot(slotIndex);
-                SaveManager.Instance.SaveGame(); // Create new base save
+                // Nothing is written yet: the player picks where to save from the pause menu.
+                SaveManager.Instance.BeginNewGame(slotIndex);
             }
 
             if (SceneLoader.Instance != null)
@@ -166,6 +169,11 @@ namespace Lalim.UI
 
         private void OnSettingsMenuOpened()
         {
+            if (_settingsModal != null)
+            {
+                _settingsModal.Open(SettingsContext.MainMenu, null);
+                return;
+            }
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.ShowSettings();

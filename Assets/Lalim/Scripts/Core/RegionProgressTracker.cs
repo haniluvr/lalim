@@ -37,11 +37,18 @@ namespace Lalim.Core
         private void OnEnable()
         {
             EventBus.Subscribe<ZoneCompletedEvent>(OnZoneCompleted);
+            EventBus.Subscribe<SaveDataReplacedEvent>(OnSaveReplaced);
         }
 
         private void OnDisable()
         {
             EventBus.Unsubscribe<ZoneCompletedEvent>(OnZoneCompleted);
+            EventBus.Unsubscribe<SaveDataReplacedEvent>(OnSaveReplaced);
+        }
+
+        private void OnSaveReplaced(SaveDataReplacedEvent evt)
+        {
+            if (SaveManager.Instance != null && SaveManager.Instance.CurrentSave != null) RestoreFromSave(SaveManager.Instance.CurrentSave);
         }
 
         private void Start()
@@ -192,6 +199,8 @@ namespace Lalim.Core
 
         private void RestoreFromSave(SaveData save)
         {
+            // Replace, don't merge: a new game or another slot must not keep zones from the last one.
+            foreach (string zoneId in new List<string>(_zoneCompletion.Keys)) _zoneCompletion[zoneId] = false;
             if (save.completedZoneIds == null) return;
 
             foreach (string zoneId in save.completedZoneIds)
