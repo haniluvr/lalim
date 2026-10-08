@@ -56,7 +56,7 @@ namespace Lalim.UI
             float targetAlpha = visible ? 1f : 0f;
             if (!Mathf.Approximately(_alpha, targetAlpha))
             {
-                SetAlpha(Mathf.MoveTowards(_alpha, targetAlpha, Time.unscaledDeltaTime * _fadeSpeed));
+                SetAlpha(Mathf.MoveTowards(_alpha, targetAlpha, Lalim.Core.PauseClock.DeltaTime * _fadeSpeed));
             }
         }
 

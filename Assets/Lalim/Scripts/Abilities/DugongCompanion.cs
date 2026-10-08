@@ -9,12 +9,16 @@ namespace Lalim.Abilities
     ///
     /// States:
     ///  - Follow:      swims BESIDE the player (a couple of meters to the side), catching up smoothly.
-    ///                 While Bubble Barrier is up it tucks in closer so it's inside the bubble too.
+    ///                 While Bubble Barrier is up it tucks in closer so it's inside the bubble too,
+    ///                 and moves with the player (a Surge or Riptide can't leave it behind).
     ///                 If it falls more than 40m behind it reappears out of the camera's view.
-    ///  - Approaching: Tidebond called it; swims straight to the player (or reappears just
-    ///                 off-camera behind them first if it's far away), then mounts.
-    ///  - Mounted:     snaps so its SeatAnchor sits under the player and matches their heading.
-    ///                 The player's CharacterController does all the movement.
+    ///  - Approaching: Tidebond called it; swims straight to the player's side (or reappears just
+    ///                 off-camera behind them first if it's far away).
+    ///  - Mounted:     Tidebond — the player isn't on its back: it swims right alongside, matching
+    ///                 their heading, with the player's near hand on its flank (player on its left
+    ///                 → right hand on its left side, and the other way round). Whichever side it
+    ///                 arrived on is kept. The player's CharacterController does all the movement.
+    ///                 (The same pose can hide the player from predators in a later minigame.)
     ///  - Resting:     Tidebond ran out — swims slowly nearby for the cooldown so "the dugong
     ///                 is tired" is something the player can see.
     ///
@@ -27,7 +31,7 @@ namespace Lalim.Abilities
         public static DugongCompanion Instance { get; private set; }
 
         [Header("References")]
-        [Tooltip("Child transform where the player sits. The dugong is positioned so this lands on the player.")]
+        [Tooltip("Unused since Tidebond became swimming alongside (see the Tidebond header); kept for the gizmo.")]
         [SerializeField] private Transform _seatAnchor;
         [SerializeField] private Animator _animator;
         [SerializeField] private ParticleSystem _healVfx;
@@ -52,6 +56,17 @@ namespace Lalim.Abilities
         [Tooltip("Safety net: if the dugong hasn't arrived after this long it snaps to the player.")]
         [SerializeField] private float _approachTimeout = 2.5f;
 
+        [Header("Tidebond (hand on its side)")]
+        [Tooltip("Half the body's width at the flank the player touches, in the model's own units.")]
+        [SerializeField] private float _flankHalfWidth = 0.42f;
+        [Tooltip("Height (model units) of the touched point on the flank.")]
+        [SerializeField] private float _flankHeight = 0.85f;
+        [Tooltip("Forward offset (model units) of the touched point; negative = behind the middle.")]
+        [SerializeField] private float _flankForward = -0.1f;
+        [Tooltip("How much of the arm's length the hand reaches out (1 = fully straight).")]
+        [SerializeField, Range(0.5f, 1f)] private float _reachFraction = 0.85f;
+        [SerializeField] private float _handBlendSeconds = 0.25f;
+
         [Header("Resting")]
         [SerializeField] private float _restFollowDistance = 9f;
         [SerializeField] private float _restSpeed = 2f;
@@ -72,6 +87,19 @@ namespace Lalim.Abilities
         private float _approachTimer;
         private float _restTimer;
         private float _sideSign = 1f;
+        private Vector3 _lastPlayerPos;
+        private bool _hasLastPlayerPos;
+        private float _handWeight;
+        private Arm _rightArm, _leftArm;
+        private bool _armsResolved;
+
+        /// <summary>The diver's arm bones (generic rig, found by name).</summary>
+        private struct Arm
+        {
+            public Transform Upper, Fore, Hand;
+            public bool Valid => Upper != null && Fore != null && Hand != null;
+            public float Length => Valid ? Vector3.Distance(Upper.position, Fore.position) + Vector3.Distance(Fore.position, Hand.position) : 0f;
+        }
 
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
         private static readonly int MountedHash = Animator.StringToHash("Mounted");
@@ -123,7 +151,11 @@ namespace Lalim.Abilities
             _onArrived = onArrived;
             _approachTimer = 0f;
             _restTimer = 0f;
+            _handWeight = 0f;
             SetTired(false);
+            // Keeps the side it's on: on the player's right → the player's right hand touches it.
+            Vector3 right = Vector3.Cross(Vector3.up, FlatForward(rider));
+            _sideSign = Vector3.Dot(transform.position - rider.position, right) >= 0f ? 1f : -1f;
 
             if ((transform.position - rider.position).sqrMagnitude > teleportDistance * teleportDistance)
             {
@@ -154,6 +186,9 @@ namespace Lalim.Abilities
             _restTimer = seconds;
             SetTired(true);
         }
+
+        /// <summary>The green heal particles (Seagrass Mend copies them onto the player).</summary>
+        public ParticleSystem HealVfx => _healVfx;
 
         /// <summary>Seagrass Mend flourish: plays the heal animation/VFX. The heal itself never depends on this.</summary>
         public void PlayHeal()
@@ -189,6 +224,9 @@ namespace Lalim.Abilities
         {
             ResolvePlayer();
             if (_player == null) return;
+            Vector3 playerMoved = _hasLastPlayerPos ? _player.position - _lastPlayerPos : Vector3.zero;
+            _lastPlayerPos = _player.position;
+            _hasLastPlayerPos = true;
             if (_holdSpot != null && State != DugongState.Mounted && State != DugongState.Approaching)
             {
                 UpdateAnimSpeed(0f);   // a slow idle sway in place
@@ -197,7 +235,7 @@ namespace Lalim.Abilities
 
             switch (State)
             {
-                case DugongState.Follow: TickFollow(_followBackDistance, _maxFollowSpeed); break;
+                case DugongState.Follow: CarryInsideBarrier(playerMoved); TickFollow(_followBackDistance, _maxFollowSpeed); break;
                 case DugongState.Resting: TickResting(); break;
                 case DugongState.Approaching: TickApproach(); break;
             }
@@ -205,8 +243,13 @@ namespace Lalim.Abilities
 
         private void LateUpdate()
         {
-            // Mounted positioning runs after the player has moved this frame so there's no lag.
-            if (State == DugongState.Mounted && _player != null) SnapToSeat();
+            // Mounted positioning runs after the player has moved (and been animated) this frame,
+            // so there's no lag and the hand lands on the flank.
+            if (State == DugongState.Mounted && _player != null)
+            {
+                SnapToSeat();
+                ReachHand();
+            }
         }
 
         private void TickFollow(float backDistance, float maxSpeed)
@@ -243,6 +286,19 @@ namespace Lalim.Abilities
             // Swimming alongside: match the player's heading instead of jittering toward tiny moves.
             if (_velocity.sqrMagnitude < 1f) FaceDirection(playerFwd);
             else FaceTravelDirection();
+        }
+
+        /// <summary>
+        /// Sharing the bubble, the dugong travels with the player: a surge (8 m in a third of a
+        /// second) is faster than it can swim, so the player's own movement is applied to it too.
+        /// </summary>
+        private void CarryInsideBarrier(Vector3 playerMoved)
+        {
+            if (!InsideBarrier() || playerMoved.sqrMagnitude > 25f) return;   // > 5 m in a frame: a respawn, not a dash
+            BubbleBarrierAbility barrier = PlayerHealth.Instance.Barrier;
+            float inside = Mathf.Max(barrier.CurrentRadius, 6f) + 2f;
+            if ((transform.position - _player.position).sqrMagnitude > inside * inside) return;   // it's still catching up
+            Move(playerMoved);
         }
 
         private static bool InsideBarrier()
@@ -307,8 +363,7 @@ namespace Lalim.Abilities
         private void TickApproach()
         {
             _approachTimer += Time.deltaTime;
-            Vector3 seatOffset = _seatAnchor != null ? _seatAnchor.position - transform.position : Vector3.zero;
-            Vector3 target = _player.position - seatOffset;
+            Vector3 target = BesidePosition(transform.rotation);
             Vector3 toTarget = target - transform.position;
             float dist = toTarget.magnitude;
 
@@ -336,12 +391,64 @@ namespace Lalim.Abilities
             Vector3 heading = PlayerController.Instance != null ? PlayerController.Instance.Velocity : Vector3.zero;
             if (heading.sqrMagnitude < 0.25f) heading = FlatForward(_player);
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(heading.normalized) * Quaternion.Euler(_modelRotationOffset), 1f - Mathf.Exp(-10f * Time.deltaTime));
-
-            Vector3 seatOffset = _seatAnchor != null ? _seatAnchor.position - transform.position : Vector3.zero;
-            transform.position = _player.position - seatOffset;
+            transform.position = BesidePosition(transform.rotation);
 
             float speed = PlayerController.Instance != null ? PlayerController.Instance.Velocity.magnitude : 0f;
             UpdateAnimSpeed(speed);
+        }
+
+        // ─────────────────────────────────────────────
+        // Tidebond: alongside, hand on the flank
+        // ─────────────────────────────────────────────
+
+        /// <summary>Where the dugong goes (at <paramref name="rotation"/>) so its flank is at arm's reach of the player.</summary>
+        private Vector3 BesidePosition(Quaternion rotation)
+        {
+            ResolveArms();
+            Arm arm = _sideSign > 0f ? _rightArm : _leftArm;
+            Vector3 heading = rotation * Quaternion.Inverse(Quaternion.Euler(_modelRotationOffset)) * Vector3.forward;
+            Vector3 right = Vector3.Cross(Vector3.up, heading);
+            right = right.sqrMagnitude > 1e-4f ? right.normalized : _player.right;
+
+            Vector3 shoulder;
+            float reach;
+            if (arm.Valid) { shoulder = arm.Upper.position; reach = arm.Length * _reachFraction; }
+            else { shoulder = _player.position + Vector3.up * 0.45f; reach = 0.25f; }
+
+            Vector3 flankTarget = shoulder + right * (_sideSign * reach);
+            return flankTarget - rotation * Vector3.Scale(FlankLocal(), transform.lossyScale);
+        }
+
+        /// <summary>The touched point on the flank facing the player, in the model's own space.</summary>
+        private Vector3 FlankLocal() => new Vector3(-_sideSign * _flankHalfWidth, _flankHeight, _flankForward);
+
+        private void ReachHand()
+        {
+            _handWeight = Mathf.MoveTowards(_handWeight, 1f, Time.deltaTime / Mathf.Max(0.01f, _handBlendSeconds));
+            Arm arm = _sideSign > 0f ? _rightArm : _leftArm;
+            if (!arm.Valid) return;
+            Vector3 flank = transform.TransformPoint(FlankLocal());
+            TwoBoneIK.Solve(arm.Upper, arm.Fore, arm.Hand, flank, -Vector3.up + _player.forward * -0.3f, _handWeight);
+        }
+
+        private void ResolveArms()
+        {
+            if (_armsResolved || _player == null) return;
+            _armsResolved = true;
+            _rightArm = FindArm("R_");
+            _leftArm = FindArm("L_");
+        }
+
+        private Arm FindArm(string prefix)
+        {
+            var arm = new Arm();
+            foreach (Transform t in _player.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == prefix + "Upperarm") arm.Upper = t;
+                else if (t.name == prefix + "Forearm") arm.Fore = t;
+                else if (t.name == prefix + "Hand") arm.Hand = t;
+            }
+            return arm;
         }
 
         // ─────────────────────────────────────────────

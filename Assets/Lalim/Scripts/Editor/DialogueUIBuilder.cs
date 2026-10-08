@@ -10,7 +10,7 @@ namespace Lalim.EditorTools
     /// Builds the dialogue UI under a dialogue canvas:
     ///  - DialoguePanel: the long box (NPC / Player sprite), name in the shaded strip
     ///    (top-left for NPCs, top-right for the player), text starting from the left;
-    ///  - ReviewOverlay: full-screen dark log (NPC lines left, player lines right);
+    ///  - ReviewOverlay: full-screen dark log (every line from the left);
     ///  - DialogueHUD: Review, Auto, Speed (number in the circle), Pause — top-left, in that order.
     /// Replaces the old two-layout panel; leaves an already-built new panel alone.
     /// </summary>

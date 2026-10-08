@@ -20,7 +20,7 @@ namespace Lalim.Challenges.GhostNet
     /// under a torn hole sized to it (small, long or large), but the net's inner knots have been
     /// dragged out of place so ropes cross over the holes. DRAG the glowing knots; once nothing
     /// crosses the room an animal needs, it fits through and swims free into the "Freed Ocean
-    /// Friends" tray (and the codex). When every animal is free, SWIPE UP to haul the net away.
+    /// Friends" tray. When every animal is free, SWIPE UP to haul the net away.
     ///
     /// DDA knobs: animals (3–7), scramble (how many knots start out of place), hints.
     /// DDA reporting: a knot move that removes crossings or frees an animal = correct action.
@@ -52,6 +52,14 @@ namespace Lalim.Challenges.GhostNet
         [SerializeField] private Material _knotMaterial;
         [SerializeField] private TMP_FontAsset _titleFont;
         [SerializeField] private TMP_FontAsset _bodyFont;
+
+        [Header("Sound")]
+        [Tooltip("Grabbing a knot to drag the rope.")]
+        [SerializeField] private AudioClip _ropeDragClip;
+        [Tooltip("The net hauled up and away.")]
+        [SerializeField] private AudioClip _netLiftClip;
+        [Tooltip("An animal slipping free (once, even if several get out together).")]
+        [SerializeField] private AudioClip _freedClip;
 
         [Header("Layout (metres)")]
         [SerializeField, Min(0.4f)] private float _cellSize = 0.9f;
@@ -319,6 +327,7 @@ namespace Lalim.Challenges.GhostNet
             NetPuzzle.Hole hole = _puzzle.Holes[index];
             GameObject go = s.model != null ? Instantiate(s.model) : GameObject.CreatePrimitive(PrimitiveType.Capsule);
             go.name = $"Trapped_{s.id}";
+            if (s.model != null) CreatureRig.Play(go, s.model.name, true);   // struggling in the net: its idle
             foreach (Collider c in go.GetComponentsInChildren<Collider>()) Destroy(c);
             Vector3 size = ModelSize(go);
             float scale = AnimalLength(s.fit) / Mathf.Max(0.001f, Mathf.Max(size.x, size.z));
@@ -363,6 +372,7 @@ namespace Lalim.Challenges.GhostNet
                 _grabbed = NearestKnot(p);
                 if (_grabbed >= 0)
                 {
+                    GameAudio.PlayFlat(_ropeDragClip);
                     _crossingsAtGrab = _puzzle.TotalCrossings();
                     ChallengeManager.Instance?.ReportPlayerAction();
                     Redraw();
@@ -438,8 +448,7 @@ namespace Lalim.Challenges.GhostNet
 
         private void RefreshHints()
         {
-            int left = ChallengeManager.Instance != null && ChallengeManager.Instance.IsChallengeActive ? ChallengeManager.Instance.HintsRemaining : HintBudget;
-            _ui?.SetHints(left);
+            _ui?.SetHints(HintBulb.Remaining(HintBudget));
         }
 
         private void UpdateStatus()
@@ -465,6 +474,7 @@ namespace Lalim.Challenges.GhostNet
                 any = true;
                 StartCoroutine(FreeAnimal(a));
             }
+            if (any) GameAudio.PlayFlat(_freedClip);
             if (any && Array.TrueForAll(_freed, f => f))
             {
                 _hauling = true;
@@ -486,6 +496,7 @@ namespace Lalim.Challenges.GhostNet
             GameObject animal = _animalObjects[a];
             if (animal == null) yield break;
             Destroy(animal.GetComponent<Struggle>());
+            if (s.model != null) CreatureRig.Play(animal, s.model.name, false);   // and it swims off
             Transform tr = animal.transform;
             Vector3 start = tr.position;
             Vector3 away = start - _root.position;
@@ -524,6 +535,7 @@ namespace Lalim.Challenges.GhostNet
 
         private IEnumerator Haul()
         {
+            GameAudio.PlayFlat(_netLiftClip);
             _ui.ShowSwipeHint(false);
             UpdateStatus();
             Vector3 start = _root.position;
@@ -704,6 +716,13 @@ namespace Lalim.Challenges.GhostNet
             _sceneProps = sceneProps;
         }
 
+        public void EditorSetupSounds(AudioClip ropeDrag, AudioClip netLift, AudioClip freed)
+        {
+            _ropeDragClip = ropeDrag;
+            _netLiftClip = netLift;
+            _freedClip = freed;
+        }
+
         public void EditorSetupLook(Material rope, Material tangled, Material knot, TMP_FontAsset titleFont, TMP_FontAsset bodyFont, List<Species> species)
         {
             _ropeMaterial = rope;
@@ -735,12 +754,11 @@ namespace Lalim.Challenges.GhostNet
         /// </summary>
         private class NetUI : MonoBehaviour
         {
-            private const float CardWidth = 860f, CardHeight = 118f, BulbZone = 118f;
+            private const float CardWidth = 860f, CardHeight = 118f, BulbZone = HintBulb.CardZone;
 
-            private TMP_Text _status, _badgeText;
-            private RectTransform _barFill, _swipe, _badge;
-            private Image _bulb;
-            private Button _hintButton;
+            private TMP_Text _status;
+            private RectTransform _barFill, _swipe;
+            private HintBulb _hints;
             private readonly List<RectTransform> _slots = new List<RectTransform>();
             private readonly List<Image> _slotFill = new List<Image>();
             private readonly List<TMP_Text> _slotMark = new List<TMP_Text>();
@@ -772,31 +790,13 @@ namespace Lalim.Challenges.GhostNet
                 // ── Glass card ──
                 RectTransform card = Rect("Card", transform, new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(CardWidth, CardHeight));
                 card.pivot = new Vector2(0.5f, 1f);
+                Lalim.UI.ZoneBannerUI.Avoid(card);   // warnings drop below the card
                 Sliced(card, "Fill", GlassSprites.Rounded, new Color(0.06f, 0.22f, 0.32f, 0.62f), 0.75f);
                 Sliced(card, "Sheen", GlassSprites.RoundedSheen, new Color(1f, 1f, 1f, 0.9f), 0.75f);
                 Sliced(card, "Rim", GlassSprites.RoundedOutline, new Color(0.78f, 0.96f, 1f, 0.55f), 0.75f);
 
                 // Hint bulb, flush with the card's left edge, split off by a hairline.
-                RectTransform zone = Rect("HintButton", card, new Vector2(0f, 0.5f), new Vector2(BulbZone * 0.5f, 0f), new Vector2(BulbZone, CardHeight));
-                var hit = zone.gameObject.AddComponent<Image>();
-                hit.color = new Color(1f, 1f, 1f, 0f);
-                _hintButton = zone.gameObject.AddComponent<Button>();
-                _hintButton.transition = Selectable.Transition.None;
-                _hintButton.onClick.AddListener(() => onHint?.Invoke());
-                RectTransform icon = Rect("Bulb", zone, new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(62f, 62f));
-                _bulb = icon.gameObject.AddComponent<Image>();
-                _bulb.sprite = GlassSprites.Bulb;
-                _bulb.raycastTarget = false;
-                _badge = Rect("Count", zone, new Vector2(0.5f, 0.5f), new Vector2(26f, 24f), new Vector2(32f, 32f));
-                var badgeImg = _badge.gameObject.AddComponent<Image>();
-                badgeImg.sprite = GlassSprites.Circle;
-                badgeImg.color = new Color(0.55f, 1f, 0.75f, 0.95f);
-                badgeImg.raycastTarget = false;
-                _badgeText = Text(_badge, "", 20f, _title, new Color(0.03f, 0.14f, 0.2f), new Vector2(32f, 32f));
-                RectTransform divider = Rect("Divider", card, new Vector2(0f, 0.5f), new Vector2(BulbZone, 0f), new Vector2(2f, CardHeight - 36f));
-                var div = divider.gameObject.AddComponent<Image>();
-                div.color = new Color(0.78f, 0.96f, 1f, 0.28f);
-                div.raycastTarget = false;
+                _hints = HintBulb.AttachToCard(card, CardHeight, onHint, _title);
 
                 // Progress bar + one hint line, centred in the rest of the card.
                 float content = (CardWidth - BulbZone) * 0.5f + BulbZone - CardWidth * 0.5f;
@@ -815,14 +815,12 @@ namespace Lalim.Challenges.GhostNet
                 _status = Text(Rect("Hint", card, new Vector2(0.5f, 0.5f), new Vector2(content, -26f), new Vector2(700f, 40f)),
                                "", 28f, _body, new Color(1f, 1f, 1f, 0.88f), new Vector2(700f, 40f));
 
-                // ── Freed Ocean Friends tray ──
-                Text(Rect("TrayLabel", transform, new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(800f, 40f)),
-                     "FREED OCEAN FRIENDS", 24f, _body, new Color(0.85f, 1f, 0.97f, 0.9f), new Vector2(800f, 40f)).characterSpacing = 6f;
+                // ── Freed animals tray (no label: the portraits speak for themselves) ──
                 float spacing = 140f;
                 for (int i = 0; i < animals; i++)
                 {
                     float x = (i - (animals - 1) * 0.5f) * spacing;
-                    RectTransform slot = Rect($"Slot{i}", transform, new Vector2(0.5f, 0f), new Vector2(x, 132f), new Vector2(116f, 116f));
+                    RectTransform slot = Rect($"Slot{i}", transform, new Vector2(0.5f, 0f), new Vector2(x, 196f), new Vector2(116f, 116f));   // clear of the HP / swim bar / shells
                     var back = slot.gameObject.AddComponent<Image>();
                     back.sprite = GlassSprites.Circle;
                     back.color = new Color(0.06f, 0.22f, 0.32f, 0.55f);
@@ -857,13 +855,7 @@ namespace Lalim.Challenges.GhostNet
 
             public void SetProgress(float value) => _barFill.anchorMax = new Vector2(Mathf.Clamp01(value), 1f);
 
-            public void SetHints(int left)
-            {
-                _badgeText.text = left.ToString();
-                _badge.gameObject.SetActive(left > 0);
-                _hintButton.interactable = left > 0;
-                _bulb.color = left > 0 ? new Color(1f, 0.93f, 0.55f, 1f) : new Color(1f, 1f, 1f, 0.3f);
-            }
+            public void SetHints(int left) => _hints.SetHints(left);
 
             public void Reveal(int slot, Texture portrait, string name)
             {
@@ -880,14 +872,14 @@ namespace Lalim.Challenges.GhostNet
                     _slotMark[slot].text = name;
                     _slotMark[slot].fontSize = 18f;
                 }
-                _revealedAt[slot] = Time.unscaledTime;
+                _revealedAt[slot] = Lalim.Core.PauseClock.Time;
             }
 
             public void ShowSwipeHint(bool on) => _swipe.gameObject.SetActive(on);
 
             private void Update()
             {
-                float now = Time.unscaledTime;
+                float now = Lalim.Core.PauseClock.Time;
                 for (int i = 0; i < _slots.Count; i++)
                 {
                     if (_revealedAt[i] < 0f) continue;

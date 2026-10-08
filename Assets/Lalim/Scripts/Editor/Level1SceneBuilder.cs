@@ -181,15 +181,23 @@ namespace Lalim.EditorTools
             trash.EditorSetupTrash(env, z1.ToxicVolume.GetComponent<Collider>());
             trash.EditorSetupProfile(profiles["TrashCollection"]);
             z1Steps.Add(trash);
-            var sort = Step<SegregationStep>(z1, "03_Sorting", "luzon_z1_sort", "Lay each piece in its rightful bowl.");
+            // After the trash the player swims back and talks: Amansinaya hands over the kit (1st reward).
+            var trashTalk = Step<DialogueStep>(z1, "03_TrashDoneTalk", "luzon_z1_trash_talk", "Return to Amansinaya.");
+            trashTalk.EditorSetupDialogue(DialogueStep.Kind.Talk, Level1DialogueScripts.BarkTrashDone);
+            trashTalk.EditorSetBoxOpen(false);
+            z1Steps.Add(trashTalk);
+            z1Steps.Add(Grant(z1, "04_WaterKit", "luzon_z1_kit", WaterKitId, "Tool Received", "Water Sampling Kit"));   // listed in the Quest Complete toast
+            var sort = Step<SegregationStep>(z1, "05_Sorting", "luzon_z1_sort", "Lay each piece in its rightful bowl.");
             sort.EditorSetupSegregation(altar, trash, stand);
             sort.EditorSetupProfile(profiles["Sorting"]);
+            sort.EditorSetStation(EnsureSortStation(sort, stand));
+            altar.EditorSetFonts(AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>("Assets/Lalim/Fonts/PlusJakartaSans-ExtraBold SDF Padded.asset"),
+                                 AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>("Assets/Lalim/Fonts/PlusJakartaSans-Medium SDF Padded.asset"));
             z1Steps.Add(sort);
-            z1Steps.Add(Level1RelicRewards.EnsureStep(z1, Level1RelicRewards.Zones[0]));
-            z1Steps.Add(Dialogue(z1, "05_Closing", "luzon_z1_closing", DialogueStep.Kind.Closing, null));
-            z1Steps.Add(Grant(z1, "06_WaterKit", "luzon_z1_kit", WaterKitId, "Tool Received", "Water Sampling Kit"));
-            z1Steps.Add(Cleanse(z1, "07_Cleanse", "luzon_z1_cleanse", "Quest Complete", "Amansinaya's shallows are clean again"));
-            z1Steps.Add(Unlock(z1, "08_Gate", "luzon_z1_gate", zone2Barrier, null));
+            z1Steps.Add(Level1RelicRewards.EnsureStep(z1, Level1RelicRewards.Zones[0]));   // the relic: 2nd reward
+            z1Steps.Add(Dialogue(z1, "07_Closing", "luzon_z1_closing", DialogueStep.Kind.Closing, null));
+            z1Steps.Add(Cleanse(z1, "08_Cleanse", "luzon_z1_cleanse", "Quest Complete", "Amansinaya's shallows are clean again"));
+            z1Steps.Add(Unlock(z1, "09_Gate", "luzon_z1_gate", zone2Barrier, null));
 
             var z2Steps = new List<QuestStep>();
             z2Steps.Add(Step<TalkStep>(z2, "01_Talk", "luzon_z2_talk", "Find Haik in the canyon."));
@@ -197,8 +205,12 @@ namespace Lalim.EditorTools
                 "Water", "Tap to use Water Sampling Kit", ChallengeType.WaterSampling, WaterKitId, "Water reading");
             InstallWaterCalibration(waterStep, profiles["WaterCalibration"], report);
             z2Steps.Add(waterStep);
-            z2Steps.Add(Dialogue(z2, "03_ReadingsDone", "luzon_z2_readings_bark", DialogueStep.Kind.Bark, Level1DialogueScripts.BarkReadingsDone));
-            z2Steps.Add(Grant(z2, "04_CoralSeed", "luzon_z2_seed", CoralSeedId, "Tool Received", "Coral Seed", announceWithQuestComplete: false));
+            // After the readings the player swims back and talks (as with Amansinaya after the trash).
+            var readingsTalk = Step<DialogueStep>(z2, "03_ReadingsDone", "luzon_z2_readings_bark", "Return to Haik.");
+            readingsTalk.EditorSetupDialogue(DialogueStep.Kind.Talk, Level1DialogueScripts.BarkReadingsDone);
+            readingsTalk.EditorSetBoxOpen(false);
+            z2Steps.Add(readingsTalk);
+            z2Steps.Add(Grant(z2, "04_CoralSeed", "luzon_z2_seed", CoralSeedId, "Tool Received", "Coral Seed"));   // listed in the Quest Complete toast
             var coralStep = Areas(z2, "05_CoralReplanting", "luzon_z2_coral", "Clear the dead ground and plant coral at all three places.", z2Areas, keys,
                 "Coral", "Prepare the site", ChallengeType.CoralReplanting, CoralSeedId, "Coral replanting");
             InstallCoralSitePrep(coralStep, profiles["CoralSitePrep"], report);
@@ -1196,6 +1208,14 @@ namespace Lalim.EditorTools
             int updated = ReplaceOldLines(router, quest, barks);
             if (updated > 0) report.AppendLine($"Updated {updated} {deity} line(s).");
 
+            // Barks added since the first install (e.g. Amansinaya's "trash_done" talk).
+            foreach (StatueDialogueRouter.NamedLines bark in barks)
+            {
+                if (router.GetBark(bark.key) != null) continue;
+                router.EditorSetBark(bark.key, bark.lines);
+                report.AppendLine($"Added {deity}'s '{bark.key}' lines.");
+            }
+
             EditorUtility.SetDirty(router);
             return router;
         }
@@ -1206,6 +1226,7 @@ namespace Lalim.EditorTools
             "Hold the needles steady, then tell me what is wrong. Only a true reading can guide a true course.",
             "Now you see the storm. Sour water, wrong salt, fevered heat. No coral could live in this.",
             "Take these seeds. Clear the dead ground at each place you tested, then plant them where the rock is clean.",
+            "Then lay each piece in its rightful bowl. What is sorted truly can be made new again. Go, and be quick. The poison does not wait.",
         };
 
         private static int ReplaceOldLines(StatueDialogueRouter router, List<DialogueLine> quest, List<StatueDialogueRouter.NamedLines> barks)
@@ -1428,6 +1449,30 @@ namespace Lalim.EditorTools
             }
             step.EditorSetupStations(stations);
             return step;
+        }
+
+        // The altar's interact point: the sorting starts when the player taps it (glow ring on the sand).
+        private static SortingStation EnsureSortStation(SegregationStep sort, Transform stand)
+        {
+            GameObject go = FindOrCreate("SortStation", sort.transform);
+            // Low over the sand in front of the bowls, so its button sits at the diver's height.
+            if (go.GetComponent<SortingStation>() == null && stand != null)
+            {
+                Vector3 p = stand.position;
+                if (Physics.Raycast(p + Vector3.up * 20f, Vector3.down, out RaycastHit sand, 60f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) p.y = sand.point.y + 1.2f;
+                go.transform.position = p;
+            }
+            go.layer = LayerMask.NameToLayer(GameConstants.Layers.INTERACTABLE);
+            SphereCollider col = Add<SphereCollider>(go);
+            col.isTrigger = true;
+            col.radius = StationReach;
+            GameObject marker = EnsureMarker(go.transform);
+            Transform ring = marker.transform.Find("Ring");
+            if (ring != null && Physics.Raycast(go.transform.position + Vector3.up * 20f, Vector3.down, out RaycastHit ground, 60f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                ring.position = new Vector3(ring.position.x, ground.point.y + 0.08f, ring.position.z);
+            SortingStation station = Add<SortingStation>(go);
+            station.EditorSetup("Sort the trash", marker);
+            return station;
         }
 
         private const float StationReach = 4f;

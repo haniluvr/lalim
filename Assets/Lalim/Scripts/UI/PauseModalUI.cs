@@ -97,6 +97,7 @@ namespace Lalim.UI
 
         private void OnDestroy()
         {
+            if (IsOpen) PauseClock.SetPaused(false);
             if (Instance == this) Instance = null;
         }
 
@@ -155,6 +156,7 @@ namespace Lalim.UI
         private void ShowPausePanel()
         {
             IsOpen = true;
+            PauseClock.SetPaused(true);   // the HUD freezes behind the menu too
             SetRootVisible(true);
             if (_statusText != null) _statusText.text = "";
             ShowOnly(_pausePanel);
@@ -163,6 +165,7 @@ namespace Lalim.UI
         private void HideAll()
         {
             IsOpen = false;
+            PauseClock.SetPaused(false);
             SetActive(_pausePanel, false);
             SetActive(_slotsPanel, false);
             SetActive(_confirmPanel, false);

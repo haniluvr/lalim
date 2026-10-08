@@ -166,6 +166,11 @@ namespace Lalim.Core
             public const string RADIANT_CONCH = "00_radiantconch";            // Amansinaya
             public const string COMPASS = "01_compass";                       // Haik
             public const string WOVEN_NET_FRAGMENT = "02_wovennetfragment";   // Neguno
+
+            // Level 2 (Visayas) rewards
+            public const string MOONTIDE = "10_moontide";                     // Manunubo — reveals the tides/currents that carry the player (ability not built yet)
+            public const string KATAW_GIFT = "11_katawgift";                  // Kataw — placeholder, reward not decided yet
+            public const string PEARL_OF_LUMINESCENCE = "12_pearlofluminescence"; // Bakunawa
         }
 
         // ─────────────────────────────────────────────
@@ -217,11 +222,15 @@ namespace Lalim.Core
             public const int RIPTIDE_COST_ORBS = 0; // basic skill: cooldown only, never costs stamina
             public const float RIPTIDE_SPEED_MULTIPLIER = 1.75f;
 
+            // Swim stamina: the bar surges charge and Riptide spends (SwimStaminaPool).
+            public const int SWIM_STAMINA_SEGMENTS = 6;
+            public const float RIPTIDE_SECONDS_PER_SEGMENT = 10f;
+
             public const int SPIRIT_SENSE_COST_ORBS = 1;
             public const float SPIRIT_SENSE_DURATION = 15f;
 
             public const float TIDEBOND_FATIGUE_SECONDS = 45f;
-            public const float TIDEBOND_COOLDOWN = 30f;
+            public const float TIDEBOND_COOLDOWN = 7f;
             public const int TIDEBOND_COST_ORBS = 2;
             public const float TIDEBOND_SPEED_MULTIPLIER = 2.25f;
 

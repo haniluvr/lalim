@@ -24,7 +24,7 @@ namespace Lalim.UI
         {
             if (_rawImage != null)
             {
-                _uvRect.position += _scrollSpeed * Time.unscaledDeltaTime;
+                _uvRect.position += _scrollSpeed * Lalim.Core.PauseClock.DeltaTime;
                 _rawImage.uvRect = _uvRect;
             }
         }

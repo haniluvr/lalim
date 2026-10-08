@@ -207,7 +207,7 @@ namespace Lalim.UI
             float t = 0f;
             while (t < 1f)
             {
-                t += Time.unscaledDeltaTime / _toggleSeconds;
+                t += Lalim.Core.PauseClock.DeltaTime / _toggleSeconds;
                 float e = 1f - Mathf.Pow(1f - Mathf.Clamp01(t), 3f);
                 ApplyBox(Mathf.Lerp(from, to, e));
                 yield return null;

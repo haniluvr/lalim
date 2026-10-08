@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afed891bff989402fb0a71a8b8e4cba6, type: 3}
+  m_Name: SfxLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Core.SfxLibrary
+  entries:
+  - cue: 0
+    clip: {fileID: 8300000, guid: fa6ed9e596580440093f98d7aa5cd638, type: 3}
+    volume: 1
+  - cue: 1
+    clip: {fileID: 8300000, guid: 41f2ff91a78974817bbabc7945b5f5ed, type: 3}
+    volume: 1
+  - cue: 2
+    clip: {fileID: 8300000, guid: 8d972554971184982ae3d5009aa11a32, type: 3}
+    volume: 1
+  - cue: 3
+    clip: {fileID: 8300000, guid: af9692207b9d04565b44e75d60b55e15, type: 3}
+    volume: 1
+  - cue: 4
+    clip: {fileID: 8300000, guid: c1c84811e56e8427f89e584e28b9074e, type: 3}
+    volume: 1
+  - cue: 5
+    clip: {fileID: 8300000, guid: 822d4425808724509b5ad53579ae2ec7, type: 3}
+    volume: 1
+  - cue: 6
+    clip: {fileID: 8300000, guid: 96ef7bfa2fa254489b962896cd7093c1, type: 3}
+    volume: 1
+  - cue: 7
+    clip: {fileID: 8300000, guid: 360da6a8ef5214a17ace683b2ecc2699, type: 3}
+    volume: 1
+  - cue: 8
+    clip: {fileID: 8300000, guid: 1cc031d0ccfe44054842810608b1c311, type: 3}
+    volume: 1
+  - cue: 9
+    clip: {fileID: 8300000, guid: ad818521cfeb841059865dbffabeda64, type: 3}
+    volume: 1
+  - cue: 10
+    clip: {fileID: 8300000, guid: 1332889bbe24c4c6187a4c4b322bfb6f, type: 3}
+    volume: 1
+  - cue: 11
+    clip: {fileID: 8300000, guid: 92d49679fccf449bba7b4d8f388614a9, type: 3}
+    volume: 1
+  - cue: 12
+    clip: {fileID: 8300000, guid: deb5e06270ad04f3a889b79da0f9099d, type: 3}
+    volume: 1

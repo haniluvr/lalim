@@ -37,6 +37,13 @@ namespace Lalim.Mechanics
             [Tooltip("Marine life that returns once the zone's look reaches its threshold.")]
             public List<TieredObject> life = new List<TieredObject>();
 
+            [Header("Optional: this zone's own clean water (else the scene's fog)")]
+            public bool overrideCleanFog;
+            public Color cleanFogColor = new Color(0f, 0.35f, 0.65f);
+            [Min(0f)] public float cleanFogDensity = 0.015f;
+            [Tooltip("Scales the depth fog's density here: above 1 = murkier, shorter visibility.")]
+            [Min(0.05f)] public float depthFogScale = 1f;
+
             // Cached at Awake: the bounds collider is the zone's toxic volume, which is disabled
             // once the zone is cleansed (a disabled collider reports empty bounds).
             [NonSerialized] public Bounds cachedBounds;
@@ -92,6 +99,9 @@ namespace Lalim.Mechanics
 
         private Color _cleanFogColor;
         private float _cleanFogDensity;
+        private Color _sceneFogColor;
+        private float _sceneFogDensity;
+        private float _depthFogScale = 1f;
         private Volume _volume;
         private readonly Dictionary<Light, float> _lightBase = new Dictionary<Light, float>();
         private readonly Dictionary<ParticleSystem, float> _murkBase = new Dictionary<ParticleSystem, float>();
@@ -111,6 +121,8 @@ namespace Lalim.Mechanics
 
             _cleanFogColor = RenderSettings.fogColor;
             _cleanFogDensity = RenderSettings.fogDensity;
+            _sceneFogColor = _cleanFogColor;
+            _sceneFogDensity = _cleanFogDensity;
             _mpb = new MaterialPropertyBlock();
 
             foreach (Light l in _lights) if (l != null) _lightBase[l] = l.intensity;
@@ -126,6 +138,7 @@ namespace Lalim.Mechanics
 
         private void OnDestroy()
         {
+            UnderwaterDepthFog.ZoneDensityScale = 1f;
             if (Instance == this) Instance = null;
             if (_volume != null && _volume.profile != null) Destroy(_volume.profile);
         }
@@ -147,6 +160,7 @@ namespace Lalim.Mechanics
             _level = _levelTarget;
             RecomputeZoneLooks();
             _playerLook = LookAtPlayer();
+            BlendCleanWater(instant: true);
             ApplyAll(force: true);
             _initialised = true;
         }
@@ -179,7 +193,38 @@ namespace Lalim.Mechanics
             }
             RecomputeZoneLooks();
             _playerLook = Mathf.MoveTowards(_playerLook, LookAtPlayer(), Time.deltaTime / _zoneBlendSeconds);
+            BlendCleanWater(instant: false);
             ApplyAll(force: false);
+        }
+
+        /// <summary>
+        /// Eases the clean water colour, fog density and depth-fog scale toward the zone the player
+        /// is in (zones without an override use the scene's own fog).
+        /// </summary>
+        private void BlendCleanWater(bool instant)
+        {
+            Color color = _sceneFogColor;
+            float density = _sceneFogDensity;
+            float scale = 1f;
+            PlayerController player = PlayerController.Instance;
+            if (player != null)
+            {
+                Vector3 p = player.transform.position;
+                foreach (ZoneLook z in _zones)
+                {
+                    if (!z.overrideCleanFog || z.cachedBounds.size == Vector3.zero || !z.cachedBounds.Contains(p)) continue;
+                    color = z.cleanFogColor;
+                    density = z.cleanFogDensity;
+                    scale = z.depthFogScale;
+                    break;
+                }
+            }
+
+            float t = instant ? 1f : Mathf.Clamp01(Time.deltaTime / _zoneBlendSeconds);
+            _cleanFogColor = Color.Lerp(_cleanFogColor, color, t);
+            _cleanFogDensity = Mathf.Lerp(_cleanFogDensity, density, t);
+            _depthFogScale = Mathf.Lerp(_depthFogScale, scale, t);
+            UnderwaterDepthFog.ZoneDensityScale = _depthFogScale;
         }
 
         private void RecomputeZoneLooks()

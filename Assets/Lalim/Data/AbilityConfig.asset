@@ -37,7 +37,7 @@ MonoBehaviour:
   spiritSenseExplorationRadius: 40
   spiritSenseWispTriggerDistance: 40
   tidebondFatigueSeconds: 45
-  tidebondCooldown: 30
+  tidebondCooldown: 7
   tidebondCostOrbs: 2
   tidebondSpeedMultiplier: 2.25
   dugongRecallTeleportDistance: 25

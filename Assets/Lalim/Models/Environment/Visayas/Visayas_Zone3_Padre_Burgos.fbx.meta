@@ -1,0 +1,384 @@
+fileFormatVersion: 2
+guid: cc9a66d1350eb49a6aa587bc75558ab9
+ModelImporter:
+  serializedVersion: 24501
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral
+    second: {fileID: 2100000, guid: 36fc7fdb5710845099005ae37b1897a6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.001
+    second: {fileID: 2100000, guid: fe3f1a1baf7794041816ce5d40f1dcd8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.002
+    second: {fileID: 2100000, guid: e9e03772e91ea44ffba399c7b9a388b9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.003
+    second: {fileID: 2100000, guid: 99038eb6868274036a81e8bcc1643fe3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.004
+    second: {fileID: 2100000, guid: 7430d0d99f201416389523e221dba72d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.005
+    second: {fileID: 2100000, guid: 95cd120069c3b4a57a3e8c30d799aa87, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Glow_Cyan
+    second: {fileID: 2100000, guid: bc1a7d41f08704ce9b7fa54317b5923b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_SeaFan_Orange
+    second: {fileID: 2100000, guid: 892d61ea612f74fc98562d71580ef769, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_SeaFan_Pink
+    second: {fileID: 2100000, guid: 57e210816454749c0a42386979549841, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_SeaFan_Purple
+    second: {fileID: 2100000, guid: 56ffed7a1f19b4583b837adcb275603e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_SeaFan_Red
+    second: {fileID: 2100000, guid: 0c55b0416c004490a992826925746982, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Seahorse_Coral
+    second: {fileID: 2100000, guid: 1af9a0cd1e44c43aa9ae4f4515ee83f3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Seahorse_Gold
+    second: {fileID: 2100000, guid: 421d4ae36f3ab4272975da2b1b81393f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Seahorse_Violet
+    second: {fileID: 2100000, guid: 9147f8fcafe704080a35cddfbe470e43, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Staghorn_Lime
+    second: {fileID: 2100000, guid: 61be19ae0b8e443788b0ba31b7f066b3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Staghorn_Pink
+    second: {fileID: 2100000, guid: 898b16030f05b4dc48245b9f8a26c465, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Staghorn_Tan
+    second: {fileID: 2100000, guid: a787c34361ef24f11a38a74619dcfd3e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Staghorn_Violet
+    second: {fileID: 2100000, guid: b3e5c60b6d4ff4937bef5bf9e27e54f2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Table_Blue
+    second: {fileID: 2100000, guid: b77f2869e89fe461b843b91a66813092, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Table_Gold
+    second: {fileID: 2100000, guid: 656d226cbeae34d528a210eb6a3e91cf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Table_Pink
+    second: {fileID: 2100000, guid: 7f173df9b9a11487dad4ff21b977fb05, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_Table_Teal
+    second: {fileID: 2100000, guid: 0483fdc88d4364f1e9fd7eec0bb64316, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_TubeSponge_Cyan
+    second: {fileID: 2100000, guid: b4da58c5248df47bda53e66cd6014947, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_TubeSponge_Lime
+    second: {fileID: 2100000, guid: f4003087098a048f1a21b24d54693119, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_TubeSponge_Magenta
+    second: {fileID: 2100000, guid: 42b3de542d793442b8e09d33ab48294a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_TubeSponge_Orange
+    second: {fileID: 2100000, guid: 755263712cf8e4f998ab8488e96aa9cb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Volcanic
+    second: {fileID: 2100000, guid: aa25f99dfb3074ef481afd81bd454669, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z2_0
+    second: {fileID: 2100000, guid: 925d991729a6d4d25bb21647c7ac3d0b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z2_1
+    second: {fileID: 2100000, guid: 1001c744971c442e2a447d3c8ced13b2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z3_0
+    second: {fileID: 2100000, guid: 5aeff8c44328743b1be9b4f197495963, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z3_1
+    second: {fileID: 2100000, guid: 2b57de8f5b12149669dc4b11d3d735f7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z3_2
+    second: {fileID: 2100000, guid: 05c2fc4367b6d417fbbba201c82655df, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Anemone
+    second: {fileID: 2100000, guid: 3f82eeed31bc9456c97967f946a83c67, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Cluster_A
+    second: {fileID: 2100000, guid: 753f31e88ff0a41158f9ef7138815412, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Cluster_B
+    second: {fileID: 2100000, guid: b8b606fb5c97a4b10b9752fcbb881fba, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_1
+    second: {fileID: 2100000, guid: 35b539162e8174ab8943e137b3bc046b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_2
+    second: {fileID: 2100000, guid: f136a163614584cc998ca5e2d70b8b6e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_2B
+    second: {fileID: 2100000, guid: 9ba8636a2e28b41d3a1d5db32d45d749, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Funnel
+    second: {fileID: 2100000, guid: f6940ba33e2e9491b9c69b71118b4c00, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_A
+    second: {fileID: 2100000, guid: cb6adf97485874b6d817969960401c76, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_B1
+    second: {fileID: 2100000, guid: 53fc903322ac145d49003180fe9af0a7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_2
+    second: {fileID: 2100000, guid: c2132045177e84033b8f2f6a430311d1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_2b
+    second: {fileID: 2100000, guid: ddc41fc2a25234f0aa522014c62c86f7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_3
+    second: {fileID: 2100000, guid: 6d49e4113b648412281598bd29bbd2fd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_3b
+    second: {fileID: 2100000, guid: e5558900f7f0b4522b9dd7bfc0a17785, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Urchins
+    second: {fileID: 2100000, guid: e0787047db64d43dbaa90b719ea5c6c6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Whale_Ribs_A
+    second: {fileID: 2100000, guid: dfaa2af2f08334e239487f34f85d67ae, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Whale_Ribs_B
+    second: {fileID: 2100000, guid: 5749671b948cb43d1a7cbfb21af5d664, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Whale_Skull
+    second: {fileID: 2100000, guid: daf749b96e268479ba3fa9c04210595f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Whale_Spine
+    second: {fileID: 2100000, guid: bb02d06bd06b8443099d5f2336eae758, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Sand_Black
+    second: {fileID: 2100000, guid: aa5cea790d46d47bd845a747369a2a62, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_WhaleShark_Top
+    second: {fileID: 2100000, guid: 66fa678423c144d8497d1948fd9549cf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Turtle.001
+    second: {fileID: 2100000, guid: 12796cc7c15bb4edfa0e7a88f2cf556d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: TurtleShell.001
+    second: {fileID: 2100000, guid: d3d3bc21006ed4058b9209df8605c905, type: 2}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+    searchTexturesGlobally: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    importUVs: -1
+    importVertexColors: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

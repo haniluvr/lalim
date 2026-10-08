@@ -17,7 +17,8 @@ namespace Lalim.EditorTools
     ///  - The pickup pool is 25 single pieces (the hard-difficulty count): plastic bottles, plastic
     ///    bags, glass bottles and cans, each typed so the sorting altar matches what it looks like.
     ///  - Every piece lies flat on open sand inside zone 1: not under or inside coral, rocks or
-    ///    overhangs, spread out, away from the statue and altar.
+    ///    overhangs, spread out, away from the statue and altar — and only down in the zone's low
+    ///    basin (the pit), never up on the raised rim at the edge of the map or on its slopes.
     ///
     /// Re-running re-places the same pool (Undo-able). Nothing outside zone 1 is touched.
     /// </summary>
@@ -48,6 +49,9 @@ namespace Lalim.EditorTools
         private const float StatueClearance = 9f;
         private const float AltarClearance = 6f;
         private const float EdgeMargin = 6f;
+        private const float BasinTolerance = 1.2f;   // how far above the basin floor still counts as the pit
+        // Everything this far around a spot must be pit too, so nothing lies on the slope up to the rim.
+        private const float SlopeProbe = 6f;
 
         [MenuItem("Tools/Lalim/Level 1/Scatter Zone 1 Trash")]
         public static void ScatterMenu() => Debug.Log(Scatter(seed: 20261002));
@@ -113,6 +117,9 @@ namespace Lalim.EditorTools
             // Pieces being placed must not block their own raycasts.
             foreach (var p in pool) p.go.SetActive(false);
 
+            float basinTop = BasinFloor(minX, maxX, minZ, maxZ) + BasinTolerance;
+            report.AppendLine($"Zone 1's pit: seabed below {basinTop:0.0} m.");
+
             var rng = new System.Random(seed);
             var placed = new List<Vector3>();
             var spots = new List<RaycastHit>();
@@ -124,6 +131,7 @@ namespace Lalim.EditorTools
                 float z = Mathf.Lerp(minZ, maxZ, (float)rng.NextDouble());
                 if (!OpenSand(new Vector3(x, map.Max.y - 1f, z), map, blockers, out RaycastHit hit)) continue;
                 Vector3 pnt = hit.point;
+                if (!InPit(pnt, basinTop, map)) continue;
                 if (Flat(pnt - statue) < StatueClearance) continue;
                 if (altar != null && Flat(pnt - altar.position) < AltarClearance) continue;
                 bool crowded = false;
@@ -178,6 +186,41 @@ namespace Lalim.EditorTools
             var room = new Bounds(hit.point + Vector3.up * 0.8f, new Vector3(ClearRadius * 2f, 1.6f, ClearRadius * 2f));
             foreach (Bounds b in blockers) if (b.Intersects(room)) return false;
             return true;
+        }
+
+        // The basin floor: the typical low seabed height in zone 1 (a quarter of the samples are lower).
+        private static float BasinFloor(float minX, float maxX, float minZ, float maxZ)
+        {
+            var heights = new List<float>();
+            for (float x = minX; x <= maxX; x += 4f)
+                for (float z = minZ; z <= maxZ; z += 4f)
+                    if (SeabedAt(x, z, out float y)) heights.Add(y);
+            if (heights.Count == 0) return float.MaxValue;
+            heights.Sort();
+            return heights[heights.Count / 4];
+        }
+
+        private static bool InPit(Vector3 p, float basinTop, UnderwaterBounds map)
+        {
+            if (p.y > basinTop) return false;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 d = Quaternion.Euler(0f, i * 45f, 0f) * Vector3.forward * SlopeProbe;
+                if (!SeabedAt(p.x + d.x, p.z + d.z, out float y) || y > basinTop + 0.5f) return false;
+            }
+            return true;
+        }
+
+        private static bool SeabedAt(float x, float z, out float y)
+        {
+            y = 0f;
+            foreach (RaycastHit h in Physics.RaycastAll(new Vector3(x, 80f, z), Vector3.down, 300f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (!IsSeabed(h.collider)) continue;
+                y = h.point.y;
+                return true;
+            }
+            return false;
         }
 
         private static bool IsSeabed(Collider c)

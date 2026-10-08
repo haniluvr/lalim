@@ -12,9 +12,9 @@ namespace Lalim.UI
     /// Pointer down/up feed InputManager's held state exactly like the Shift key, so
     /// AbilityController resolves tap vs hold the same way for keyboard and touch.
     ///
-    /// The icon never changes. Surge's cooldown shows on the overlay + countdown, and the charge
-    /// ring fills while a hold is building up. Riptide's remaining time is shown on the thin line
-    /// under the HP bar (RiptideTimerUI), not on the button.
+    /// The icon never changes. The shared Surge/Riptide cooldown shows on the overlay + countdown,
+    /// and the charge ring fills while a hold is building up. The swim stamina both spend is the
+    /// segmented line under the HP bar (RiptideTimerUI), not on the button.
     /// </summary>
     public class SurgeRiptideButton : AbilityButtonUI
     {

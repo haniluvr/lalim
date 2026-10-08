@@ -9,14 +9,18 @@ using Lalim.Mechanics.Quest;
 namespace Lalim.Challenges
 {
     /// <summary>
-    /// Zone 2, minigame 1 — water level readings at one area (first person), on the "Sea Sensors"
-    /// panel (WaterSensorsUI).
+    /// Zone 2, minigame 1 — water level readings at one area (first person), on the "Water
+    /// Sampling Kit" panel (WaterSensorsUI).
     ///
     /// Three arc gauges (pH, Salinity, Temp) each have a needle sweeping back and forth: tap the
-    /// gauge's STOP while its needle is in the green band to lock it. The needle then settles on
-    /// the area's real reading ("8.1 · Normal"). With all three locked, tap COMPLETE.
+    /// gauge's STOP while its needle is in the green band to lock it. The needle stays exactly
+    /// where it was stopped and the area's reading shows ("8.1 · Normal"). With all three locked,
+    /// tap COMPLETE.
     /// DDA knobs: band width, sweep speed (bandSpeed), speed wobble (needleNoise), and how long a
     /// missed STOP stays locked out (lockDrain, in seconds).
+    ///
+    /// A hint (the bulb on the panel) glides the next unlocked needle into its green band and locks it.
+    /// DDA knob "hints" sets how many (default 2).
     ///
     /// DDA reporting: every STOP tap is a player action; the first lock is the first correct action;
     /// a STOP outside the band is an error. One task per locked gauge (the last on COMPLETE).
@@ -38,7 +42,7 @@ namespace Lalim.Challenges
         [SerializeField] private MinigameDifficultyProfile _profile;
         [SerializeField] private GameObject _kitModel;
 
-        [Header("Sea Sensors panel")]
+        [Header("Water Sampling Kit panel")]
         [SerializeField] private TMP_FontAsset _titleFont;
         [SerializeField] private TMP_FontAsset _bodyFont;
         [SerializeField] private Sprite _handIcon;
@@ -51,7 +55,7 @@ namespace Lalim.Challenges
         public int TaskCount => 3;
         public float ExpectedSeconds => _profile != null ? _profile.expectedSeconds : 60f;
         public float ExpectedFirstActionSeconds => _profile != null ? _profile.expectedFirstActionSeconds : 5f;
-        public int HintBudget => 0;
+        public int HintBudget => _profile != null && _profile.Has(Level1DifficultyKnobs.Hints) ? Mathf.Max(0, _profile.GetInt(Level1DifficultyKnobs.Hints)) : 2;
 
         private MinigameStage _stage;
         private AreaStation _station;
@@ -114,7 +118,7 @@ namespace Lalim.Challenges
             var lockoutUntil = new float[3];
             var band = new Vector2[3];
 
-            _ui.SetSubtitle($"Water Sampling Kit · {_areaLabel}");
+            _ui.SetSubtitle("Tap STOP when the needle is in the green to take each reading.");
             for (int i = 0; i < 3; i++)
             {
                 Param p = order[i];
@@ -136,6 +140,12 @@ namespace Lalim.Challenges
             _ui.StopPressed += i => pressed = i;
             bool complete = false;
             _ui.CompletePressed += () => complete = true;
+            bool hint = false;
+            _ui.HintPressed += () => hint = true;
+            _ui.SetHints(Lalim.UI.HintBulb.Remaining(HintBudget));
+            int gliding = -1;            // a hint is easing this needle into its band
+            float glideFrom = 0f, glideT = 0f;
+            const float GlideSeconds = 0.5f;
 
             int lockedCount = 0;
             bool firstLock = true;
@@ -144,9 +154,40 @@ namespace Lalim.Challenges
             {
                 float dt = Time.deltaTime;
                 t += dt;
+                // A hint: the next unlocked needle glides to the middle of its band and locks.
+                if (hint)
+                {
+                    hint = false;
+                    int next = -1;
+                    for (int i = 0; i < 3 && next < 0; i++) if (!locked[i]) next = i;
+                    if (gliding < 0 && next >= 0 && ChallengeManager.Instance != null && ChallengeManager.Instance.UseHint())
+                    {
+                        gliding = next;
+                        glideFrom = needle[next];
+                        glideT = 0f;
+                    }
+                    _ui.SetHints(Lalim.UI.HintBulb.Remaining(HintBudget));
+                }
+                if (gliding >= 0)
+                {
+                    int i = gliding;
+                    glideT += dt / GlideSeconds;
+                    needle[i] = Mathf.Lerp(glideFrom, (band[i].x + band[i].y) * 0.5f, Mathf.SmoothStep(0f, 1f, glideT));
+                    _ui.SetNeedle(i, needle[i]);
+                    if (glideT >= 1f)
+                    {
+                        gliding = -1;
+                        locked[i] = true;
+                        lockedCount++;
+                        Lalim.Core.Sfx.Play(Lalim.Core.SfxCue.Correct);
+                        Settle(i, needle[i], order[i]);
+                        if (lockedCount < 3) ChallengeManager.Instance?.ReportTaskCompleted();
+                    }
+                }
+
                 for (int i = 0; i < 3; i++)
                 {
-                    if (locked[i]) continue;
+                    if (locked[i] || i == gliding) continue;
                     // Ping-pong sweep; the speed wobbles a little so the rhythm can't just be counted.
                     float v = speed * (1f + wobble * 1.5f * Mathf.Sin(t * 2.3f + seed[i]) + i * 0.08f);
                     needle[i] += dir[i] * v * dt;
@@ -162,7 +203,7 @@ namespace Lalim.Challenges
                 {
                     int i = pressed;
                     pressed = -1;
-                    if (!locked[i] && Time.time >= lockoutUntil[i])
+                    if (!locked[i] && i != gliding && Time.time >= lockoutUntil[i])
                     {
                         ChallengeManager.Instance?.ReportPlayerAction();
                         if (needle[i] >= band[i].x && needle[i] <= band[i].y)
@@ -170,12 +211,14 @@ namespace Lalim.Challenges
                             locked[i] = true;
                             lockedCount++;
                             if (firstLock) { firstLock = false; ChallengeManager.Instance?.ReportCorrectAction(); }
-                            StartCoroutine(Settle(i, needle[i], order[i]));
+                            Lalim.Core.Sfx.Play(Lalim.Core.SfxCue.Correct);
+                            Settle(i, needle[i], order[i]);
                             if (lockedCount < 3) ChallengeManager.Instance?.ReportTaskCompleted();
                         }
                         else
                         {
                             ChallengeManager.Instance?.ReportError();
+                            Lalim.Core.Sfx.Play(Lalim.Core.SfxCue.Wrong);
                             lockoutUntil[i] = Time.time + missLockout;
                             _ui.Miss(i, missLockout);
                         }
@@ -188,6 +231,7 @@ namespace Lalim.Challenges
 
             // All three read: COMPLETE (or Enter/Space in the editor) reports the last task → Stop().
             _ui.SetCompleteReady();
+            _ui.SetHints(0);   // nothing left to hint
             while (!complete && !Input.GetKeyDown(KeyCode.Return) && !Input.GetKeyDown(KeyCode.Space))
             {
                 t += Time.deltaTime;
@@ -197,19 +241,12 @@ namespace Lalim.Challenges
             ChallengeManager.Instance?.ReportTaskCompleted();
         }
 
-        /// <summary>The stopped needle glides to the area's actual reading, which is then shown.</summary>
-        private IEnumerator Settle(int i, float from, Param p)
+        /// <summary>The stopped needle stays put; the area's reading is shown under the gauge.</summary>
+        private void Settle(int i, float at, Param p)
         {
             float value = ValueOf(p);
-            Vector2 scale = ScaleOf(p);
-            float to = Mathf.InverseLerp(scale.x, scale.y, value);
             _ui.Lock(i, $"{Tick(p, value)}{(p == Param.Salinity ? " ppt" : p == Param.Temperature ? "°C" : "")} · {StatusOf(p, value)}", IsNormal(p, value));
-            for (float k = 0f; k < 1f; k += Time.deltaTime / 0.6f)
-            {
-                _ui.SetNeedle(i, Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, k)));
-                yield return null;
-            }
-            _ui.SetNeedle(i, to);
+            _ui.SetNeedle(i, at);
         }
 
         // ───────────────────────── Data ─────────────────────────

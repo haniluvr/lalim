@@ -36,7 +36,7 @@ namespace Lalim.Mechanics
 
         [Header("Third-Person Spring Arm")]
         [Tooltip("Arm length: how far behind the pivot the camera trails.")]
-        [SerializeField] private float _orbitDistance = 2.5f;
+        [SerializeField] private float _orbitDistance = 4.7f;
         [Tooltip("Pivot height above the player's origin (about shoulder height).")]
         [SerializeField] private float _orbitHeight = 1.0f;
         [Tooltip("Offset at the end of the arm, in camera space (x = right, y = up). Slightly above the shoulders.")]
@@ -197,6 +197,31 @@ namespace Lalim.Mechanics
 
         public bool HasShot => _shot != null;
 
+        private float _shakeAmplitude;
+        private float _shakeUntil;
+        private float _shakeLength = 1f;
+        private float _shakeSeed;
+
+        /// <summary>A short jolt (a bite, an impact). Stronger calls win; it fades out over <paramref name="seconds"/>.</summary>
+        public void Shake(float amplitude, float seconds)
+        {
+            float remaining = Mathf.Max(0f, _shakeUntil - Time.time) / Mathf.Max(0.01f, _shakeLength) * _shakeAmplitude;
+            if (amplitude < remaining) return;
+            _shakeAmplitude = amplitude;
+            _shakeLength = Mathf.Max(0.05f, seconds);
+            _shakeUntil = Time.time + _shakeLength;
+            _shakeSeed = UnityEngine.Random.value * 100f;
+        }
+
+        private void ApplyShake()
+        {
+            if (Time.time >= _shakeUntil || Time.timeScale <= 0f) return;
+            float k = (_shakeUntil - Time.time) / _shakeLength;
+            float t = Time.time * 28f;
+            Vector3 offset = new Vector3(Mathf.PerlinNoise(_shakeSeed, t) - 0.5f, Mathf.PerlinNoise(t, _shakeSeed) - 0.5f, 0f) * 2f * _shakeAmplitude * k * k;
+            transform.position += transform.rotation * offset;
+        }
+
         private void LateUpdate()
         {
             if (_playerTarget == null) return;
@@ -229,6 +254,7 @@ namespace Lalim.Mechanics
                         break;
                 }
             }
+            ApplyShake();
         }
 
         // ─────────────────────────────────────────────
@@ -243,6 +269,10 @@ namespace Lalim.Mechanics
             float extraTarget = 0f;
             foreach (float d in _extraDistanceRequests.Values) extraTarget = Mathf.Max(extraTarget, d);
             _currentExtraDistance = Mathf.MoveTowards(_currentExtraDistance, extraTarget, _extraDistanceSpeed * Time.deltaTime);
+
+            // First-person minigames: the view is fixed on the work — no swiping or gyro look (a
+            // drag there moves pieces, it must never pan the camera).
+            if (InFirstPerson) return;
 
             // Player settings: look speed and inverted vertical look.
             GameSettings settings = SettingsManager.Active;
@@ -410,6 +440,20 @@ namespace Lalim.Mechanics
         /// <summary>
         /// Switch camera mode with smooth transition.
         /// </summary>
+        /// <summary>In (or going into) first person — the camera is fixed then.</summary>
+        public bool InFirstPerson =>
+            CurrentMode == CameraMode.FirstPerson || (_isTransitioning && _transitionTargetMode == CameraMode.FirstPerson)
+            || (ChallengeManager.Instance != null && ChallengeManager.Instance.IsFirstPersonChallengeActive);
+
+        /// <summary>Cuts straight to first person (behind a fade), with no camera swoop.</summary>
+        public void SnapToFirstPerson()
+        {
+            _isTransitioning = false;
+            CurrentMode = CameraMode.FirstPerson;
+            SetBodyVisible(false);
+            SnapToCurrentMode();
+        }
+
         public void SwitchMode(CameraMode newMode)
         {
             if (CurrentMode == newMode && !_isTransitioning) return;
@@ -531,14 +575,30 @@ namespace Lalim.Mechanics
             SwitchMode(evt.Perspective == ChallengePerspective.ThirdPerson ? CameraMode.ThirdPerson : CameraMode.FirstPerson);
         }
 
-        private void OnChallengeCompleted(ChallengeCompletedEvent evt)
+        private void OnChallengeCompleted(ChallengeCompletedEvent evt) => LeaveFirstPerson();
+
+        private void OnChallengeFailed(ChallengeFailedEvent evt) => LeaveFirstPerson();
+
+        // Out of a first-person minigame through black (as into it), back behind the diver.
+        // (Area minigames hand the camera back themselves — MinigameStage — while this is off.)
+        private void LeaveFirstPerson()
         {
-            SwitchMode(CameraMode.ThirdPerson);
+            bool firstPerson = CurrentMode == CameraMode.FirstPerson || (_isTransitioning && _transitionTargetMode == CameraMode.FirstPerson);
+            if (!isActiveAndEnabled || !firstPerson) { SwitchMode(CameraMode.ThirdPerson); return; }
+            StartCoroutine(FadeToThirdPerson());
         }
 
-        private void OnChallengeFailed(ChallengeFailedEvent evt)
+        private System.Collections.IEnumerator FadeToThirdPerson()
         {
-            SwitchMode(CameraMode.ThirdPerson);
+            Lalim.UI.ScreenFader fader = Lalim.UI.ScreenFader.Instance;
+            yield return fader.FadeOut(0.2f);
+            _isTransitioning = false;
+            CurrentMode = CameraMode.ThirdPerson;
+            SetBodyVisible(true);
+            SyncHeadingToPlayer();
+            _verticalAngle = 10f;
+            SnapToCurrentMode();
+            yield return fader.FadeIn(0.3f);
         }
     }
 }

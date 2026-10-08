@@ -39,8 +39,8 @@ namespace Lalim.Abilities
         [SerializeField] private float _minVisualRadius = 0.9f;
         [Tooltip("Rough radius of the player's body, used when wrapping the bubble around player + dugong.")]
         [SerializeField] private float _playerBodyRadius = 0.9f;
-        [Tooltip("How far the camera eases back while the bubble is up, so it's seen from outside.")]
-        [SerializeField] private float _cameraPullBack = 2.2f;
+        [Tooltip("How far the camera eases back while the bubble is up. 0: the normal orbit distance (4.7 m) already sees the bubble from outside.")]
+        [SerializeField] private float _cameraPullBack = 0f;
         [SerializeField] private float _radiusLerpSpeed = 4f;
         [SerializeField] private AudioClip _raiseSfx;
         [SerializeField] private AudioClip _popHitSfx;

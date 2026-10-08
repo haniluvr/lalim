@@ -96,6 +96,16 @@ namespace Lalim.Abilities
             if (Current <= 0f) Exhaust();
         }
 
+        public bool IsAtFullHealth => Current >= Max - 0.01f;
+
+        /// <summary>Seagrass Mend heals the dugong alongside the player.</summary>
+        public void Heal(float amount)
+        {
+            if (amount <= 0f) return;
+            Current = Mathf.Min(Max, Current + amount);
+            if (IsExhausted && Normalized >= RecoverFraction) IsExhausted = false;
+        }
+
         /// <summary>Resuming a save: the dugong's health back to where it was.</summary>
         public void RestoreCurrent(float hp, bool exhausted)
         {

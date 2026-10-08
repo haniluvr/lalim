@@ -33,6 +33,16 @@ namespace Lalim.UI
         private readonly Queue<string> _queue = new Queue<string>();
         private bool _playing;
 
+        // On-screen cards (minigame instructions) the banner must not cover: it drops just below them.
+        private static readonly List<RectTransform> Avoided = new List<RectTransform>();
+        private const float AvoidGap = 16f;
+
+        /// <summary>Keep banners below this card while it's on screen (e.g. a minigame's instruction card).</summary>
+        public static void Avoid(RectTransform card)
+        {
+            if (card != null && !Avoided.Contains(card)) Avoided.Add(card);
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(this); return; }
@@ -70,7 +80,7 @@ namespace Lalim.UI
                 Layout(_text.text);
                 yield return Fade(0f, 1f);
                 // A toast arriving mid-banner cuts it short.
-                for (float t = 0f; t < _holdSeconds && !ActToastUI.IsBusy; t += Time.unscaledDeltaTime) yield return null;
+                for (float t = 0f; t < _holdSeconds && !ActToastUI.IsBusy; t += Lalim.Core.PauseClock.DeltaTime) yield return null;
                 yield return Fade(1f, 0f);
             }
             _playing = false;
@@ -81,7 +91,7 @@ namespace Lalim.UI
             float t = 0f;
             while (t < _fadeSeconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += Lalim.Core.PauseClock.DeltaTime;
                 _group.alpha = Mathf.Lerp(from, to, t / _fadeSeconds);
                 yield return null;
             }
@@ -125,7 +135,31 @@ namespace Lalim.UI
             card.anchorMin = card.anchorMax = new Vector2(0.5f, 1f);
             card.pivot = new Vector2(0.5f, 1f);
             card.sizeDelta = new Vector2(cardWidth, Mathf.Max(84f, textHeight + PadY * 2f));
-            card.anchoredPosition = new Vector2(x - centre, -TopMargin);
+            card.anchoredPosition = new Vector2(x - centre, -TopBelowAvoided(canvasRt, cam));
+        }
+
+        // Distance from the top of the screen to place the banner: the usual margin, or just under
+        // the lowest on-screen card it has been asked to avoid.
+        private static float TopBelowAvoided(RectTransform canvasRt, Camera cam)
+        {
+            float top = TopMargin;
+            var corners = new Vector3[4];
+            for (int i = Avoided.Count - 1; i >= 0; i--)
+            {
+                RectTransform r = Avoided[i];
+                if (r == null) { Avoided.RemoveAt(i); continue; }
+                if (!r.gameObject.activeInHierarchy) continue;
+                CanvasGroup g = r.GetComponentInParent<CanvasGroup>();
+                if (g != null && g.alpha < 0.05f) continue;
+                Canvas c = r.GetComponentInParent<Canvas>();
+                if (c == null) continue;
+                Camera rCam = c.rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : c.rootCanvas.worldCamera;
+                r.GetWorldCorners(corners);   // 0 = bottom-left
+                Vector2 screen = RectTransformUtility.WorldToScreenPoint(rCam, corners[0]);
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRt, screen, cam, out Vector2 local))
+                    top = Mathf.Max(top, canvasRt.rect.yMax - local.y + AvoidGap);
+            }
+            return top;
         }
 
         private void BuildDefault()

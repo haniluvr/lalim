@@ -24,7 +24,9 @@ namespace Lalim.Challenges
     /// (Level1SceneBuilder.PlaceCoralSitesOnFlatGround), so nothing sinks into a slope.
     ///
     /// Tasks: one per skeleton + one for the algae + one for planting.
-    /// A small glass card at the top shows a progress bar and one hint: what's left to do next.
+    /// A small glass card at the top shows a progress bar and one line: what's left to do next.
+    /// A hint (the bulb on the card) does the next job for the player: clears the rest of the
+    /// algae, or chisels away one whole skeleton. DDA knob "hints" sets how many (default 2).
     /// </summary>
     public class CoralSitePrepMinigame : MonoBehaviour, IAreaMinigame
     {
@@ -34,6 +36,10 @@ namespace Lalim.Challenges
         [Tooltip("Living coral prefabs, kept in their own colours: the decoys, the planted coral and the bloom.")]
         [SerializeField] private GameObject[] _livingModels;
         [SerializeField] private GameObject _seedModel;
+        [Tooltip("Size of the Coral Seed once it lands in the socket (metres).")]
+        [SerializeField, Min(0.05f)] private float _seedSize = 0.45f;
+        [Tooltip("Played on every tap on a dead skeleton.")]
+        [SerializeField] private AudioClip _chiselClip;
         [Tooltip("URP Unlit with alpha clipping: the brushed-away parts of the algae simply vanish.")]
         [SerializeField] private Material _algaeMaterial;
 
@@ -70,7 +76,7 @@ namespace Lalim.Challenges
         public int TaskCount => Skeletons + 2;
         public float ExpectedSeconds => _profile != null ? _profile.expectedSeconds : 45f;
         public float ExpectedFirstActionSeconds => _profile != null ? _profile.expectedFirstActionSeconds : 5f;
-        public int HintBudget => 0;
+        public int HintBudget => _profile != null && _profile.Has(Level1DifficultyKnobs.Hints) ? Mathf.Max(0, _profile.GetInt(Level1DifficultyKnobs.Hints)) : 2;
 
         private int Skeletons => _profile != null && _profile.Has(Level1DifficultyKnobs.Skeletons) ? Mathf.Max(1, _profile.GetInt(Level1DifficultyKnobs.Skeletons)) : 3;
 
@@ -88,6 +94,7 @@ namespace Lalim.Challenges
         private GameObject _grownCoral;
         private TMP_Text _hint;
         private RectTransform _barFill;
+        private HintBulb _hints;
         private GameObject _statusCanvas;
         private Transform _topView;
         private int _tapsPerSkeleton = 4;
@@ -451,6 +458,7 @@ namespace Lalim.Challenges
         private void Chisel(Collider skeleton)
         {
             ChallengeManager.Instance?.ReportCorrectAction();
+            Lalim.Core.GameAudio.PlayFlat(_chiselClip);
             int hp = --_skeletonHp[skeleton];
             Transform t = skeleton.transform;
             StartCoroutine(Shake(t, 0.12f));
@@ -472,6 +480,7 @@ namespace Lalim.Challenges
         private void HitDecoy(Collider decoy)
         {
             ChallengeManager.Instance?.ReportError();
+            Lalim.Core.Sfx.Play(Lalim.Core.SfxCue.Wrong);
             StartCoroutine(Shake(decoy.transform, 0.25f));
             if (Time.time >= _nextDecoyWarning)
             {
@@ -485,24 +494,79 @@ namespace Lalim.Challenges
             if (!_algaeDone || _skeletonHp.Count > 0 || _socket == null) return;
             _socket.gameObject.SetActive(true);
             UpdateStatus();
+            RefreshHints();
+        }
+
+        // ───────────────────────── Hints ─────────────────────────
+
+        /// <summary>What the card asks for next is done for the player: the algae first, then one skeleton.</summary>
+        private void UseHint()
+        {
+            bool algae = !_algaeDone;
+            Collider skeleton = null;
+            foreach (Collider c in _skeletonHp.Keys) { skeleton = c; break; }
+            if (!_ready || _planted || (!algae && skeleton == null) || ChallengeManager.Instance == null || !ChallengeManager.Instance.UseHint())
+            {
+                RefreshHints();
+                return;
+            }
+            if (algae)
+            {
+                _clearedPixels = _totalPixels;
+                _algaeDone = true;
+                StartCoroutine(DissolveAlgae());
+                ChallengeManager.Instance.ReportTaskCompleted();
+            }
+            else
+            {
+                Transform t = skeleton.transform;
+                _skeletonHp.Remove(skeleton);
+                Burst(t.position, _bleachedColor, 24);
+                Destroy(skeleton.gameObject);
+                ChallengeManager.Instance.ReportTaskCompleted();
+            }
+            UpdateStatus();
+            CheckSiteClean();
+            RefreshHints();
+        }
+
+        // Nothing left to hint once the seed's spot is showing.
+        private void RefreshHints()
+        {
+            if (_hints == null) return;
+            bool hintable = !_planted && (!_algaeDone || _skeletonHp.Count > 0);
+            _hints.SetHints(hintable ? HintBulb.Remaining(HintBudget) : 0);
         }
 
         private IEnumerator Plant()
         {
             _planted = true;
+            RefreshHints();
+            Lalim.Core.Sfx.Play(Lalim.Core.SfxCue.ItemPickup);   // the seed set into the rock
             _socket.gameObject.SetActive(false);
             UpdateStatus();
 
             if (_seedModel != null)
             {
-                GameObject seed = Instantiate(_seedModel, _socket.transform.position + Vector3.up * 0.8f, Quaternion.identity, _site);
-                NormaliseSize(seed, 0.25f);
-                Vector3 start = seed.transform.position, end = _socket.transform.position + Vector3.up * 0.05f;
-                for (float t = 0f; t < 0.7f; t += Time.deltaTime)
+                // Dropped from the middle of the view: it starts between the camera and the socket
+                // (so it sits dead centre on screen) and falls, speeding up, into the rock.
+                Vector3 end = _socket.transform.position + Vector3.up * 0.05f;
+                Camera cam = _stage.Camera;
+                Vector3 start = cam != null ? Vector3.Lerp(end, cam.transform.position, 0.55f) : end + Vector3.up * 1.5f;
+                GameObject seed = Instantiate(_seedModel, start, Quaternion.identity, _site);
+                foreach (Collider c in seed.GetComponentsInChildren<Collider>()) Destroy(c);
+                NormaliseSize(seed, _seedSize);
+                const float fall = 0.75f;
+                for (float t = 0f; t < fall; t += Time.deltaTime)
                 {
-                    seed.transform.position = Vector3.Lerp(start, end, Mathf.SmoothStep(0f, 1f, t / 0.7f));
+                    float k = t / fall;
+                    seed.transform.position = Vector3.Lerp(start, end, k * k);   // gravity: slow, then fast
+                    seed.transform.Rotate(Vector3.up, 220f * Time.deltaTime, Space.World);
                     yield return null;
                 }
+                seed.transform.position = end;
+                Burst(end, new Color(0.45f, 1f, 0.9f), 14);
+                yield return Squash(seed.transform, 0.18f);
                 Destroy(seed);
             }
 
@@ -557,6 +621,19 @@ namespace Lalim.Challenges
             if (!HasLiving) Paint(go, color);   // the real prefabs keep their own colours
             go.AddComponent<Sway>();
             return go;
+        }
+
+        /// <summary>A little squash as the seed lands.</summary>
+        private static IEnumerator Squash(Transform t, float seconds)
+        {
+            Vector3 full = t.localScale;
+            for (float e = 0f; e < seconds && t != null; e += Time.deltaTime)
+            {
+                float k = Mathf.Sin(e / seconds * Mathf.PI) * 0.25f;
+                t.localScale = Vector3.Scale(full, new Vector3(1f + k, 1f - k, 1f + k));
+                yield return null;
+            }
+            if (t != null) t.localScale = full;
         }
 
         private static IEnumerator Grow(Transform t, float seconds)
@@ -726,7 +803,7 @@ namespace Lalim.Challenges
 
         private void BuildStatus()
         {
-            _statusCanvas = new GameObject("[CoralSiteHud]", typeof(Canvas), typeof(CanvasScaler));
+            _statusCanvas = new GameObject("[CoralSiteHud]", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             _statusCanvas.transform.SetParent(transform, false);
             var canvas = _statusCanvas.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -736,15 +813,19 @@ namespace Lalim.Challenges
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.matchWidthOrHeight = 1f;
 
-            RectTransform card = UiRect("Card", _statusCanvas.transform, new Vector2(0f, -36f), new Vector2(760f, 118f));
+            float bulb = HintBulb.CardZone, x = bulb * 0.5f;   // content sits right of the bulb
+            RectTransform card = UiRect("Card", _statusCanvas.transform, new Vector2(0f, -36f), new Vector2(760f + bulb, 118f));
             card.anchorMin = card.anchorMax = new Vector2(0.5f, 1f);
             card.pivot = new Vector2(0.5f, 1f);
+            ZoneBannerUI.Avoid(card);   // the "that coral is alive" warning drops below the card
             UiSliced(card, "Fill", GlassSprites.Rounded, new Color(0.06f, 0.22f, 0.32f, 0.62f), 0.75f);
             UiSliced(card, "Sheen", GlassSprites.RoundedSheen, new Color(1f, 1f, 1f, 0.9f), 0.75f);
             UiSliced(card, "Rim", GlassSprites.RoundedOutline, new Color(0.78f, 0.96f, 1f, 0.55f), 0.75f);
+            _hints = HintBulb.AttachToCard(card, 118f, UseHint, _hintFont);
+            RefreshHints();
 
             // Progress bar: a soft track with a mint fill that grows from the left.
-            RectTransform track = UiRect("Track", card, new Vector2(0f, 18f), new Vector2(640f, 22f));
+            RectTransform track = UiRect("Track", card, new Vector2(x, 18f), new Vector2(640f, 22f));
             UiSliced(track, "Back", GlassSprites.Rounded, new Color(1f, 1f, 1f, 0.16f), 0.22f);
             _barFill = UiRect("Fill", track, Vector2.zero, Vector2.zero);
             _barFill.anchorMin = Vector2.zero;
@@ -757,7 +838,7 @@ namespace Lalim.Challenges
             fill.color = new Color(0.55f, 1f, 0.75f, 0.95f);
             fill.raycastTarget = false;
 
-            RectTransform hintRt = UiRect("Hint", card, new Vector2(0f, -26f), new Vector2(720f, 40f));
+            RectTransform hintRt = UiRect("Hint", card, new Vector2(x, -26f), new Vector2(720f, 40f));
             _hint = hintRt.gameObject.AddComponent<TextMeshProUGUI>();
             if (_hintFont != null) _hint.font = _hintFont;
             _hint.fontSize = 28f;
@@ -819,6 +900,8 @@ namespace Lalim.Challenges
             _coralModels = skeletonShapes;
             _livingModels = livingModels;
         }
+
+        public void EditorSetupChiselClip(AudioClip clip) => _chiselClip = clip;
 
         public void EditorSetupLook(Material algaeMaterial, TMP_FontAsset hintFont, GameObject platformRock)
         {

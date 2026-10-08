@@ -502,9 +502,22 @@ namespace Lalim.EditorTools
             foreach (Transform t in scene.transform)
             {
                 if (!t.name.StartsWith("Creature_") || t.name.Contains("Trapped")) continue;
-                if (t.GetComponent<WanderingMarineAnimal>() != null) continue;
                 Swim? swim = null;
                 foreach (Swim sw in CreatureSwims) if (t.name.Contains("_" + sw.kind + "_")) { swim = sw; break; }
+
+                // A "Fish" group is several fish placed together: they swim as a school, each on
+                // its own (moving the group as one piece spun them around each other).
+                if (swim != null && swim.Value.kind == "Fish")
+                {
+                    if (t.GetComponent<MarineSchool>() != null) continue;
+                    var old = t.GetComponent<WanderingMarineAnimal>();
+                    if (old != null) Undo.DestroyObjectImmediate(old);
+                    var school = Undo.AddComponent<MarineSchool>(t.gameObject);
+                    school.EditorSetupAdopt(swim.Value.radius, swim.Value.speed, swim.Value.low, swim.Value.high);
+                    count++;
+                    continue;
+                }
+                if (t.GetComponent<WanderingMarineAnimal>() != null) continue;
                 MeshFilter mf = t.GetComponentInChildren<MeshFilter>();
                 if (swim == null || mf == null || mf.sharedMesh == null) continue;
 

@@ -22,13 +22,16 @@ namespace Lalim.UI
 
         [Header("HUD Action Buttons")]
         [SerializeField] private Button _settingsButton;
-        [SerializeField] private Button _navigationButton;
-        [SerializeField] private Button _codexButton;
         [SerializeField] private Button _inventoryButton;
 
-        [Header("Modals")]
-        [SerializeField] private MapModalUI _mapModal;
-        [SerializeField] private CodexModalUI _codexModal;
+        [Header("Inventory window and relic buttons (built at runtime)")]
+        [SerializeField] private TMP_FontAsset _titleFont;
+        [SerializeField] private TMP_FontAsset _bodyFont;
+        [Tooltip("The equipped relic's HUD button background (the relic's own icon goes on top).")]
+        [SerializeField] private Sprite _relicButtonSprite;
+
+        public TMP_FontAsset TitleFont => _titleFont;
+        public TMP_FontAsset BodyFont => _bodyFont;
 
         [Header("Challenge Timer")]
         [SerializeField] private GameObject _timerGroup;
@@ -71,10 +74,69 @@ namespace Lalim.UI
         private void Awake()
         {
             Instance = this;
+            // The vitals (HP bar, swim bar, shells) stay up during minigames — HP keeps draining,
+            // so it works like a timer there. They get their own groups that ignore the HUD's.
+            foreach (Component c in GetComponentsInChildren<HealthBarUI>(true)) AddVitals(c.gameObject);
+            foreach (Component c in GetComponentsInChildren<StaminaOrbsUI>(true)) AddVitals(c.gameObject);
+            foreach (Component c in GetComponentsInChildren<RiptideTimerUI>(true)) MoveToVitalsCanvas(c.transform);
         }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            if (_vitalsCanvas != null) Destroy(_vitalsCanvas);
+        }
+
+        private readonly System.Collections.Generic.List<CanvasGroup> _vitals = new System.Collections.Generic.List<CanvasGroup>();
+
+        /// <summary>
+        /// Unity skips drawing a whole canvas whose own CanvasGroup is at alpha 0 — ignoreParentGroups
+        /// can't save children from that. So the vitals move to a sibling overlay canvas with the same
+        /// scaling, drawn above the minigame screens (40–60) and below the zone banner (80) and pause (100).
+        /// </summary>
+        private const int VitalsSortingOrder = 70;
+        private GameObject _vitalsCanvas;
+
+        private void MoveToVitalsCanvas(Transform vital)
+        {
+            if (_vitalsCanvas == null)
+            {
+                _vitalsCanvas = new GameObject("[HUDVitals]", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+                _vitalsCanvas.transform.SetParent(transform.parent, false);
+                var canvas = _vitalsCanvas.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = VitalsSortingOrder;
+                CanvasScaler mine = GetComponent<CanvasScaler>(), scaler = _vitalsCanvas.GetComponent<CanvasScaler>();
+                if (mine != null)
+                {
+                    scaler.uiScaleMode = mine.uiScaleMode;
+                    scaler.referenceResolution = mine.referenceResolution;
+                    scaler.screenMatchMode = mine.screenMatchMode;
+                    scaler.matchWidthOrHeight = mine.matchWidthOrHeight;
+                    scaler.scaleFactor = mine.scaleFactor;
+                    scaler.referencePixelsPerUnit = mine.referencePixelsPerUnit;
+                }
+            }
+            vital.SetParent(_vitalsCanvas.transform, false);
+        }
+
+        private void AddVitals(GameObject go)
+        {
+            MoveToVitalsCanvas(go.transform);
+            CanvasGroup g = go.GetComponent<CanvasGroup>();
+            if (g == null) g = go.AddComponent<CanvasGroup>();
+            g.ignoreParentGroups = true;
+            g.interactable = false;
+            g.blocksRaycasts = false;
+            _vitals.Add(g);
+        }
+
+        /// <summary>HP and stamina show whenever play is on screen — minigames included, not dialogue or menus.</summary>
+        public bool VitalsShowing => _stateAllowsHud && !_dialogueOpen;
 
         private void OnEnable()
         {
+            if (_vitalsCanvas != null) _vitalsCanvas.SetActive(true);   // follows the HUD on and off
             EventBus.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
             EventBus.Subscribe<ChallengeStartedEvent>(OnChallengeStarted);
             EventBus.Subscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
@@ -87,6 +149,7 @@ namespace Lalim.UI
 
         private void OnDisable()
         {
+            if (_vitalsCanvas != null) _vitalsCanvas.SetActive(false);
             EventBus.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
             EventBus.Unsubscribe<ChallengeStartedEvent>(OnChallengeStarted);
             EventBus.Unsubscribe<ChallengeCompletedEvent>(OnChallengeCompleted);
@@ -105,16 +168,6 @@ namespace Lalim.UI
                 _settingsButton.onClick.AddListener(OnSettingsButtonPressed);
             }
 
-            if (_navigationButton != null)
-            {
-                _navigationButton.onClick.AddListener(OnNavigationButtonPressed);
-            }
-
-            if (_codexButton != null)
-            {
-                _codexButton.onClick.AddListener(OnCodexButtonPressed);
-            }
-
             if (_inventoryButton != null)
             {
                 _inventoryButton.onClick.AddListener(OnInventoryButtonPressed);
@@ -124,6 +177,8 @@ namespace Lalim.UI
             {
                 _hintButton.onClick.AddListener(OnHintButtonPressed);
             }
+
+            if (GetComponent<RelicHudButtons>() == null) gameObject.AddComponent<RelicHudButtons>().Init(_relicButtonSprite);
 
             // Start with challenge-specific elements hidden
             SetChallengeUIVisible(false);
@@ -136,6 +191,9 @@ namespace Lalim.UI
             {
                 UpdateTimer();
             }
+
+            // I key: the same toggle as the HUD's inventory button.
+            if (InputManager.Instance != null && InputManager.Instance.InventoryPressed) OnInventoryButtonPressed();
         }
 
         // ─────────────────────────────────────────────
@@ -241,33 +299,11 @@ namespace Lalim.UI
             else EventBus.Publish(new PauseRequestedEvent { IsPaused = true });
         }
 
-        private void OnNavigationButtonPressed()
-        {
-            if (_mapModal != null)
-            {
-                _mapModal.ToggleModal();
-            }
-            else if (MapModalUI.Instance != null)
-            {
-                MapModalUI.Instance.ToggleModal();
-            }
-        }
-
-        private void OnCodexButtonPressed()
-        {
-            if (_codexModal != null)
-            {
-                _codexModal.ToggleModal();
-            }
-            else if (CodexModalUI.Instance != null)
-            {
-                CodexModalUI.Instance.ToggleModal();
-            }
-        }
-
-        // The placeholder inventory window was removed; the button is kept for the real one.
         private void OnInventoryButtonPressed()
         {
+            bool open = InventoryModalUI.Instance != null && InventoryModalUI.Instance.IsOpen;
+            if (!open && !IsShowing) return;   // not during dialogue, menus or full-screen minigames
+            InventoryModalUI.Toggle(_titleFont, _bodyFont);
         }
 
         private void OnHintButtonPressed()
@@ -320,6 +356,7 @@ namespace Lalim.UI
             // unsubscribed it from GameStateChangedEvent — so it could never receive the event
             // that would turn it back on again. Use a CanvasGroup instead so the object (and its
             // subscriptions) stay alive at all times.
+            foreach (CanvasGroup v in _vitals) if (v != null) v.alpha = VitalsShowing ? 1f : 0f;
             if (_rootCanvasGroup != null)
             {
                 _rootCanvasGroup.alpha = showHUD ? 1f : 0f;

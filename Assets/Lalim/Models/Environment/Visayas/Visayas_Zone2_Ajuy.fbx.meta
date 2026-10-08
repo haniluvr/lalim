@@ -1,0 +1,324 @@
+fileFormatVersion: 2
+guid: 1dca7ae2bd3a54c63b33d42707579921
+ModelImporter:
+  serializedVersion: 24501
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat
+    second: {fileID: 2100000, guid: d96506b2862174f25ad2ff24e2938e22, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.001
+    second: {fileID: 2100000, guid: 979145472576049369c51353ff6c2180, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.002
+    second: {fileID: 2100000, guid: 3ea694f37942e423a98cfe25c281130e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.003
+    second: {fileID: 2100000, guid: f03c2ac4dc970400cb67415446a1deaf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.004
+    second: {fileID: 2100000, guid: c859e1a724a8a4c45ba4aff934e147b0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.005
+    second: {fileID: 2100000, guid: 6d5313139a49a43dda5bbba5c2083680, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.007
+    second: {fileID: 2100000, guid: 93f97cea1da0a436fbe07b47ed009c97, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.015
+    second: {fileID: 2100000, guid: f2b34af06c5a54f27afa39e5e2c5ba4c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.016
+    second: {fileID: 2100000, guid: a8e716a8bf9464e59b8acea3305bd14f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.017
+    second: {fileID: 2100000, guid: 556ad54affcff42858fcc84905cc2e34, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.020
+    second: {fileID: 2100000, guid: 30061984bfd45441c885322573d30ab0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.021
+    second: {fileID: 2100000, guid: 636bbbfb7eaef454e99a68edb8f98437, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elf_house_mat.022
+    second: {fileID: 2100000, guid: 0f4466b68ffa748b0b5d5c3c155e9ac8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Dead_Coral
+    second: {fileID: 2100000, guid: b7f05e9f274c14bf9a323ca8f7fab560, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Glow_Amber
+    second: {fileID: 2100000, guid: e82be51c9b8e8469b9ed2f4f8030ab9a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z2_0
+    second: {fileID: 2100000, guid: 72e73f05e347148448940a5779ad6bdb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z2_1
+    second: {fileID: 2100000, guid: 98f703639940f49eca649ace7680bd84, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z2_2
+    second: {fileID: 2100000, guid: 0ec6dd679524d4fe3ba85bb64b8fd6ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Anemone
+    second: {fileID: 2100000, guid: 35d61180b0d9c40b28481be342ee21e5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Cluster_A
+    second: {fileID: 2100000, guid: 38058cfd01f5a4539990128c9d917afe, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Cluster_B
+    second: {fileID: 2100000, guid: 0ad6bc9677c024d908c3cec15e926731, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_1
+    second: {fileID: 2100000, guid: 0cf2f4435bebd4ae7a84994eb8d58ad8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_1B
+    second: {fileID: 2100000, guid: e21a99c43475e415c81d5f0cfb1675cb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_2
+    second: {fileID: 2100000, guid: adba52ba5e92740fe9f0798ffb4c5a44, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_2B
+    second: {fileID: 2100000, guid: ad352f0943d1d42dd9e3ee5edd79ef4a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Funnel
+    second: {fileID: 2100000, guid: 8b5641085b851406caa4d4ebcd7722e9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_A
+    second: {fileID: 2100000, guid: f7282bbf413a445f9826657fa771d6ad, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_B1
+    second: {fileID: 2100000, guid: d2ba8117d521f42fb9f83d481fc613d0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_B2
+    second: {fileID: 2100000, guid: b5899ec726c1b4cf9adbd02e6a1a94c3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_1
+    second: {fileID: 2100000, guid: fcfabac4cc6ff444db9080b1c87f0b92, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_1b
+    second: {fileID: 2100000, guid: 2549237f2b47d4a688802a3fb1bdeb02, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_2
+    second: {fileID: 2100000, guid: ba8fdce7980194583b66fde9b34be54d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_2b
+    second: {fileID: 2100000, guid: a3889c022a6064dd49dee4ddf4c00c19, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_3
+    second: {fileID: 2100000, guid: 211b96abda49a44d8ac733afac53952e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_3b
+    second: {fileID: 2100000, guid: c00966d1dcc0a40a2bc1cfcdeb251afa, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Urchins
+    second: {fileID: 2100000, guid: d078247ef0f874310b1d5f8891304f17, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Stump_PH
+    second: {fileID: 2100000, guid: b2c232ff9e9a04543b95fd0bdfcafbe4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Wreck_Wood
+    second: {fileID: 2100000, guid: b3645c4b0d18847bb82d63ab96f5caf5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Z2_Rope
+    second: {fileID: 2100000, guid: 65b7ac5a6ab834bab94b046730f5a7e7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Z2_Wood
+    second: {fileID: 2100000, guid: bf071b2e2097044e099eeb85aa850b1a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SM_Env_Mangrove_Tree_01_PolygonPirates_Material_01_A
+    second: {fileID: 2100000, guid: 6ad7167ccf7594ed0bd92ac45ef693b5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SM_Env_Mangrove_Tree_02_PolygonPirates_Material_01_A
+    second: {fileID: 2100000, guid: e6d792e0e672a47b89a65556cc8e62ba, type: 2}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+    searchTexturesGlobally: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    importUVs: -1
+    importVertexColors: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

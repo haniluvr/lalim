@@ -103,6 +103,7 @@ namespace Lalim.Mechanics.Quest
             }
 
             SetupToxicity();
+            ZoneSiteShuffle.ApplyAll();   // this playthrough's minigame spots, before anything is placed
 
             bool resumed = PlaceAtSavedCheckpoint();
 
@@ -197,8 +198,14 @@ namespace Lalim.Mechanics.Quest
             string scene = gameObject.scene.name;
             float dps;
 
+            // A pinned level always drains at the base rate, whatever an older save recorded.
+            if (_pinDrainToBase)
+            {
+                dps = _baseToxicDps;
+                if (save != null) { save.levelToxicDps = dps; save.levelToxicScene = scene; }
+            }
             // One snapshot per level, kept across reloads so the drain never changes mid-level.
-            if (save != null && save.levelToxicDps >= 0f && save.levelToxicScene == scene)
+            else if (save != null && save.levelToxicDps >= 0f && save.levelToxicScene == scene)
             {
                 dps = save.levelToxicDps;
             }
@@ -235,7 +242,8 @@ namespace Lalim.Mechanics.Quest
             _nextZoneCheck = Time.time + _zoneCheckInterval;
 
             ZoneQuest zone = ZoneAtPlayer();
-            if (zone == null) return;
+            if (zone == null) return;   // between zones (a trench): the last zone's music and ambience carry on
+            if (zone.Ambience != null) ZoneAmbience.Play(zone.Ambience);
             if (zone != _musicZone || (ProximityMusic.Instance != null && zone.CurrentTrack != null))
             {
                 _musicZone = zone;

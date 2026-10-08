@@ -257,7 +257,7 @@ namespace Lalim.UI
 
             float targetAlpha = want ? 1f : 0f;
             if (!Mathf.Approximately(_alpha, targetAlpha))
-                SetAlpha(Mathf.MoveTowards(_alpha, targetAlpha, Time.unscaledDeltaTime * _fadeSpeed));
+                SetAlpha(Mathf.MoveTowards(_alpha, targetAlpha, Lalim.Core.PauseClock.DeltaTime * _fadeSpeed));
             if (_alpha <= 0f)
             {
                 if (!want) _target = null;
@@ -267,7 +267,7 @@ namespace Lalim.UI
 
             if (want) _anchor = AnchorFor(_target, _targetComponent, player);
             Vector3 pos = _anchor + Vector3.up * (Mathf.Sin(Time.time * _bobSpeed) * _bobHeight);
-            transform.position = _placed ? Vector3.Lerp(transform.position, pos, 1f - Mathf.Exp(-_followSharpness * Time.unscaledDeltaTime)) : pos;
+            transform.position = _placed ? Vector3.Lerp(transform.position, pos, 1f - Mathf.Exp(-_followSharpness * Lalim.Core.PauseClock.DeltaTime)) : pos;
             _placed = true;
 
             // Face the camera square-on: same orientation as the camera, so it never skews.
@@ -275,7 +275,7 @@ namespace Lalim.UI
 
             float distance = Vector3.Distance(cam.transform.position, transform.position);
             float distanceScale = Mathf.Lerp(1f, distance / _referenceDistance, _keepScreenSize);
-            _pop = Mathf.MoveTowards(_pop, 1f, Time.unscaledDeltaTime * 4f);
+            _pop = Mathf.MoveTowards(_pop, 1f, Lalim.Core.PauseClock.DeltaTime * 4f);
             float metresPerUnit = _iconHeight / IconUnits * Mathf.Clamp(distanceScale, 0.45f, 2.5f) * EaseOutBack(_pop);
             transform.localScale = Vector3.one * metresPerUnit;
 

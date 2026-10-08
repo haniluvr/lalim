@@ -1484,8 +1484,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 376634501504589119}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.050000012, y: 0.050000012}
-  m_AnchorMax: {x: 0.95, y: 0.95}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1510,7 +1510,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.42, g: 0.37, b: 0.26, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2066,6 +2066,9 @@ MonoBehaviour:
   _fill: {fileID: 7845790177862798829}
   _canvasGroup: {fileID: 0}
   _fadeSpeed: 6
+  _minHeight: 6
+  _dividerWidth: 2
+  _dividerColor: {r: 0, g: 0.04, b: 0.08, a: 0.9}
 --- !u!1 &1533495924711317252
 GameObject:
   m_ObjectHideFlags: 0
@@ -5661,7 +5664,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -6996,11 +6999,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.UI.HUDController
   _rootCanvasGroup: {fileID: 1025120477831573401}
   _settingsButton: {fileID: 0}
-  _navigationButton: {fileID: 0}
-  _codexButton: {fileID: 0}
   _inventoryButton: {fileID: 5087934639598553688}
-  _mapModal: {fileID: 0}
-  _codexModal: {fileID: 0}
+  _titleFont: {fileID: 11400000, guid: 46e86d4123dd84e3fa0676ce8bfeb530, type: 2}
+  _bodyFont: {fileID: 11400000, guid: d161d8bc206f746fdbc56232cc55573f, type: 2}
+  _relicButtonSprite: {fileID: 21300000, guid: 89bca5fd4050340059a0e9da81ab3554, type: 3}
   _timerGroup: {fileID: 0}
   _timerText: {fileID: 0}
   _timerFill: {fileID: 0}
@@ -8901,6 +8903,7 @@ GameObject:
   - component: {fileID: 6331925024643132540}
   - component: {fileID: 2294566183230037094}
   - component: {fileID: 8240099236094461411}
+  - component: {fileID: 4958772661931040089}
   m_Layer: 0
   m_Name: ActionButton
   m_TagString: Untagged
@@ -9041,6 +9044,19 @@ MonoBehaviour:
   _interactSprite: {fileID: 21300000, guid: 39de3095d8c8d404fbba8034fc80c7e4, type: 3}
   _chatSprite: {fileID: 21300000, guid: 6c412b4f3e4c74643bd1144dea52b5a7, type: 3}
   _fadeSpeed: 8
+  _floatInWorld: 1
+--- !u!114 &4958772661931040089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8266920295208182460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.UI.NoTapSound
 --- !u!1 &8377385393853585553
 GameObject:
   m_ObjectHideFlags: 0
@@ -9730,8 +9746,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: PAUSED
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 06481a7341cd24f69b96b1ed207d459c, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: b7347311fb2dc4f20b2f09ad391751c2, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2751f207a8b204a8281b06671c843631, type: 2}
+  m_sharedMaterial: {fileID: 1978316192354033164, guid: 2751f207a8b204a8281b06671c843631,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

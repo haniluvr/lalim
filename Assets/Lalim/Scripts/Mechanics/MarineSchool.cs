@@ -9,6 +9,10 @@ namespace Lalim.Mechanics
     /// alignment), wiggles as it swims, stays above the seabed, steers around rocks, and scatters
     /// when the diver swims through. Fish are spawned from <see cref="_models"/> at start; they have
     /// no colliders, so they never block the player.
+    ///
+    /// With <see cref="_adoptChildren"/> the fish already placed under this object (the scene's own
+    /// fish groups) become the school instead: each swims on its own, wiggling, starting from where
+    /// it was placed — the group itself never turns, so they don't spin around one another.
     /// </summary>
     public class MarineSchool : MonoBehaviour
     {
@@ -18,6 +22,8 @@ namespace Lalim.Mechanics
         [SerializeField, Min(0.05f)] private float _length = 0.45f;
         [Tooltip("Turn the model so its head points forward (+Z), in degrees.")]
         [SerializeField] private float _modelYaw;
+        [Tooltip("Use the fish already under this object instead of spawning models (head = the + end of each mesh's longest axis).")]
+        [SerializeField] private bool _adoptChildren;
 
         [Header("Movement")]
         [SerializeField, Min(1f)] private float _roamRadius = 10f;
@@ -47,6 +53,7 @@ namespace Lalim.Mechanics
         {
             _home = _centre = transform.position;
             PickTarget();
+            if (_adoptChildren) { AdoptChildren(); return; }
             if (_models == null || _models.Length == 0) return;
             for (int i = 0; i < _count; i++)
             {
@@ -59,10 +66,70 @@ namespace Lalim.Mechanics
                     pace = Random.Range(0.85f, 1.15f),
                 };
                 fish.body = SwimBody.Spawn(model, transform, _length * Random.Range(0.85f, 1.15f), _modelYaw);
+                if (fish.body.childCount > 0) CreatureRig.Play(fish.body.GetChild(0).gameObject, model.name, false, fish.pace);
                 fish.body.position = _centre + fish.slot;
                 fish.velocity = Random.onUnitSphere * 0.2f;
                 _fish.Add(fish);
             }
+        }
+
+        // Each placed fish gets a pivot at its middle facing its head (+Z), so it can turn and wiggle on its own.
+        // A rigged fish (a model with a skinned mesh) is one fish facing -Z, like every model in the
+        // sea-creature set; anything else counts each of its meshes as a fish, head along its longest side.
+        private void AdoptChildren()
+        {
+            var meshes = new List<MeshFilter>();
+            var rigged = new List<Transform>();
+            foreach (Transform child in transform)
+            {
+                if (!child.gameObject.activeSelf) continue;
+                if (child.GetComponentInChildren<SkinnedMeshRenderer>() != null) rigged.Add(child);
+                else meshes.AddRange(child.GetComponentsInChildren<MeshFilter>());
+            }
+            float lengths = 0f;
+            foreach (Transform fish in rigged)
+            {
+                Bounds rb = default;
+                bool any = false;
+                foreach (Renderer r in fish.GetComponentsInChildren<Renderer>())
+                {
+                    if (!any) { rb = r.bounds; any = true; } else rb.Encapsulate(r.bounds);
+                }
+                Vector3 head = fish.TransformDirection(Vector3.back).normalized;
+                lengths += Adopt(fish, any ? rb.center : fish.position, head, any ? Mathf.Max(rb.size.x, Mathf.Max(rb.size.y, rb.size.z)) : _length);
+            }
+            foreach (MeshFilter mf in meshes)
+            {
+                if (mf.sharedMesh == null) continue;
+                Bounds mb = mf.sharedMesh.bounds;
+                Vector3 sx = mf.transform.TransformVector(Vector3.right * mb.size.x);
+                Vector3 sy = mf.transform.TransformVector(Vector3.up * mb.size.y);
+                Vector3 sz = mf.transform.TransformVector(Vector3.forward * mb.size.z);
+                Vector3 longest = sx.magnitude >= sy.magnitude && sx.magnitude >= sz.magnitude ? sx : sy.magnitude >= sz.magnitude ? sy : sz;
+                Vector3 centre = mf.GetComponent<Renderer>() != null ? mf.GetComponent<Renderer>().bounds.center : mf.transform.position;
+                lengths += Adopt(mf.transform, centre, longest.normalized, longest.magnitude);
+            }
+            if (_fish.Count > 0) _length = lengths / _fish.Count;
+        }
+
+        private float Adopt(Transform body, Vector3 centre, Vector3 head, float length)
+        {
+            var pivot = new GameObject(body.name + " (swim)").transform;
+            pivot.SetParent(transform, true);
+            pivot.position = centre;
+            Vector3 up = Vector3.ProjectOnPlane(Vector3.up, head);
+            pivot.rotation = Quaternion.LookRotation(head, up.sqrMagnitude > 0.001f ? up : Vector3.forward);
+            body.SetParent(pivot, true);
+
+            _fish.Add(new Fish
+            {
+                body = pivot,
+                slot = centre - _centre,
+                phase = Random.value * 10f,
+                pace = Random.Range(0.85f, 1.15f),
+                velocity = head * 0.2f,
+            });
+            return length;
         }
 
         private void PickTarget()
@@ -121,6 +188,17 @@ namespace Lalim.Mechanics
         }
 
 #if UNITY_EDITOR
+        /// <summary>Editor: the fish already under this object become the school.</summary>
+        public void EditorSetupAdopt(float roamRadius, float speed, float minHeight, float maxHeight)
+        {
+            _adoptChildren = true;
+            _models = new GameObject[0];
+            _roamRadius = roamRadius;
+            _speed = speed;
+            _minHeight = minHeight;
+            _maxHeight = maxHeight;
+        }
+
         public void EditorSetup(GameObject[] models, int count, float length, float modelYaw, float roamRadius, float speed)
         {
             _models = models;

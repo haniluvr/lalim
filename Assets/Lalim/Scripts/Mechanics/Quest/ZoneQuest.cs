@@ -27,6 +27,8 @@ namespace Lalim.Mechanics.Quest
         [Header("Music")]
         [SerializeField] private AudioClip _bgmPolluted;
         [SerializeField] private AudioClip _bgmCleansed;
+        [Tooltip("Ambience loop for this zone (flat stereo, Ambient volume). Plays under the music while the diver is here.")]
+        [SerializeField] private AudioClip _ambience;
 
         [Header("Steps (run in order)")]
         [SerializeField] private List<QuestStep> _steps = new List<QuestStep>();
@@ -42,6 +44,7 @@ namespace Lalim.Mechanics.Quest
             RegionProgressTracker.Instance != null && RegionProgressTracker.Instance.IsZoneCompleted(_zoneId);
 
         public AudioClip CurrentTrack => IsCleansed && _bgmCleansed != null ? _bgmCleansed : _bgmPolluted;
+        public AudioClip Ambience => _ambience;
 
         // Cached at Awake: the toxic volume is disabled when the zone is cleansed, and a disabled
         // collider reports empty bounds.

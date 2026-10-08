@@ -78,7 +78,12 @@ namespace Lalim.Core
         TrenchDescent,          // Manage pressure during deep dive
 
         // Level 1 (Luzon) additions — appended so serialized enum values stay stable
-        TrashCollection         // 3rd-person swim-and-pickup before segregation
+        TrashCollection,        // 3rd-person swim-and-pickup before segregation
+
+        // Level 2 (Visayas) — appended for the same reason
+        FishGathering,          // Caluya: call scattered herds with the Radiant Conch, avoid predators
+        SelectiveCatching,      // Ajuy: net targets, spare protected species
+        SchoolRelocation        // Padre Burgos: bring the schools to sanctuaries while Bakunawa hunts
     }
 
     /// <summary>Camera perspective a challenge runs in. FirstPerson is the default (value 0).</summary>
@@ -157,6 +162,29 @@ namespace Lalim.Core
         public int TotalRelics;
         public int TotalTools;
         public int TotalQuestItems;
+    }
+
+    /// <summary>A relic was equipped or unequipped from the inventory (its HUD button appears / goes).</summary>
+    public struct RelicEquipChangedEvent
+    {
+        public string ItemId;
+        public bool Equipped;
+    }
+
+    /// <summary>The player tapped an equipped relic's HUD button (conch call, net throw…).</summary>
+    public struct RelicUsedEvent
+    {
+        public string ItemId;
+    }
+
+    /// <summary>
+    /// An equipped relic's HUD button (or its key) went down or came back up. Relics used by
+    /// holding (the Woven Net Fragment: hold to aim, release to throw) listen to this.
+    /// </summary>
+    public struct RelicHoldEvent
+    {
+        public string ItemId;
+        public bool Down;
     }
 
     // ─────────────────────────────────────────────

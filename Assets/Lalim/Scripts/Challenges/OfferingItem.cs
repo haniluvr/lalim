@@ -164,6 +164,7 @@ namespace Lalim.Challenges
             _collected = true;
             s_Active.Remove(this);
             ToggleGlow(false);
+            Lalim.Core.Sfx.PlayAt(Lalim.Core.SfxCue.ItemPickup, transform.position);
 
             Collected?.Invoke(this);
             gameObject.SetActive(false);

@@ -8,7 +8,9 @@ namespace Lalim.Mechanics.Quest
     /// <summary>
     /// First-person "stage" for an area minigame: takes the camera from CameraController and frames
     /// the work site from the station's view point, hides the diver (the camera is at their eyes),
-    /// locks movement and hides the game HUD. Exit() hands everything back.
+    /// locks movement and hides the game HUD (the HP/stamina bars stay). Going in and coming out
+    /// fade through black, like a conversation, and the view then stays fixed (no panning).
+    /// Exit() hands everything back.
     /// </summary>
     public class MinigameStage
     {
@@ -44,7 +46,19 @@ namespace Lalim.Mechanics.Quest
 
             HUDController.Instance?.SetSuppressed(this, true);
 
-            if (_camera != null && viewPoint != null) _move = _host.StartCoroutine(Blend(viewPoint, blendSeconds));
+            if (_camera != null && viewPoint != null) _move = _host.StartCoroutine(FadeTo(viewPoint));
+        }
+
+        /// <summary>Seconds of each half of the fade in and out of the stage (as for conversations).</summary>
+        public const float FadeSeconds = 0.3f;
+
+        private IEnumerator FadeTo(Transform target)
+        {
+            ScreenFader fader = ScreenFader.Instance;
+            yield return fader.FadeOut(FadeSeconds);
+            _camera.transform.SetPositionAndRotation(target.position, target.rotation);
+            yield return fader.FadeIn(FadeSeconds);
+            _move = null;
         }
 
         public void Exit()
@@ -55,6 +69,21 @@ namespace Lalim.Mechanics.Quest
             if (_move != null && _host != null) _host.StopCoroutine(_move);
             _move = null;
 
+            if (_host != null && _host.isActiveAndEnabled) _host.StartCoroutine(FadeBack());
+            else HandBack();
+        }
+
+        // Fade to black, give the camera back behind the diver, fade in.
+        private IEnumerator FadeBack()
+        {
+            ScreenFader fader = ScreenFader.Instance;
+            yield return fader.FadeOut(FadeSeconds * 0.7f);
+            HandBack();
+            yield return fader.FadeIn(FadeSeconds);
+        }
+
+        private void HandBack()
+        {
             foreach (Renderer r in _hiddenRenderers) if (r != null) r.enabled = true;
             _hiddenRenderers.Clear();
 
@@ -66,23 +95,6 @@ namespace Lalim.Mechanics.Quest
                 _controller.SnapToCurrentMode();
             }
             PlayerController.Instance?.SetMovementEnabled(true);
-        }
-
-        private IEnumerator Blend(Transform target, float seconds)
-        {
-            Transform cam = _camera.transform;
-            Vector3 p0 = cam.position;
-            Quaternion r0 = cam.rotation;
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.SmoothStep(0f, 1f, t / seconds);
-                cam.SetPositionAndRotation(Vector3.Lerp(p0, target.position, k), Quaternion.Slerp(r0, target.rotation, k));
-                yield return null;
-            }
-            cam.SetPositionAndRotation(target.position, target.rotation);
-            _move = null;
         }
 
         /// <summary>World ray under the pointer (mouse / first touch).</summary>

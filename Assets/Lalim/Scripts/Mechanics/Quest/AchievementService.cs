@@ -89,7 +89,7 @@ namespace Lalim.Mechanics.Quest
                 save.unlockedAchievementIds.Add(a.Id);
             }
             Debug.Log($"[Achievement] {a.Name} unlocked");
-            ActToastUI.Post("Achievement Unlocked", $"{a.Name}\n{a.Description}", ToastKind.Achievement);
+            ActToastUI.Post("Achievement Unlocked", a.Name, ToastKind.Achievement);   // just its name
             SaveManager.Instance?.AutoSave();
         }
 

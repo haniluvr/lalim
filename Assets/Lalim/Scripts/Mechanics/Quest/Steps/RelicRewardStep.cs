@@ -9,7 +9,9 @@ namespace Lalim.Mechanics.Quest
     /// After the zone's last minigame: swim back to the deity and talk. The deity thanks the diver
     /// (the statue's "relic_gift" lines) and, at <see cref="_revealAtLine"/>, the relic fades into view,
     /// glowing, and hovers in front of the diver. When the conversation ends it sweeps into the
-    /// diver and goes into the inventory. It's announced with the zone's "Quest Complete" toast.
+    /// diver and goes into the inventory. It's announced with the zone's "Quest Complete" toast
+    /// (no toast of its own). The deity's closing lines follow on in the same conversation — the
+    /// dialogue never closes in between — and the relic is received as they begin.
     /// Relics are kept in the save and are needed in Level 2 (GameConstants.Relics).
     /// </summary>
     public class RelicRewardStep : QuestStep
@@ -31,9 +33,14 @@ namespace Lalim.Mechanics.Quest
         [SerializeField] private StatueDialogueRouter _statue;
         [Tooltip("Halo, sparkle and fade-in materials for the relic's glow.")]
         [SerializeField] private RelicPresentation.Look _look;
+        [Tooltip("Carry straight on into the statue's closing lines in the same conversation (its closing step then skips).")]
+        [SerializeField] private bool _continueIntoClosing = true;
 
         private RelicPresentation _presentation;
-        private int _lineCount;
+        private int _lineCount;      // the gift's own lines (the closing may follow in the same talk)
+        private bool _received;
+        private bool _revealed;
+        private bool _talkDone;
 
         private StatueDialogueRouter Statue => _statue != null ? _statue : (Zone != null ? Zone.Statue : null);
 
@@ -50,8 +57,14 @@ namespace Lalim.Mechanics.Quest
             }
 
             _lineCount = lines.Count;
+            _received = false;
+            _revealed = false;
+            _talkDone = false;
+            var talk = new List<DialogueLine>(lines);
+            bool withClosing = _continueIntoClosing && statue.ClosingLines != null && statue.ClosingLines.Count > 0;
+            if (withClosing) talk.AddRange(statue.ClosingLines);
             ObjectiveTracker.Instance?.SetObjective(statue.transform);
-            statue.ArmTalk(lines, OnTalkStarted, OnTalkDone);
+            statue.ArmTalk(talk, () => { if (withClosing) statue.MarkClosingSaid(); OnTalkStarted(); }, OnTalkDone);
         }
 
         private void OnTalkStarted()
@@ -67,32 +80,62 @@ namespace Lalim.Mechanics.Quest
         {
             // Lines edited shorter than the reveal index still get the reveal, on the last line.
             int at = Mathf.Min(_revealAtLine, _lineCount - 1);
-            if (index >= at && _presentation == null) Reveal();
+            if (index >= at && _presentation == null && !_received) Reveal();
+            // The gift is over and the closing begins: the relic sweeps into the diver meanwhile.
+            if (index >= _lineCount && !_received) Receive();
+        }
+
+        /// <summary>A skill (Moontide) is a blessing, not a thing: no floating model during the handover.</summary>
+        private bool IsSkill
+        {
+            get
+            {
+                ItemData item = InventoryManager.Instance != null && !string.IsNullOrEmpty(_itemId) ? InventoryManager.Instance.GetItemData(_itemId) : null;
+                return item != null && item.isSkill;
+            }
         }
 
         private void Reveal()
         {
+            if (_revealed) return;
+            _revealed = true;
+            // The gift's sound marks the handover itself: as the relic appears (or, for a skill
+            // with nothing to show, on the same line), not when the toast announces it later.
+            Core.Sfx.Play(Core.SfxCue.Reward);
+            if (_relicPrefab == null || IsSkill) return;   // a template step with no relic chosen yet, or a skill
             Transform diver = PlayerController.Instance != null ? PlayerController.Instance.transform : null;
             _presentation = RelicPresentation.Spawn(_relicPrefab, Statue != null ? Statue.transform : null, diver, _look);
+        }
+
+        // The relic sweeps into the diver and goes into the inventory.
+        private void Receive()
+        {
+            _received = true;
+            if (_presentation == null) Reveal();
+            if (_presentation == null) { Grant(); if (_talkDone) Complete(); return; }   // no relic model
+            _presentation.Receive(() =>
+            {
+                _presentation = null;
+                Grant();
+                if (_talkDone) Complete();
+            });
         }
 
         private void OnTalkDone()
         {
             if (DialogueManager.Instance != null) DialogueManager.Instance.LineStarted -= OnLine;
-            if (_presentation == null) Reveal();
-            _presentation.Receive(() =>
-            {
-                _presentation = null;
-                Grant();
-                Complete();
-            });
+            _talkDone = true;
+            if (!_received) Receive();          // no closing followed: receive it now, then continue
+            else if (_presentation == null) Complete();   // already in the inventory
         }
 
-        /// <summary>The relic's name, for the zone's Quest Complete toast.</summary>
-        public string RewardName => _toastBody;
+        /// <summary>The reward's name, for the zone's Quest Complete toast. A skill isn't named:
+        /// "You received a new skill".</summary>
+        public string RewardName => IsSkill ? "new skill" : _toastBody;
 
         private void Grant()
         {
+            if (string.IsNullOrEmpty(_itemId)) return;   // a template step with no relic chosen yet
             if (InventoryManager.Instance != null && !InventoryManager.Instance.HasItem(_itemId))
                 InventoryManager.Instance.AddItem(_itemId);
         }

@@ -11,6 +11,10 @@ namespace Lalim.Mechanics.Quest
     /// and the dark frame crossfades into the loading screen, which crossfades into the teleport
     /// scene, where the next level's teleport is now unlocked (the three cleansed zones already
     /// completed the region).
+    ///
+    /// Coming back into a finished level (through its teleport): the diver starts halfway down the
+    /// tunnel — above the exit, so they aren't sent straight back — the music guides them down,
+    /// and reaching the exit again returns them to the teleport scene.
     /// </summary>
     public class LevelExitStep : QuestStep
     {
@@ -68,6 +72,47 @@ namespace Lalim.Mechanics.Quest
         }
 
         private void DebugForceComplete() => OnExitReached();
+
+        /// <summary>The level is already finished: start mid-tunnel and keep the way back open.</summary>
+        public override void RestoreCompleted()
+        {
+            if (_exitTrigger == null) return;
+            Bounds exit = _exitTrigger.bounds;
+            PlayerController player = PlayerController.Instance;
+            if (player != null)
+            {
+                float top = _tunnelEntrance != null ? _tunnelEntrance.position.y : exit.max.y + 40f;
+                player.SetPosition(new Vector3(exit.center.x, Mathf.Lerp(top, exit.max.y, 0.5f), exit.center.z));
+            }
+
+            // The music leads down the tunnel, to the way back to the teleport.
+            ObjectiveTracker.Instance?.SetObjective(_exitTrigger.transform);
+            _exitTrigger.isTrigger = true;
+            LevelExitTrigger relay = _exitTrigger.GetComponent<LevelExitTrigger>();
+            if (relay == null) relay = _exitTrigger.gameObject.AddComponent<LevelExitTrigger>();
+            relay.Entered = OnExitReachedAgain;
+        }
+
+        private void OnExitReachedAgain()
+        {
+            if (_exiting) return;
+            _exiting = true;
+            SaveData save = SaveManager.Instance != null ? SaveManager.Instance.CurrentSave : null;
+            if (save != null)
+            {
+                save.lastSceneName = _nextScene;
+                save.lastCheckpointId = null;
+                SaveManager.Instance.AutoSave();
+            }
+            PlayerController.Instance?.SetMovementEnabled(false);
+            StartCoroutine(LoadNext());
+        }
+
+        private IEnumerator LoadNext()
+        {
+            yield return new WaitForSeconds(_delayBeforeLoad);
+            SceneLoader.Ensure().LoadScene(_nextScene, true, _crossfadeIntoLoading);
+        }
 
 #if UNITY_EDITOR
         public void EditorSetupExit(Transform entrance, Collider exitTrigger)

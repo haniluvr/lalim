@@ -187,7 +187,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
+  m_BackGroundColor: {r: 0.96862745, g: 0.96862745, b: 0.9490196, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -520,10 +520,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90ef738d706214fc7862b9f4f0e75d18, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.UI.BootSequenceUI
-  _unityBannerTex: {fileID: 2800000, guid: c957e14a806bf47b3b817d56178aaa32, type: 3}
-  _teamLogoTex: {fileID: 2800000, guid: b99ae144fab8f4fff93cab0198ccf999, type: 3}
+  _unityBannerTex: {fileID: 2800000, guid: 89da9e95a7d18422bb2cf92a92c54825, type: 3}
+  _teamLogoTex: {fileID: 2800000, guid: 17ef6b45115894c08a026c5e2faac2db, type: 3}
+  _backgroundColor: {r: 1, g: 1, b: 1, a: 1}
   _fadeDuration: 1
   _displayDuration: 2
+  _gapDuration: 0.35
   _nextSceneName: 02_MainMenu
 --- !u!4 &1093957649
 Transform:
@@ -707,6 +709,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Core.SceneLoader
   _minimumLoadTime: 1
+  _fadeSeconds: 0.5
+  _loadingFadeInSeconds: 0.3
+  _crossfadeSeconds: 0.8
+  _bootFadeSeconds: 0.6
 --- !u!114 &1677401141
 MonoBehaviour:
   m_ObjectHideFlags: 0

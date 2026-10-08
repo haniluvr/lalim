@@ -18,7 +18,8 @@ namespace Lalim.Mechanics.Quest
         public const string Haik = "Haik";
         public const string Neguno = "Neguno";
 
-        public const string BarkAltarRises = "altar_rises";
+        /// <summary>Amansinaya, after the trash: gives the Water Sampling Kit and sends the diver to sort.</summary>
+        public const string BarkTrashDone = "trash_done";
         public const string BarkReadingsDone = "readings_done";
         public const string BarkRelicGift = "relic_gift";
 
@@ -40,20 +41,26 @@ namespace Lalim.Mechanics.Quest
             N(Amansinaya, "Now the land sends down what it no longer wants. Plastic, glass, metal. My shallows choke on it, and the water has turned to poison."),
             N(Amansinaya, "Gather every piece you find. Leave nothing behind, not one shard."),
             N(Amansinaya, "If your eyes fail you, awaken the spirit sight. What is hidden will glow, and a light will lead you to it."),
-            N(Amansinaya, "Then lay each piece in its rightful bowl. What is sorted truly can be made new again. Go, and be quick. The poison does not wait."),
+            N(Amansinaya, "When the shallows are clear, come back to me. Go, and be quick. The poison does not wait."),
         };
 
         public static List<StatueDialogueRouter.NamedLines> AmansinayaBarks() => new List<StatueDialogueRouter.NamedLines>
         {
-            new StatueDialogueRouter.NamedLines
-            {
-                key = BarkAltarRises,
-                lines = new List<DialogueLine>
-                {
-                    N(Amansinaya, "Every wound lifted. Now: plastic, glass, metal. Choose with care. The sea remembers."),
-                }
-            },
+            new StatueDialogueRouter.NamedLines { key = BarkTrashDone, lines = AmansinayaTrashDone() },
             new StatueDialogueRouter.NamedLines { key = BarkRelicGift, lines = AmansinayaRelicGift() },
+        };
+
+        /// <summary>
+        /// Back at the statue after the trash (the player swims over and taps Talk): the first
+        /// reward, the Water Sampling Kit, then on to the sorting.
+        /// </summary>
+        public static List<DialogueLine> AmansinayaTrashDone() => new List<DialogueLine>
+        {
+            N(Amansinaya, "Every piece gathered, not one shard left behind. Can you feel it? My shallows breathe easier already."),
+            N(Amansinaya, "Take this. It reads the water's hidden moods: its sourness, its salt, its warmth."),
+            P("A water sampling kit… I'll keep it safe."),
+            N(Amansinaya, "Waters beyond mine will need it. But first, finish what you started."),
+            N(Amansinaya, "Plastic, glass, metal. Lay each piece in its rightful bowl at my altar. What is sorted truly can be made new again."),
         };
 
         /// <summary>After the sorting: thanks, and the Radiant Conch rises from the statue.</summary>
@@ -68,8 +75,8 @@ namespace Lalim.Mechanics.Quest
 
         public static List<DialogueLine> AmansinayaClosing() => new List<DialogueLine>
         {
-            N(Amansinaya, "Take this as well. It reads the water's hidden moods: its sourness, its salt, its warmth."),
             N(Amansinaya, "Haik, who once guided sailors through every storm, waits beyond the next gate. His waters are sick in ways the eye cannot see."),
+            N(Amansinaya, "That is what the kit is for. Let it see for you."),
             P("I'll find him."),
             N(Amansinaya, "Remember the fisherfolk's way, {player}. Take only what you need, and give back the first of what you are given."),
         };

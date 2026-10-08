@@ -108,7 +108,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Mechanics.CameraController
   _style: 0
   _playerTarget: {fileID: 0}
-  _orbitDistance: 2.5
+  _orbitDistance: 4.7
   _orbitHeight: 1
   _socketOffset: {x: 0, y: 0.35, z: 0}
   _probeRadius: 0.25

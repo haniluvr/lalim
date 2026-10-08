@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d37861341d451f47a8fe5f819540e68, type: 3}
+  m_Name: 11_KatawGift
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Inventory.ItemData
+  itemId: 11_katawgift
+  displayName: Kataw Gift
+  description: 'A gift from the Kataw village for learning to fish with care. (Placeholder:
+    reward not decided yet.)'
+  itemType: 0
+  regionOrigin: 1
+  isKeyItem: 1
+  icon: {fileID: 0}
+  worldModelPrefab: {fileID: 3904515040347597063, guid: a88f6cfe445ab45df867e8cabd808cc3,
+    type: 3}
+  collectSound: {fileID: 0}

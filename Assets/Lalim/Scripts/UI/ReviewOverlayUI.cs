@@ -6,9 +6,10 @@ using UnityEngine.UI;
 namespace Lalim.UI
 {
     /// <summary>
-    /// Review log: a dark overlay over the whole screen (not a modal box) listing every line shown
-    /// so far in this scene. NPC lines (with the speaker's name) start from the left; the player's
-    /// lines start from the right. Newest line at the bottom, scrolled into view on open.
+    /// Review log: a dark overlay over the whole screen (not a modal box) listing the lines shown
+    /// so far in the current conversation (earlier conversations aren't kept). Every line — NPC and player alike — starts from the left, under the
+    /// speaker's name (the player's name keeps its own colour). Newest line at the bottom,
+    /// scrolled into view on open.
     /// </summary>
     [DisallowMultipleComponent]
     public class ReviewOverlayUI : MonoBehaviour
@@ -24,6 +25,7 @@ namespace Lalim.UI
         [SerializeField, Range(0.3f, 1f)] private float _maxLineWidth = 0.72f;
 
         private int _builtCount;
+        private int _builtConversation = -1;
 
         private void Awake()
         {
@@ -50,7 +52,13 @@ namespace Lalim.UI
         {
             if (_content == null || history == null) return;
             // Append only new lines (the log only grows within a scene).
-            if (history.Count < _builtCount) { foreach (Transform c in _content) Destroy(c.gameObject); _builtCount = 0; }
+            int conversation = DialogueManager.Instance != null ? DialogueManager.Instance.ConversationId : 0;
+            if (history.Count < _builtCount || conversation != _builtConversation)
+            {
+                foreach (Transform c in _content) Destroy(c.gameObject);
+                _builtCount = 0;
+                _builtConversation = conversation;
+            }
             for (int i = _builtCount; i < history.Count; i++) AddEntry(history[i]);
             _builtCount = history.Count;
 
@@ -66,7 +74,7 @@ namespace Lalim.UI
             var row = new GameObject(e.IsPlayer ? "PlayerLine" : "NpcLine", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
             row.transform.SetParent(_content, false);
             var layout = row.GetComponent<VerticalLayoutGroup>();
-            layout.childAlignment = e.IsPlayer ? TextAnchor.UpperRight : TextAnchor.UpperLeft;
+            layout.childAlignment = TextAnchor.UpperLeft;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandWidth = false;
@@ -74,13 +82,13 @@ namespace Lalim.UI
             layout.spacing = 4f;
             layout.padding = new RectOffset(0, 0, 6, 10);
 
-            TMP_Text name = MakeText(row.transform, e.Speaker, 34f, FontStyles.Bold, e.IsPlayer ? _playerNameColor : _npcNameColor, e.IsPlayer);
+            TMP_Text name = MakeText(row.transform, e.Speaker, 34f, FontStyles.Bold, e.IsPlayer ? _playerNameColor : _npcNameColor);
             name.GetComponent<LayoutElement>().preferredWidth = lineWidth;
-            TMP_Text body = MakeText(row.transform, e.Text, 32f, FontStyles.Normal, _textColor, e.IsPlayer);
+            TMP_Text body = MakeText(row.transform, e.Text, 32f, FontStyles.Normal, _textColor);
             body.GetComponent<LayoutElement>().preferredWidth = lineWidth;
         }
 
-        private TMP_Text MakeText(Transform parent, string text, float size, FontStyles style, Color color, bool rightSide)
+        private TMP_Text MakeText(Transform parent, string text, float size, FontStyles style, Color color)
         {
             var go = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
             go.transform.SetParent(parent, false);
@@ -90,8 +98,7 @@ namespace Lalim.UI
             tmp.fontSize = size;
             tmp.fontStyle = style;
             tmp.color = color;
-            // NPC lines start from the left, the player's from the right.
-            tmp.alignment = rightSide ? TextAlignmentOptions.TopRight : TextAlignmentOptions.TopLeft;
+            tmp.alignment = TextAlignmentOptions.TopLeft;   // everyone's lines start from the left
             tmp.raycastTarget = false;
             return tmp;
         }

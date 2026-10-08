@@ -152,8 +152,20 @@ namespace Lalim.Mechanics
             return "";
         }
 
-        /// <summary>Plays the closing dialogue (instantly calls back if there is none).</summary>
-        public void PlayClosing(Action onDone) => Play(_closingLines, onDone);
+        /// <summary>The closing lines (the relic gift carries straight on into them).</summary>
+        public List<DialogueLine> ClosingLines => _closingLines;
+
+        /// <summary>The closing was already said as part of another conversation (the relic gift).</summary>
+        public void MarkClosingSaid() => _closingSaid = true;
+
+        private bool _closingSaid;
+
+        /// <summary>Plays the closing dialogue (instantly calls back if there is none, or it was already said).</summary>
+        public void PlayClosing(Action onDone)
+        {
+            if (_closingSaid) { _closingSaid = false; onDone?.Invoke(); return; }
+            Play(_closingLines, onDone);
+        }
 
         /// <summary>
         /// Plays a named bark (instantly calls back if the key is unknown). <paramref name="frame"/>

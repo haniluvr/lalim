@@ -3474,6 +3474,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!115 &904122004
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: NoTapSound
+  m_Namespace: Lalim.UI
+  m_AssemblyName: Assembly-CSharp
 --- !u!1 &921254964
 GameObject:
   m_ObjectHideFlags: 0
@@ -716884,7 +716899,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Lalim.Mechanics.CameraController
   _style: 0
   _playerTarget: {fileID: 1596135555}
-  _orbitDistance: 2.5
+  _orbitDistance: 4.7
   _orbitHeight: 1
   _socketOffset: {x: 0, y: 0.35, z: 0}
   _probeRadius: 0.25
@@ -722680,8 +722695,30 @@ PrefabInstance:
     - {fileID: 9148206335206342867, guid: a2a5cb32bb9624fe1acf55a40c20bfc9, type: 3}
     - {fileID: 6161327182140436316, guid: a2a5cb32bb9624fe1acf55a40c20bfc9, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8266920295208182460, guid: a2a5cb32bb9624fe1acf55a40c20bfc9,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1953408325}
   m_SourcePrefab: {fileID: 100100000, guid: a2a5cb32bb9624fe1acf55a40c20bfc9, type: 3}
+--- !u!1 &1953408324 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8266920295208182460, guid: a2a5cb32bb9624fe1acf55a40c20bfc9,
+    type: 3}
+  m_PrefabInstance: {fileID: 1953408323}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1953408325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1953408324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 904122004}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.UI.NoTapSound
 --- !u!1001 &1969501260
 PrefabInstance:
   m_ObjectHideFlags: 0

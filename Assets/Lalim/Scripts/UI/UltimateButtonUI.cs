@@ -7,8 +7,8 @@ namespace Lalim.UI
     /// <summary>
     /// Bubble Barrier (ultimate) button. Works like the Seagrass Mend card: it charges instead of
     /// costing stamina. A disc BEHIND the (semi-transparent) icon fills from the bottom in the
-    /// desaturated seashell colour, and turns the full seashell colour once it's ready
-    /// (HudPalette — same as the stamina shells). The icon itself never changes.
+    /// desaturated seashell colour, and turns gold once it's ready (HudPalette.ReadyGold — same as
+    /// the Mend card). The icon itself never changes.
     /// It charges from activity (swimming + using other skills), starts each level half-charged
     /// (AbilityConfig.bubbleBarrierStartCharge) and refills from 0 after every use. While the
     /// bubble is up the fill stays empty (it can't charge during use).
@@ -46,8 +46,8 @@ namespace Lalim.UI
             if (_chargeFill != null)
             {
                 _chargeFill.fillAmount = barrier.IsActive ? 0f : barrier.Charge01;
-                // Same colours as the seashell stamina orbs.
-                _chargeFill.color = ready ? HudPalette.ShellReady : HudPalette.ShellCharging;
+                // Charging in the muted seashell colour, gold once it's ready (like the Mend card).
+                _chargeFill.color = ready ? HudPalette.ReadyGold : HudPalette.ShellCharging;
             }
 
             // Small pop the moment it becomes ready (same as the Mend card).
@@ -56,7 +56,7 @@ namespace Lalim.UI
             if (_rt == null) return;
             if (_popTimer > 0f)
             {
-                _popTimer -= Time.unscaledDeltaTime;
+                _popTimer -= Lalim.Core.PauseClock.DeltaTime;
                 float t = 1f - Mathf.Clamp01(_popTimer / 0.35f);
                 _rt.localScale = Vector3.one * (1f + Mathf.Sin(t * Mathf.PI) * 0.08f);
             }

@@ -26,6 +26,8 @@ namespace Lalim.Core
 
         public bool IsLoading { get; private set; }
         public string CurrentSceneName { get; private set; }
+        /// <summary>The scene being loaded right now (the loading screen's destination), or null.</summary>
+        public string TargetSceneName { get; private set; }
 
         private void Awake()
         {
@@ -112,44 +114,68 @@ namespace Lalim.Core
         // Async Loading
         // ─────────────────────────────────────────────
 
+        /// <summary>Frame time for fades: a long frame (a scene activating) counts as a short one.</summary>
+        public static float SteadyDeltaTime => Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
+
         /// <summary>
-        /// With a loading screen:  fade the current scene to black (or crossfade it) → loading
-        ///                         screen → the real work, in stages (LoadingStages) → the loading
-        ///                         screen crossfades straight into the new scene (no black).
+        /// With a loading screen:  the loading screen fades in from black — or, leaving a game
+        ///                         scene, dissolves in over it live → the real work, in stages
+        ///                         (LoadingStages) → the loading screen dissolves away over the new
+        ///                         scene, once that scene is running smoothly (never through black).
         /// Without one:            fade to black → load → fade in (no minimum wait).
         /// From Boot the loading screen is the splash, and boot → splash fades out and in.
         /// </summary>
         private IEnumerator LoadSceneAsync(string sceneName, bool showLoadingScreen, bool crossfadeIn)
         {
             IsLoading = true;
+            TargetSceneName = sceneName;
             bool isFromBoot = CurrentSceneName == GameConstants.Scenes.BOOT;
             Debug.Log($"[SceneLoader] Loading scene: {sceneName}");
+            ScreenFader.Instance.SetBackdrop(true);
+            TransitionScreen screen = null;
 
-            // 1. Leave the current scene: fade to black, or freeze its last frame to dissolve from.
-            if (crossfadeIn) yield return ScreenFader.Instance.CaptureForCrossfade();
-            else yield return ScreenFader.Instance.FadeOut(isFromBoot ? _bootFadeSeconds : _fadeSeconds);
-            EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f });
-
-            // 2. The loading screen (the splash only plays once, at boot; every other transition —
-            //    new game, teleport, levels, back to the menu — uses 04_Loading). Loading it on its
-            //    own also unloads the scene we're leaving and the assets only it used.
+            // 1–2. The loading screen (the splash only plays once, at boot; every other transition —
+            //      new game, teleport, levels, back to the menu — uses 04_Loading).
             float startTime = Time.unscaledTime;
             if (showLoadingScreen)
             {
                 string intermediateScene = isFromBoot ? GameConstants.Scenes.SPLASH : GameConstants.Scenes.LOADING;
-                AsyncOperation interOp = SceneManager.LoadSceneAsync(intermediateScene);
-                if (interOp == null)
-                    Debug.LogError($"[SceneLoader] Failed to load intermediate scene '{intermediateScene}'. Please ensure it is added to your Build Settings.");
-                else
-                    yield return interOp;
-
-                startTime = Time.unscaledTime;
                 if (crossfadeIn)
                 {
-                    yield return null;   // one frame so the loading screen has rendered under the frozen frame
-                    yield return ScreenFader.Instance.CrossfadeOut(_crossfadeSeconds);
+                    // Loaded beside the scene we're leaving, which keeps playing underneath while
+                    // the loading screen dissolves in; then the old scene is unloaded.
+                    Scene leaving = SceneManager.GetActiveScene();
+                    yield return LoadParked(intermediateScene, s => screen = s);
+                    if (screen != null)
+                    {
+                        EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f });
+                        yield return screen.Fade(0f, 1f, _crossfadeSeconds);
+                        SceneManager.SetActiveScene(SceneManager.GetSceneByName(intermediateScene));
+                        yield return SceneManager.UnloadSceneAsync(leaving);
+                        screen.Unpark();
+                    }
+                    else crossfadeIn = false;   // couldn't load it beside: fall back to black
                 }
-                else yield return ScreenFader.Instance.FadeIn(isFromBoot ? _bootFadeSeconds : _loadingFadeInSeconds);
+                if (!crossfadeIn)
+                {
+                    // Loading it on its own also unloads the scene we're leaving.
+                    yield return ScreenFader.Instance.FadeOut(isFromBoot ? _bootFadeSeconds : _fadeSeconds);
+                    EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f });
+                    AsyncOperation interOp = SceneManager.LoadSceneAsync(intermediateScene);
+                    if (interOp == null)
+                        Debug.LogError($"[SceneLoader] Failed to load intermediate scene '{intermediateScene}'. Please ensure it is added to your Build Settings.");
+                    else
+                    {
+                        yield return interOp;
+                        screen = TransitionScreen.Of(SceneManager.GetSceneByName(intermediateScene));
+                    }
+                    yield return ScreenFader.Instance.FadeIn(isFromBoot ? _bootFadeSeconds : _loadingFadeInSeconds);
+                }
+                startTime = Time.unscaledTime;
+            }
+            else
+            {
+                yield return ScreenFader.Instance.FadeOut(_fadeSeconds);
             }
 
             // While the loading screen is up, loading gets priority over the (simple) loading-screen frame rate.
@@ -170,11 +196,22 @@ namespace Lalim.Core
                 EventBus.Publish(new SceneLoadProgressEvent { Progress = shown });
             }
 
-            // 3a. Free the memory the old scene used: loading the loading screen on its own already
-            //     unloaded the old scene and its unused assets (textures, meshes, audio); collect
+            // 3a. Free the memory the old scene used. A single-mode load already unloaded the old
+            //     scene's unused assets (textures, meshes, audio); after an additive swap that's
+            //     done here (with a time limit, so a stuck unload can't hold the bar). Then collect
             //     the garbage it left behind too.
             if (showLoadingScreen)
             {
+                if (crossfadeIn)
+                {
+                    AsyncOperation unload = Resources.UnloadUnusedAssets();
+                    float until = Time.unscaledTime + 3f;
+                    while (!unload.isDone && Time.unscaledTime < until)
+                    {
+                        Report(LoadingStages.Stage.FreeMemory, 0.5f);
+                        yield return null;
+                    }
+                }
                 GC.Collect();
                 Report(LoadingStages.Stage.FreeMemory, 1f);
                 yield return null;
@@ -198,6 +235,7 @@ namespace Lalim.Core
                 Debug.LogError($"[SceneLoader] Failed to load target scene '{sceneName}'. Please ensure it is added to your Build Settings.");
                 RestoreLoadingSettings(uploadSlice);
                 yield return ScreenFader.Instance.FadeIn(_fadeSeconds);
+                ScreenFader.Instance.SetBackdrop(false);
                 IsLoading = false;
                 yield break;
             }
@@ -222,18 +260,17 @@ namespace Lalim.Core
             }
             EventBus.Publish(new SceneLoadProgressEvent { Progress = 1f });
 
-            // 4. Swap in the new scene.
+            // 4. Swap in the new scene. The loading screen is kept through the swap (it covers it),
+            //    the bar sitting at 100% for a moment first.
             if (showLoadingScreen)
             {
-                // Let the bar sit at 100% for a moment, then freeze the loading screen's last frame
-                // over everything so the swap underneath can't be seen.
                 yield return new WaitForSecondsRealtime(0.5f);
-                yield return ScreenFader.Instance.CaptureForCrossfade();
+                if (screen != null) screen.Detach();
             }
 
             // Activation: every object in the new scene is created and set up (Awake/Start: the
             // save is restored, the player placed, quests and systems initialised), and its
-            // textures and meshes are uploaded to the GPU — all behind the frozen frame.
+            // textures and meshes are uploaded to the GPU — all behind the loading screen.
             asyncOp.allowSceneActivation = true;
             while (!asyncOp.isDone) yield return null;
             RestoreLoadingSettings(uploadSlice);
@@ -242,12 +279,64 @@ namespace Lalim.Core
             Debug.Log($"[SceneLoader] Scene loaded: {sceneName}");
             EventBus.Publish(new SceneLoadedEvent { SceneName = sceneName });
 
-            // 5. Reveal it: the loading screen dissolves into the new scene, or black fades away.
-            yield return null;   // one frame so the new scene has rendered under the overlay
-            if (showLoadingScreen) yield return ScreenFader.Instance.CrossfadeOut(_crossfadeSeconds);
+            // 5. Reveal it once its first, heavy frames are over (otherwise the fade would be
+            //    spent on a couple of long frames and look like a cut): the loading screen
+            //    dissolves into the new scene, or black fades away.
+            yield return WaitForSteadyFrames();
+            if (screen != null && !screen.IsEmpty)
+            {
+                yield return screen.Fade(1f, 0f, _crossfadeSeconds);
+                screen.Destroy();
+            }
             else yield return ScreenFader.Instance.FadeIn(_fadeSeconds);
 
+            ScreenFader.Instance.SetBackdrop(false);
             IsLoading = false;
+            TargetSceneName = null;
+        }
+
+        /// <summary>
+        /// Loads <paramref name="sceneName"/> next to the current scene, parked and invisible
+        /// (see TransitionScreen), and hands back its screen — null if it couldn't be loaded.
+        /// </summary>
+        private static IEnumerator LoadParked(string sceneName, Action<TransitionScreen> done)
+        {
+            TransitionScreen screen = null;
+            // Runs as soon as the scene's objects exist, before they're ever rendered.
+            UnityEngine.Events.UnityAction<Scene, LoadSceneMode> onLoaded = null;
+            onLoaded = (scene, mode) =>
+            {
+                if (scene.name != sceneName) return;
+                SceneManager.sceneLoaded -= onLoaded;
+                screen = TransitionScreen.Of(scene);
+                screen.Park(scene);
+                screen.SetAlpha(0f);
+            };
+            SceneManager.sceneLoaded += onLoaded;
+            AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            if (op == null)
+            {
+                SceneManager.sceneLoaded -= onLoaded;
+                Debug.LogError($"[SceneLoader] Failed to load intermediate scene '{sceneName}'. Please ensure it is added to your Build Settings.");
+                done(null);
+                yield break;
+            }
+            yield return op;
+            SceneManager.sceneLoaded -= onLoaded;
+            done(screen);
+        }
+
+        /// <summary>Waits until frames are short again after a scene activation (at most ~2 s).</summary>
+        private static IEnumerator WaitForSteadyFrames()
+        {
+            int steady = 0;
+            float until = Time.unscaledTime + 2f;
+            yield return null;
+            while (steady < 3 && Time.unscaledTime < until)
+            {
+                yield return null;
+                steady = Time.unscaledDeltaTime < 0.1f ? steady + 1 : 0;
+            }
         }
 
         private static void RestoreLoadingSettings(int uploadSlice)

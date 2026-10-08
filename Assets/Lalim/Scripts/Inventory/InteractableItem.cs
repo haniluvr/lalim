@@ -99,6 +99,7 @@ namespace Lalim.Inventory
             {
                 GameAudio.PlayAt(_itemData.collectSound, transform.position);
             }
+            else Sfx.PlayAt(SfxCue.ItemPickup, transform.position);   // the shared pickup sound
 
             // Play particle effect
             if (_collectParticles != null)

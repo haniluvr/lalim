@@ -125,6 +125,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1089883933408693444}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c1a3c917f1e6e0b419f9dd61ffa7a0a8,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3069040723429464821}
   m_SourcePrefab: {fileID: 100100000, guid: c1a3c917f1e6e0b419f9dd61ffa7a0a8, type: 3}
 --- !u!1 &4138117936152907431 stripped
 GameObject:
@@ -338,8 +342,29 @@ MonoBehaviour:
   Config: {fileID: 11400000, guid: be5c2f869c10c487d9a72dd49233fb3f, type: 2}
   _bubbleVisual: {fileID: 0}
   _bubbleMaterial: {fileID: 2100000, guid: 0aa54a330922841b0a71af2a7b35db32, type: 2}
-  _cameraClearance: 0.6
+  _visualScale: 0.45
+  _maxCameraFraction: 0.6
   _minVisualRadius: 0.9
+  _playerBodyRadius: 0.9
+  _cameraPullBack: 0
   _radiusLerpSpeed: 4
   _raiseSfx: {fileID: 0}
   _popHitSfx: {fileID: 0}
+--- !u!114 &3069040723429464821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4138117936152907431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59201b5fc33d74afda74c0998fc8a526, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Mechanics.DiverIdleFloat
+  _bob: 0.18
+  _bobSpeed: 0.8
+  _swayDegrees: 3
+  _floatAnimSpeed: 0.45
+  _settleDelay: 0.4
+  _blendSeconds: 0.8

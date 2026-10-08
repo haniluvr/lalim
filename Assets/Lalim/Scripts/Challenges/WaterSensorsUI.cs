@@ -8,9 +8,11 @@ using Lalim.UI;
 namespace Lalim.Challenges
 {
     /// <summary>
-    /// The "Sea Sensors" panel for the water readings minigame: a frosted-glass modal with three
-    /// arc gauges (pH, Salinity, Temp). Each gauge has a sweeping needle, a green target band and
-    /// a STOP button; "TESTING" checks and a COMPLETE button run along the bottom.
+    /// The "Water Sampling Kit" panel for the water readings minigame: a frosted-glass modal with
+    /// three arc gauges (pH, Salinity, Temp). Each gauge has a sweeping needle, a green target band
+    /// and a STOP button; "TESTING" checks and a COMPLETE button run along the bottom. A STOP
+    /// fires the moment it's touched (not on release), and a touch anywhere on a gauge counts too,
+    /// so the needle stops where the player meant it to.
     ///
     /// Built at runtime (sprites are generated, so it needs no art); WaterCalibrationMinigame drives it.
     /// </summary>
@@ -34,6 +36,7 @@ namespace Lalim.Challenges
 
         public event Action<int> StopPressed;
         public event Action CompletePressed;
+        public event Action HintPressed;
 
         private TMP_FontAsset _titleFont, _bodyFont;
         private Sprite _handIcon;
@@ -45,6 +48,7 @@ namespace Lalim.Challenges
         private CanvasGroup _completeGroup;
         private TMP_Text _completeLabel;
         private bool _completeReady;
+        private HintBulb _hints;
 
         private class Gauge
         {
@@ -72,6 +76,7 @@ namespace Lalim.Challenges
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             // Wide phones scale by height; narrower screens (tablets, editor) by width so it always fits.
             scaler.matchWidthOrHeight = (float)Screen.width / Mathf.Max(1, Screen.height) >= 1.7f ? 1f : 0f;
+            go.AddComponent<NoTapSound>();   // the gauges are the game, not a menu
             var ui = go.AddComponent<WaterSensorsUI>();
             ui._titleFont = titleFont;
             ui._bodyFont = bodyFont;
@@ -86,7 +91,8 @@ namespace Lalim.Challenges
         private void Build()
         {
             // Frosted glass panel: tinted fill, a soft highlight across the top, a light rim.
-            RectTransform panel = Rect("Panel", transform, new Vector2(0f, -10f), new Vector2(1600f, 880f));
+            // Lifted a little so the HP / swim bar / shells under it stay clear.
+            RectTransform panel = Rect("Panel", transform, new Vector2(0f, 12f), new Vector2(1600f, 850f));
             Sliced(panel.gameObject, GlassSprites.Rounded, GlassFill, 1f);
             RectTransform sheen = Rect("Sheen", panel, Vector2.zero, Vector2.zero);
             Stretch(sheen);
@@ -95,12 +101,15 @@ namespace Lalim.Challenges
             Stretch(rim);
             Sliced(rim.gameObject, GlassSprites.RoundedOutline, GlassEdge, 1f);
 
-            Text(panel, "SEA SENSORS", _titleFont, 66f, Cream, new Vector2(0f, 355f), new Vector2(1200f, 90f), true);
+            Text(panel, "WATER SAMPLING KIT", _titleFont, 66f, Cream, new Vector2(0f, 355f), new Vector2(1200f, 90f), true);
             _subtitle = Text(panel, "", _bodyFont, 28f, new Color(1f, 1f, 1f, 0.7f), new Vector2(0f, 300f), new Vector2(1200f, 40f), false);
             RectTransform line = Rect("Divider", panel, new Vector2(0f, 268f), new Vector2(1380f, 2f));
             line.gameObject.AddComponent<Image>().color = new Color(1f, 1f, 1f, 0.16f);
 
             for (int i = 0; i < 3; i++) _gauges[i] = BuildGauge(panel, i, new Vector2(-500f + 500f * i, 0f));
+
+            // Hint bulb in the panel's top-left corner.
+            _hints = HintBulb.CreateButton(panel, new Vector2(-705f, 330f), 96f, () => HintPressed?.Invoke(), _titleFont);
 
             // Bottom row: TESTING ✓✓✓   [COMPLETE]
             Text(panel, "TESTING", _titleFont, 34f, new Color(0.85f, 0.95f, 1f, 0.9f), new Vector2(-250f, -345f), new Vector2(260f, 60f), true);
@@ -166,13 +175,27 @@ namespace Lalim.Challenges
             g.ButtonComp = g.Button.gameObject.AddComponent<Button>();
             g.ButtonComp.transition = Selectable.Transition.None;
             int captured = index;
-            g.ButtonComp.onClick.AddListener(() => StopPressed?.Invoke(captured));
+            // Stop on touch-down: on release the needle would already have moved on.
+            g.Button.gameObject.AddComponent<PressDown>().Pressed = () => StopPressed?.Invoke(captured);
+            // The whole gauge is a (bigger) target too.
+            var hit = g.Root.gameObject.AddComponent<Image>();
+            hit.color = new Color(1f, 1f, 1f, 0f);
+            g.Root.gameObject.AddComponent<PressDown>().Pressed = () => StopPressed?.Invoke(captured);
             return g;
+        }
+
+        /// <summary>Calls <see cref="Pressed"/> as soon as a pointer goes down on this UI element.</summary>
+        private class PressDown : MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler
+        {
+            public Action Pressed;
+            public void OnPointerDown(UnityEngine.EventSystems.PointerEventData eventData) => Pressed?.Invoke();
         }
 
         // ───────────────────────── Driving ─────────────────────────
 
         public void SetSubtitle(string text) => _subtitle.text = text;
+
+        public void SetHints(int left) => _hints.SetHints(left);
 
         /// <summary>Lays out one gauge: its scale ends and its green band (both as values and as 0..1).</summary>
         public void SetupGauge(int i, string minLabel, string maxLabel, Vector2 band, string bandLow, string bandHigh)
@@ -250,7 +273,7 @@ namespace Lalim.Challenges
             g.Status.color = MissRed;
             Vector2 home = new Vector2(0f, -200f);
             float duration = Mathf.Max(0.35f, lockedFor);
-            for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
+            for (float t = 0f; t < duration; t += Lalim.Core.PauseClock.DeltaTime)
             {
                 float shake = t < 0.35f ? Mathf.Sin(t * 70f) * 14f * (1f - t / 0.35f) : 0f;
                 g.Button.anchoredPosition = home + new Vector2(shake, 0f);

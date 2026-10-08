@@ -113,6 +113,10 @@ namespace Lalim.UI
                 _queue.RemoveAt(pick);
                 if (next.Title != null) _titleText.text = next.Title;
                 if (_bodyText != null && next.Body != null) _bodyText.text = next.Body;
+                // A tool handed over mid-quest has no handover to watch, so its toast carries the
+                // reward sound. A relic's sound plays as it appears (RelicRewardStep), not here.
+                if (next.Kind == ToastKind.Reward) Lalim.Core.Sfx.Play(Lalim.Core.SfxCue.Reward);
+                else if (next.Kind == ToastKind.Act) Lalim.Core.Sfx.Play(Lalim.Core.SfxCue.ActTitle);
                 yield return Sequence();
             }
             _playing = false;
@@ -129,7 +133,7 @@ namespace Lalim.UI
                 _titleText.alpha = a;
                 if (_bodyText != null) _bodyText.alpha = a;
             });
-            if (_hold > 0f) yield return new WaitForSecondsRealtime(_hold);
+            if (_hold > 0f) yield return Lalim.Core.PauseClock.Wait(_hold);
             yield return Fade(1f, 0f, _fadeOut, a => { 
                 _panelGroup.alpha = a; 
                 _titleText.alpha = a; 
@@ -145,7 +149,7 @@ namespace Lalim.UI
             float t = 0f;
             while (t < duration)
             {
-                t += Time.unscaledDeltaTime;
+                t += Lalim.Core.PauseClock.DeltaTime;
                 apply(Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, t / duration)));
                 yield return null;
             }

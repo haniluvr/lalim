@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bef91b771d7d242358e97b0a7e50f58c, type: 3}
+  m_Name: SelectiveCatching
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.DDA.MinigameDifficultyProfile
+  expectedSeconds: 240
+  expectedFirstActionSeconds: 15
+  knobs:
+  - key: netRadius
+    easy: 4
+    normal: 3.2
+    hard: 2.6
+  - key: throwCooldown
+    easy: 1
+    normal: 1.5
+    hard: 2
+  - key: targetSpeed
+    easy: 1.6
+    normal: 2.2
+    hard: 2.8
+  - key: protectedPerPool
+    easy: 1
+    normal: 2
+    hard: 3
+  - key: protectedSpeed
+    easy: 0.9
+    normal: 1.1
+    hard: 1.4
+  - key: schoolSize
+    easy: 6
+    normal: 5
+    hard: 4

@@ -40,12 +40,15 @@ namespace Lalim.EditorTools
             new ZoneRelic
             {
                 ZoneId = GameConstants.Zones.LUZON_BLEACHED_REEF, Deity = Level1DialogueScripts.Amansinaya,
-                StepName = "04_RelicGift", StepId = "luzon_z1_relic", Objective = "Return to Amansinaya.",
+                StepName = "06_RelicGift", StepId = "luzon_z1_relic", Objective = "Return to Amansinaya.",
                 RelicIndex = 0, RevealLine = Level1DialogueScripts.AmansinayaRelicLine,
                 Renames = new[]
                 {
                     new[] { "07_Gate", "08_Gate" }, new[] { "06_Cleanse", "07_Cleanse" },
                     new[] { "05_WaterKit", "06_WaterKit" }, new[] { "04_Closing", "05_Closing" },
+                    // The talk after the trash (and the kit) moved in before the sorting.
+                    new[] { "08_Gate", "09_Gate" }, new[] { "07_Cleanse", "08_Cleanse" }, new[] { "05_Closing", "07_Closing" },
+                    new[] { "04_RelicGift", "06_RelicGift" }, new[] { "03_Sorting", "05_Sorting" }, new[] { "06_WaterKit", "04_WaterKit" },
                 },
             },
             new ZoneRelic
@@ -75,8 +78,9 @@ namespace Lalim.EditorTools
         private static readonly Dictionary<string, string> ClosingEdits = new Dictionary<string, string>
         {
             { "Do you feel it? My shallows taste sweet again.", null },
-            { "Take this. It reads the water's hidden moods: its sourness, its salt, its warmth.",
-              "Take this as well. It reads the water's hidden moods: its sourness, its salt, its warmth." },
+            // The kit is now handed over after the trash (Amansinaya's "trash_done" talk).
+            { "Take this. It reads the water's hidden moods: its sourness, its salt, its warmth.", null },
+            { "Take this as well. It reads the water's hidden moods: its sourness, its salt, its warmth.", null },
             { "The young coral holds. One day fish will shelter here again, and sailors will follow them home.", null },
             { "Free. Every one of them. You came to give, not to take. That is rarer than pearls.", null },
         };

@@ -94,7 +94,7 @@ namespace Lalim.UI
             if (_frame == null) return;
             if (healing)
             {
-                float pulse = (Mathf.Sin(Time.unscaledTime * 8f) + 1f) * 0.5f;
+                float pulse = (Mathf.Sin(Lalim.Core.PauseClock.Time * 8f) + 1f) * 0.5f;
                 _frame.color = Color.Lerp(_frameReady, _frameHealing, 0.5f + pulse * 0.5f);
             }
             else
@@ -119,7 +119,7 @@ namespace Lalim.UI
             if (_cardRect == null) return;
             if (_popTimer > 0f)
             {
-                _popTimer -= Time.unscaledDeltaTime;
+                _popTimer -= Lalim.Core.PauseClock.DeltaTime;
                 float t = 1f - Mathf.Clamp01(_popTimer / 0.35f);
                 _cardRect.localScale = Vector3.one * (1f + Mathf.Sin(t * Mathf.PI) * 0.08f);
             }

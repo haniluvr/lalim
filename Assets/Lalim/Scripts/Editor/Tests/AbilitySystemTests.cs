@@ -163,7 +163,8 @@ namespace Lalim.Tests
             var c = Shipped;
             float supply = 1f / c.GetOrbRegenSeconds(0.5f);
             float demand = MaxStaminaDemandPerSecond(c);
-            Assert.Less(demand, supply, "refill should keep up when both are used as often as possible");
+            // With Tidebond's 7s cooldown the two together cost about exactly the refill (break-even).
+            Assert.LessOrEqual(demand, supply * 1.02f, "refill should (about) keep up when both are used as often as possible");
             Assert.Greater(demand, supply * 0.6f, "...but only just, so stamina still matters");
         }
 
@@ -215,6 +216,100 @@ namespace Lalim.Tests
             float comboCycle = c.surgeComboWindow + c.surgeCooldown;
             float surgeChargePerSecond = c.surgeComboCharges * c.bubbleBarrierChargeOnSurge / comboCycle;
             Assert.Less(surgeChargePerSecond, c.bubbleBarrierChargePerSecondMoving * 2f);
+        }
+    }
+
+    public class SwimStaminaTests
+    {
+        private const float RiptidePerSegment = 10f;
+
+        [Test]
+        public void StartsFullWithSixSegments()
+        {
+            var pool = new SwimStaminaPool(GameConstants.Abilities.SWIM_STAMINA_SEGMENTS);
+            Assert.AreEqual(6, pool.Segments);
+            Assert.AreEqual(6, pool.FullSegments);
+            Assert.AreEqual(1f, pool.Normalized, 1e-4f);
+        }
+
+        [TestCase(1, 1f / 3f)]
+        [TestCase(2, 1f / 2f)]
+        [TestCase(3, 1f)]
+        public void SurgeCombosChargeAThirdAHalfAndAWholeSegment(int surges, float expected)
+        {
+            var pool = new SwimStaminaPool(6);
+            pool.SetCurrent(0f);
+            for (int i = 1; i <= surges; i++) pool.AddSurgeCharge(i);
+            Assert.AreEqual(expected, pool.Current, 1e-4f);
+        }
+
+        [Test]
+        public void ChargeIsCappedAtFull()
+        {
+            var pool = new SwimStaminaPool(6);
+            pool.SetCurrent(5.9f);
+            pool.AddSurgeCharge(3);
+            Assert.AreEqual(6f, pool.Current, 1e-4f);
+        }
+
+        [Test]
+        public void NeverRefillsOnItsOwn()
+        {
+            var pool = new SwimStaminaPool(6);
+            pool.SetCurrent(2.5f);
+            for (int i = 0; i < 600; i++) pool.Tick(0.1f, RiptidePerSegment);   // a minute
+            Assert.AreEqual(2.5f, pool.Current, 1e-4f);
+        }
+
+        [Test]
+        public void RiptideBurnsOnlyWholeSegmentsAndKeepsTheRest()
+        {
+            // 4 full segments and a third of the 5th: 40 s of Riptide, the third stays.
+            var pool = new SwimStaminaPool(6);
+            pool.SetCurrent(4f + 1f / 3f);
+            Assert.AreEqual(40f, pool.RiptideSecondsAvailable(RiptidePerSegment), 1e-3f);
+            Assert.IsTrue(pool.BeginRiptide());
+            for (int i = 0; i < 450; i++) pool.Tick(0.1f, RiptidePerSegment);   // 45 s
+            Assert.AreEqual(1f / 3f, pool.Current, 1e-3f, "the partial segment is never burnt");
+            pool.EndRiptide();
+            Assert.AreEqual(0, pool.FullSegments);
+        }
+
+        [Test]
+        public void RiptideDrainsOneSegmentPerTenSeconds()
+        {
+            var pool = new SwimStaminaPool(6);
+            pool.BeginRiptide();
+            for (int i = 0; i < 100; i++) pool.Tick(0.1f, RiptidePerSegment);
+            Assert.AreEqual(5f, pool.Current, 1e-3f);
+        }
+
+        [Test]
+        public void RiptideNeedsAWholeSegment()
+        {
+            var pool = new SwimStaminaPool(6);
+            pool.SetCurrent(0.9f);
+            Assert.AreEqual(0f, pool.RiptideSecondsAvailable(RiptidePerSegment));
+            Assert.IsFalse(pool.BeginRiptide());
+        }
+
+        [Test]
+        public void SurgesDontChargeDuringRiptide()
+        {
+            var pool = new SwimStaminaPool(6);
+            pool.SetCurrent(3f);
+            pool.BeginRiptide();
+            pool.AddSurgeCharge(1);
+            Assert.AreEqual(3f, pool.Current, 1e-4f);
+        }
+
+        [Test]
+        public void ShippedConfigMatchesTheDesign()
+        {
+            var c = AssetDatabase.LoadAssetAtPath<AbilityConfig>("Assets/Lalim/Data/AbilityConfig.asset");
+            Assert.IsNotNull(c);
+            Assert.AreEqual(6, c.swimStaminaSegments);
+            Assert.AreEqual(10f, c.riptideSecondsPerSegment, 1e-4f);
         }
     }
 

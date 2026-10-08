@@ -153,8 +153,8 @@ namespace Lalim.UI
         private void UpdateShake()
         {
             if (_rect == null || _shakeTimer <= 0f) return;
-            _shakeTimer -= Time.unscaledDeltaTime;
-            float offset = _shakeTimer > 0f ? Mathf.Sin(Time.unscaledTime * 60f) * 8f * (_shakeTimer / 0.35f) : 0f;
+            _shakeTimer -= Lalim.Core.PauseClock.DeltaTime;
+            float offset = _shakeTimer > 0f ? Mathf.Sin(Lalim.Core.PauseClock.Time * 60f) * 8f * (_shakeTimer / 0.35f) : 0f;
             _rect.anchoredPosition = _restPosition + new Vector2(offset, 0f);
         }
 
@@ -167,8 +167,8 @@ namespace Lalim.UI
 
             int have = PlayerStamina.Instance != null ? PlayerStamina.Instance.FullOrbs : cost;
             bool flashing = _flashTimer > 0f;
-            if (flashing) _flashTimer -= Time.unscaledDeltaTime;
-            bool flashOn = flashing && Mathf.PingPong(Time.unscaledTime * 8f, 1f) > 0.5f;
+            if (flashing) _flashTimer -= Lalim.Core.PauseClock.DeltaTime;
+            bool flashOn = flashing && Mathf.PingPong(Lalim.Core.PauseClock.Time * 8f, 1f) > 0.5f;
 
             Color color = flashOn ? _costFlash : (have >= cost ? _costAffordable : _costUnaffordable);
             if (_costText != null)

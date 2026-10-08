@@ -1,0 +1,147 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d98a24ad7c7924be4891d4d76ad0ef22, type: 3}
+  m_Name: AudioLevels
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Core.AudioLevels
+  entries:
+  - clip: {fileID: 8300000, guid: 1a19faccd8bae4baabd8ba4d6ec08589, type: 3}
+    rmsDb: -22
+    gain: 1
+  - clip: {fileID: 8300000, guid: e124ea71423404f448c220bccd4e9cdf, type: 3}
+    rmsDb: -28.9
+    gain: 1
+  - clip: {fileID: 8300000, guid: c1c84811e56e8427f89e584e28b9074e, type: 3}
+    rmsDb: -18
+    gain: 1
+  - clip: {fileID: 8300000, guid: c2cc16a621d674e5f9baa12f4dd34315, type: 3}
+    rmsDb: -27.8
+    gain: 1
+  - clip: {fileID: 8300000, guid: 82db6a2a11d9842a48cbd82cf2ead16a, type: 3}
+    rmsDb: -26.4
+    gain: 1
+  - clip: {fileID: 8300000, guid: 3aacdf305fcde414799a5d2fe2733c50, type: 3}
+    rmsDb: -18.6
+    gain: 1
+  - clip: {fileID: 8300000, guid: 82d348d86e3f0441e88cb09d8d2f5e2d, type: 3}
+    rmsDb: -25.7
+    gain: 0.966051
+  - clip: {fileID: 8300000, guid: a2a1cfec0eaab47ce9f18b6252c17ab6, type: 3}
+    rmsDb: -24.8
+    gain: 1
+  - clip: {fileID: 8300000, guid: 96e91ca6ad25243789ebcf5843e6b383, type: 3}
+    rmsDb: -23.4
+    gain: 1
+  - clip: {fileID: 8300000, guid: cbf12b05faf8f4ee1a4a20a9ced10f75, type: 3}
+    rmsDb: -22.1
+    gain: 1
+  - clip: {fileID: 8300000, guid: 187609e8e38ae4d5b8744cdcc2a8174a, type: 3}
+    rmsDb: -21
+    gain: 0.56234133
+  - clip: {fileID: 8300000, guid: 559f8b5acff18461aa6e491159434c10, type: 3}
+    rmsDb: -20.7
+    gain: 0.8609938
+  - clip: {fileID: 8300000, guid: 360da6a8ef5214a17ace683b2ecc2699, type: 3}
+    rmsDb: -20.5
+    gain: 1
+  - clip: {fileID: 8300000, guid: 822d4425808724509b5ad53579ae2ec7, type: 3}
+    rmsDb: -19.8
+    gain: 1
+  - clip: {fileID: 8300000, guid: b7cf99eb20886fc47884c94231af595e, type: 3}
+    rmsDb: -19.6
+    gain: 1
+  - clip: {fileID: 8300000, guid: cf4d1fdc9de3d4ff687a39319d579f9f, type: 3}
+    rmsDb: -19.2
+    gain: 0.45708823
+  - clip: {fileID: 8300000, guid: 0103a6553b549c3428e6c92984b235d7, type: 3}
+    rmsDb: -18.6
+    gain: 1
+  - clip: {fileID: 8300000, guid: f903f8748ea22445b9b5e5a846390253, type: 3}
+    rmsDb: -18.6
+    gain: 0.67608297
+  - clip: {fileID: 8300000, guid: af9692207b9d04565b44e75d60b55e15, type: 3}
+    rmsDb: -17.8
+    gain: 0.97723716
+  - clip: {fileID: 8300000, guid: 1ca2215500dec4841ae47a6f8c9ad453, type: 3}
+    rmsDb: -17.6
+    gain: 0.95499265
+  - clip: {fileID: 8300000, guid: 727da99a723f7445a9183df43b0689a1, type: 3}
+    rmsDb: -16.8
+    gain: 0.8709635
+  - clip: {fileID: 8300000, guid: 400156a56f6b34da3be741393fea6550, type: 3}
+    rmsDb: -16
+    gain: 0.31622776
+  - clip: {fileID: 8300000, guid: e79c75addb6f54c0a8c654eb76fab253, type: 3}
+    rmsDb: -15.6
+    gain: 0.3019952
+  - clip: {fileID: 8300000, guid: ae47a1cb46f1e4410a7bc89ff804baea, type: 3}
+    rmsDb: -15.3
+    gain: 0.46238104
+  - clip: {fileID: 8300000, guid: 111a4ce2813284a129df0feca93dd1e6, type: 3}
+    rmsDb: -15.2
+    gain: 0.7244359
+  - clip: {fileID: 8300000, guid: c817ac51d62bc40ce8be790e7bd4d3a8, type: 3}
+    rmsDb: -15
+    gain: 0.70794576
+  - clip: {fileID: 8300000, guid: 8d972554971184982ae3d5009aa11a32, type: 3}
+    rmsDb: -14.8
+    gain: 0.691831
+  - clip: {fileID: 8300000, guid: 96ef7bfa2fa254489b962896cd7093c1, type: 3}
+    rmsDb: -13.8
+    gain: 0.61659503
+  - clip: {fileID: 8300000, guid: 41f2ff91a78974817bbabc7945b5f5ed, type: 3}
+    rmsDb: -18
+    gain: 1
+  - clip: {fileID: 8300000, guid: 1a9ea42b0ea9d4325b321dd5cc463626, type: 3}
+    rmsDb: -13.6
+    gain: 0.7585776
+  - clip: {fileID: 8300000, guid: 1eba89934442846c39b07b6fbbed0772, type: 3}
+    rmsDb: -13
+    gain: 0.22387213
+  - clip: {fileID: 8300000, guid: fa6ed9e596580440093f98d7aa5cd638, type: 3}
+    rmsDb: -14.1
+    gain: 0.64
+  - clip: {fileID: 8300000, guid: 0b0aaf96ce4ed4bc1be942db5bdedaa5, type: 3}
+    rmsDb: -10.5
+    gain: 0.4216965
+  - clip: {fileID: 8300000, guid: 285f13ea2e699440d991faf299226463, type: 3}
+    rmsDb: -8
+    gain: 0.31622776
+  - clip: {fileID: 8300000, guid: 1cc031d0ccfe44054842810608b1c311, type: 3}
+    rmsDb: -18
+    gain: 1
+  - clip: {fileID: 8300000, guid: cf4c42d6fe3734df3865fc1206af5005, type: 3}
+    rmsDb: -18.6
+    gain: 1
+  - clip: {fileID: 8300000, guid: ad818521cfeb841059865dbffabeda64, type: 3}
+    rmsDb: -18.5
+    gain: 0.42
+  - clip: {fileID: 8300000, guid: 1332889bbe24c4c6187a4c4b322bfb6f, type: 3}
+    rmsDb: -19.9
+    gain: 1
+  - clip: {fileID: 8300000, guid: 92d49679fccf449bba7b4d8f388614a9, type: 3}
+    rmsDb: -13.8
+    gain: 0.62
+  - clip: {fileID: 8300000, guid: deb5e06270ad04f3a889b79da0f9099d, type: 3}
+    rmsDb: -19
+    gain: 1
+  - clip: {fileID: 8300000, guid: 2e779f01d663b433ba975af39196c33d, type: 3}
+    rmsDb: -16.7
+    gain: 0.86
+  - clip: {fileID: 8300000, guid: 430ff6d964c6542449ea744b716ab318, type: 3}
+    rmsDb: -15.9
+    gain: 0.79
+  - clip: {fileID: 8300000, guid: 0495f8392f22b4073981a4048516d810, type: 3}
+    rmsDb: -22.1
+    gain: 1
+  - clip: {fileID: 8300000, guid: 6f176a458a68d49beaa7abd7179b4d16, type: 3}
+    rmsDb: -5.9
+    gain: 0.25

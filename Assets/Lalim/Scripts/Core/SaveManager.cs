@@ -438,6 +438,7 @@ namespace Lalim.Core
         public List<string> collectedRelicIds = new List<string>();
         public List<string> collectedToolIds = new List<string>();
         public List<string> collectedQuestItemIds = new List<string>();
+        public List<string> equippedRelicIds = new List<string>();   // relics with a HUD button (RelicLoadout)
 
         // Zone completion (RegionProgressTracker)
         public List<string> completedZoneIds = new List<string>();
@@ -480,6 +481,7 @@ namespace Lalim.Core
             if (levelToxicScene == oldLevel1) levelToxicScene = GameConstants.Scenes.LUZON;
         }
         public string ghostNetBagState;                               // species shuffle bag (ghost nets)
+        public int siteShuffleSeed;                                   // where zone 2's minigame areas are this playthrough (0 = not picked yet)
 
         // HP, stamina, dugong health and skill cooldowns when the game was saved, so resuming
         // picks up exactly where the player left off (PlayerVitals).

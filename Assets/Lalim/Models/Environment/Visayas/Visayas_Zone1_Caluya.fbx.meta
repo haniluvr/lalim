@@ -1,0 +1,399 @@
+fileFormatVersion: 2
+guid: 5f13a26b714ec41b2a439ae61695ff82
+ModelImporter:
+  serializedVersion: 24501
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: BrownFish.001
+    second: {fileID: 2100000, guid: cdda82bbfc3224e4dbe73285dd759d37, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ClownFishBlack.001
+    second: {fileID: 2100000, guid: ee6a0e3487f324f08b1655f79715197c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ClownFishOrange.001
+    second: {fileID: 2100000, guid: 48c370da90cbf4cec8f3d027a0fd95ee, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ClownFishWhite.001
+    second: {fileID: 2100000, guid: 29e14c83f86734f78904343e693f547b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral
+    second: {fileID: 2100000, guid: 10137f636b6134f0c80e0a871ecf8791, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.001
+    second: {fileID: 2100000, guid: 1bfe544ce60a8434bb2e880cccd9899d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.002
+    second: {fileID: 2100000, guid: 7c0ca84e0d4d3482d8841410193bd4dd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.003
+    second: {fileID: 2100000, guid: adc45cdeac2244ceaa1e141e1c374748, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.004
+    second: {fileID: 2100000, guid: 4d018c5e9ae114fbda82fe18f4bec433, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.005
+    second: {fileID: 2100000, guid: eaaaa62a05003459ebb0d4c606bd613f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Coral.006
+    second: {fileID: 2100000, guid: 2d7f1c94eaed44a5986e0876567cfefb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CrabRed
+    second: {fileID: 2100000, guid: e2034acde84c841d6b9ffaee0795587a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CrabWhite
+    second: {fileID: 2100000, guid: 0263b81b2e1c14e23b36a669872a19bb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DoryBlack.001
+    second: {fileID: 2100000, guid: ba28b10411d084d4fa840a8a6e1b6da3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DoryBlue.001
+    second: {fileID: 2100000, guid: fab1cf05a0be8458490f060be3e040be, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DoryYellow.001
+    second: {fileID: 2100000, guid: b052bc3c6b3a64d879e4f7aad90b406a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Fish.001
+    second: {fileID: 2100000, guid: a2c4e8909ffaf441eb3189fdd3d9209c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: FishUnderside.001
+    second: {fileID: 2100000, guid: 59e85d7e8037e4751ad071f59ae17250, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Lobster
+    second: {fileID: 2100000, guid: 337e2a7636b2d451f9258f7865c50248, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Dead_Coral
+    second: {fileID: 2100000, guid: 77acba280656f48e4b11a6cfc537432f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Farm_Float
+    second: {fileID: 2100000, guid: 435507233de59402bbd2e509f3882ac3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_GiantClam_Cream
+    second: {fileID: 2100000, guid: cb7461e7c969c4112b30fed439d17409, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_GiantClam_Teal
+    second: {fileID: 2100000, guid: ac0f9534ec6e948249dfee68342deabe, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_P_GiantClam_Violet
+    second: {fileID: 2100000, guid: da3545d0c55254d0dae763b67ab0aa3c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z1_0
+    second: {fileID: 2100000, guid: 846ce62c7fdf2460c9fcbff66168e416, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z1_1
+    second: {fileID: 2100000, guid: 90c913da9b1244f1b8acbdf8a2d2528d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z1_2
+    second: {fileID: 2100000, guid: b1fb0a6bfb1e24f58a2085034a4de7ff, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z2_0
+    second: {fileID: 2100000, guid: e667c4d2c40d345619f2fb384913e2a3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Rock_Z2_1
+    second: {fileID: 2100000, guid: 3560dfddca2e34ab08d4eef42c4b6d22, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Anemone
+    second: {fileID: 2100000, guid: 832dbb62adb3a4a558c8fee56135bcf7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Cluster_A
+    second: {fileID: 2100000, guid: 244f988b196ba40e7bfd5d2bf9fd72eb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Cluster_B
+    second: {fileID: 2100000, guid: 83084e441e33444cb8ce6872eb1b0c6e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_1
+    second: {fileID: 2100000, guid: 924f177cf8e374c40818452a13dd048e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_1B
+    second: {fileID: 2100000, guid: 201cc0725eafd4e9bb77f5be6a4bee50, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_2
+    second: {fileID: 2100000, guid: 4f1f28ad25bb14a8a9eb725cb3d5a7fd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Coral_2B
+    second: {fileID: 2100000, guid: 006170c7c36ca41d2824ee624824d7f9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Funnel
+    second: {fileID: 2100000, guid: 637aee60a748e43d5a539e33c75e3386, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Kelp_1
+    second: {fileID: 2100000, guid: 566686f7b6d3c49ee8c6ad6191beb0b9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Kelp_2
+    second: {fileID: 2100000, guid: 906207759edcd4ae5af8e54b96473da6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_A
+    second: {fileID: 2100000, guid: 1848c4a04f5db499cb41b719e6bdb119, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_B1
+    second: {fileID: 2100000, guid: 6b1c42c9b7b8f4701bc8cd989b909871, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Seaweed_B2
+    second: {fileID: 2100000, guid: 2f54e42e9e25449c098299a62484493c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_1
+    second: {fileID: 2100000, guid: 346ae066f8f4b4b2e926fee1c4140f6e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_1b
+    second: {fileID: 2100000, guid: 7a166672163e5496db3ea582282ad2e8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_2
+    second: {fileID: 2100000, guid: f4e828953a1324e12bbe1f2d23c7de19, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_2b
+    second: {fileID: 2100000, guid: c7a1682bb744940f299531d1953bd085, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_3
+    second: {fileID: 2100000, guid: 5ad701b00f54d4934b8f9946d1d5e654, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Sponge_3b
+    second: {fileID: 2100000, guid: adefe7b9727804f348a952f7454d1290, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_SM_Plant_Urchins
+    second: {fileID: 2100000, guid: d1aba18d3850f47f18a69ed67d4f5c44, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Z2_Rope
+    second: {fileID: 2100000, guid: 7729f259c045e4004a86869d3dac315d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Z2_Wood
+    second: {fileID: 2100000, guid: 01cd8575327bd43d0a8110b2fc7b711d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.004
+    second: {fileID: 2100000, guid: 75c48549c95cd47889b5da8d4fa43349, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.005
+    second: {fileID: 2100000, guid: 9ff32d568c46f4bbf9f4628985265734, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: RedPart.001
+    second: {fileID: 2100000, guid: cd46a7f27aea2417d8c8b4a5aba48d20, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SandDollar.002
+    second: {fileID: 2100000, guid: 9b361283adf884f3688a50adb11d8471, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Starfish
+    second: {fileID: 2100000, guid: 9e2deb67a60fa41b79400f622f3bc2ca, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Underside.002
+    second: {fileID: 2100000, guid: 2c1861185c3404793aeee3732cbb083a, type: 2}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+    searchTexturesGlobally: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    importUVs: -1
+    importVertexColors: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

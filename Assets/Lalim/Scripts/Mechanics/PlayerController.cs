@@ -312,7 +312,9 @@ namespace Lalim.Mechanics
             }
 
             // --- Apply Motion to CharacterController ---
-            _characterController.Move(_currentVelocity * Time.deltaTime);
+            // Water flows (tide currents) carry the diver on top of their own swimming, so letting go
+            // of the stick doesn't fight the current.
+            _characterController.Move((_currentVelocity + TotalFlow()) * Time.deltaTime);
 
             // Cancel accumulated downward velocity when touching seabed
             if (_characterController.isGrounded && _currentVelocity.y < 0f)
@@ -594,6 +596,32 @@ namespace Lalim.Mechanics
         }
 
         /// <summary>Removes a previously-registered speed multiplier. Call when an ability ends or is cancelled.</summary>
+        private readonly Dictionary<object, Vector3> _flows = new Dictionary<object, Vector3>();
+
+        /// <summary>A water flow carrying the diver (a tide current), added on top of their own swimming.</summary>
+        public void SetFlow(object source, Vector3 velocity) => _flows[source] = velocity;
+        public void ClearFlow(object source) => _flows.Remove(source);
+
+        /// <summary>
+        /// One flow at a time (overlapping currents don't add up): the strongest, favouring the one
+        /// going the way the diver is heading, so two lanes side by side never cancel out.
+        /// </summary>
+        private Vector3 TotalFlow()
+        {
+            if (!_movementEnabled || _flows.Count == 0) return Vector3.zero;
+            Vector3 heading = Quaternion.Euler(0f, _facingYaw, 0f) * Vector3.forward;
+            Vector3 best = Vector3.zero;
+            float bestScore = 0f;
+            foreach (Vector3 v in _flows.Values)
+            {
+                float m = v.magnitude;
+                if (m < 0.001f) continue;
+                float score = m * (1.5f + Vector3.Dot(v / m, heading));
+                if (score > bestScore) { bestScore = score; best = v; }
+            }
+            return best;
+        }
+
         public void ClearSpeedMultiplier(object source)
         {
             _speedMultipliers.Remove(source);
@@ -638,6 +666,18 @@ namespace Lalim.Mechanics
             _dashElapsed = 0f;
             _dashPeakSpeed = 2f * distance / duration; // linear ease-out: avg = peak / 2
             _dashExitSpeed = (distance / duration) * exitVelocityRetain;
+        }
+
+        /// <summary>A shove (a bite, a hit): like a dash, but the diver keeps facing the way they were.</summary>
+        public void Knockback(Vector3 dir, float distance, float duration)
+        {
+            if (!_movementEnabled || dir.sqrMagnitude < 0.0001f) return;
+            duration = Mathf.Max(duration, 0.01f);
+            _dashDir = dir.normalized;
+            _dashDuration = duration;
+            _dashElapsed = 0f;
+            _dashPeakSpeed = 2f * distance / duration;
+            _dashExitSpeed = 0f;
         }
 
         public void CancelDash()
@@ -718,6 +758,9 @@ namespace Lalim.Mechanics
                 case ChallengeType.HazardDefusal:
                 case ChallengeType.GhostNetRescue:
                 case ChallengeType.TrashCollection:
+                case ChallengeType.FishGathering:
+                case ChallengeType.SelectiveCatching:
+                case ChallengeType.SchoolRelocation:
                     return true;
 
                 case ChallengeType.SustainableFishing:

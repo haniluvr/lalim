@@ -293,6 +293,7 @@ MonoBehaviour:
   _requiredItemId: 
   _viewPoint: {fileID: 7149950784301057028}
   _marker: {fileID: 7895083835554885601}
+  _promptHeight: 0.4
 --- !u!114 &5038905539462437225
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -310,43 +311,62 @@ MonoBehaviour:
   - id: clownfish
     displayName: Clownfish
     model: {fileID: 919132149155446097, guid: 175ee9cb636c24f119ff5179c864aa55, type: 3}
+    fit: 0
   - id: bluetang
     displayName: Blue Tang
     model: {fileID: 919132149155446097, guid: fcd495eb507ec45818483f48fcdca25f, type: 3}
+    fit: 0
   - id: reeffish
     displayName: Reef Fish
     model: {fileID: 919132149155446097, guid: 39f64694d5c984e96bac0921f002f244, type: 3}
+    fit: 0
   - id: crab
     displayName: Crab
     model: {fileID: 919132149155446097, guid: 3bd339356925a4805b616fb684f96ca6, type: 3}
+    fit: 0
   - id: lobster
     displayName: Spiny Lobster
     model: {fileID: 919132149155446097, guid: c57208142e991412aadcf940170db3a2, type: 3}
+    fit: 0
   - id: seastar
     displayName: Sea Star
     model: {fileID: 919132149155446097, guid: f2f9dbcf6b64c49c19ca429083de924d, type: 3}
+    fit: 0
   - id: octopus
     displayName: Octopus
     model: {fileID: 919132149155446097, guid: 0468cf20383cb46f69762379deed1fa2, type: 3}
+    fit: 0
   - id: squid
     displayName: Squid
     model: {fileID: 919132149155446097, guid: 0c8629a1f04e844e3aef867621b1ee27, type: 3}
+    fit: 0
   - id: moray
     displayName: Moray Eel
     model: {fileID: 919132149155446097, guid: 7d8711c0e30a24e9daabd9497d18e81a, type: 3}
+    fit: 0
   - id: pawikan
     displayName: Sea Turtle
     model: {fileID: 919132149155446097, guid: ad3e1c5fdfa734c2e9a1e0838e78cc7c, type: 3}
+    fit: 0
   - id: stingray
     displayName: Stingray
     model: {fileID: 919132149155446097, guid: 9df2844c3a15540fbb888b1935b4afe4, type: 3}
-  _netModel: {fileID: 919132149155446097, guid: 2e92cd70a9c874c06bbad3b6f27cfcd4,
-    type: 3}
+    fit: 0
   _sceneProps: []
-  _netSize: {x: 8, y: 3.8}
+  _ropeMaterial: {fileID: 0}
+  _tangledMaterial: {fileID: 0}
+  _knotMaterial: {fileID: 0}
+  _titleFont: {fileID: 0}
+  _bodyFont: {fileID: 0}
+  _ropeDragClip: {fileID: 8300000, guid: 0495f8392f22b4073981a4048516d810, type: 3}
+  _netLiftClip: {fileID: 8300000, guid: 6f176a458a68d49beaa7abd7179b4d16, type: 3}
+  _freedClip: {fileID: 8300000, guid: 3aacdf305fcde414799a5d2fe2733c50, type: 3}
+  _cellSize: 0.9
+  _viewPitch: 72
   _knotSize: 0.22
   _grabRadius: 0.5
-  _ropeWidth: 0.05
+  _ropeRadius: 0.03
+  _cordRadius: 0.012
 --- !u!1 &7895083835554885601
 GameObject:
   m_ObjectHideFlags: 0

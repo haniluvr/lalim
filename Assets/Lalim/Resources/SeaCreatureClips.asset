@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1f8a726ecb374a949217743aa0f52fd, type: 3}
+  m_Name: SeaCreatureClips
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Mechanics.SeaCreatureClips
+  _entries:
+  - model: BrownFish
+    swim: {fileID: -2246556710137776211, guid: 39f64694d5c984e96bac0921f002f244, type: 3}
+    idle: {fileID: 0}
+  - model: ClownFish
+    swim: {fileID: -48908820372889678, guid: 175ee9cb636c24f119ff5179c864aa55, type: 3}
+    idle: {fileID: 0}
+  - model: DoryFish
+    swim: {fileID: -340452426166087222, guid: fcd495eb507ec45818483f48fcdca25f, type: 3}
+    idle: {fileID: 0}
+  - model: TunaFish
+    swim: {fileID: -4742847032485410652, guid: eb4f11089e739478bb6404d91f806d16, type: 3}
+    idle: {fileID: 0}
+  - model: Turtle
+    swim: {fileID: -7800233705998659984, guid: ad3e1c5fdfa734c2e9a1e0838e78cc7c, type: 3}
+    idle: {fileID: 4272227522538187189, guid: ad3e1c5fdfa734c2e9a1e0838e78cc7c, type: 3}
+  - model: StingRay
+    swim: {fileID: 4781951162920444690, guid: 9df2844c3a15540fbb888b1935b4afe4, type: 3}
+    idle: {fileID: 0}
+  - model: Hammerhead
+    swim: {fileID: 4781951162920444690, guid: 8b7a6bfc320b141fbbf3d2f977f0da47, type: 3}
+    idle: {fileID: 0}
+  - model: Whale
+    swim: {fileID: -4086864642940237741, guid: ddc03dd385ef741bc9811503758df021, type: 3}
+    idle: {fileID: 0}
+  - model: Eel
+    swim: {fileID: -4086864642940237741, guid: 7d8711c0e30a24e9daabd9497d18e81a, type: 3}
+    idle: {fileID: -8945691123924629249, guid: 7d8711c0e30a24e9daabd9497d18e81a, type: 3}
+  - model: Squid
+    swim: {fileID: 4026694985428944282, guid: 0c8629a1f04e844e3aef867621b1ee27, type: 3}
+    idle: {fileID: 7629809873768849400, guid: 0c8629a1f04e844e3aef867621b1ee27, type: 3}
+  - model: Octopus
+    swim: {fileID: 8349542763059015795, guid: 0468cf20383cb46f69762379deed1fa2, type: 3}
+    idle: {fileID: -8945691123924629249, guid: 0468cf20383cb46f69762379deed1fa2, type: 3}
+  - model: Crab
+    swim: {fileID: 8349542763059015795, guid: 3bd339356925a4805b616fb684f96ca6, type: 3}
+    idle: {fileID: -8945691123924629249, guid: 3bd339356925a4805b616fb684f96ca6, type: 3}
+  - model: Lobster
+    swim: {fileID: -6146304519643335762, guid: c57208142e991412aadcf940170db3a2, type: 3}
+    idle: {fileID: -2104284462645173068, guid: c57208142e991412aadcf940170db3a2, type: 3}
+  - model: StarFish
+    swim: {fileID: 4781951162920444690, guid: f2f9dbcf6b64c49c19ca429083de924d, type: 3}
+    idle: {fileID: 0}
+  - model: Seal
+    swim: {fileID: 4117316793062672111, guid: 9ef4734ec855a43a6bec8a3e97b6f086, type: 3}
+    idle: {fileID: -1812613073623737639, guid: 9ef4734ec855a43a6bec8a3e97b6f086, type: 3}
+  - model: Penguin
+    swim: {fileID: 4781951162920444690, guid: 297172d0c7aee441e8018bed054527dc, type: 3}
+    idle: {fileID: 0}

@@ -40,13 +40,31 @@ namespace Lalim.Core
 
         public static float Gain(AudioChannel channel) => SettingsManager.Active.Gain(channel);
 
+        private static AudioLevels _levels;
+        private static bool _levelsLoaded;
+
+        /// <summary>
+        /// The clip's loudness-matching gain (AudioLevels), so files mastered louder or quieter all
+        /// sit at their group's level. 1 for clips that weren't measured.
+        /// </summary>
+        public static float ClipGain(AudioClip clip)
+        {
+            if (clip == null) return 1f;
+            if (!_levelsLoaded) { _levels = Resources.Load<AudioLevels>("Audio/AudioLevels"); _levelsLoaded = true; }
+            return _levels != null ? _levels.Gain(clip) : 1f;
+        }
+
         private static int MaxOneShots => MaxOneShotsPerTier[Mathf.Clamp(SettingsManager.Active.sfxQuality, 0, MaxOneShotsPerTier.Length - 1)];
 
-        /// <summary>Fire-and-forget sound at a world position (replaces AudioSource.PlayClipAtPoint).</summary>
-        public static void PlayAt(AudioClip clip, Vector3 position, float volume = 1f, AudioChannel channel = AudioChannel.Sfx)
+        /// <summary>
+        /// Fire-and-forget sound at a world position (replaces AudioSource.PlayClipAtPoint). Full volume
+        /// within <paramref name="minDistance"/>, fading with distance after that (Unity's default of 1 m
+        /// made anything a few metres off nearly silent).
+        /// </summary>
+        public static void PlayAt(AudioClip clip, Vector3 position, float volume = 1f, AudioChannel channel = AudioChannel.Sfx, float minDistance = 6f)
         {
             if (clip == null) return;
-            float v = volume * Gain(channel);
+            float v = volume * Gain(channel) * ClipGain(clip);
             if (v <= 0f || !HasOneShotRoom()) return;
 
             GameSettings s = SettingsManager.Active;
@@ -57,6 +75,31 @@ namespace Lalim.Core
             src.volume = v;
             src.spatialBlend = s.spatialAudio ? 1f : 0f;
             src.spread = s.headphoneOptimization ? 0f : SpeakerSpread;
+            src.rolloffMode = AudioRolloffMode.Logarithmic;
+            src.minDistance = Mathf.Max(0.5f, minDistance);
+            src.maxDistance = Mathf.Max(src.minDistance * 4f, 120f);
+            src.Play();
+            _oneShots.Add(src);
+            Object.Destroy(go, clip.length / Mathf.Max(0.01f, Mathf.Abs(src.pitch)) + 0.1f);
+        }
+
+        /// <summary>
+        /// Fire-and-forget sound heard "in the head" (stingers, warnings): no position, no panning.
+        /// <paramref name="survivesSceneLoad"/>: it plays to the end even if the scene changes under it
+        /// (the teleport whoosh carrying on into the loading screen).
+        /// </summary>
+        public static void PlayFlat(AudioClip clip, float volume = 1f, AudioChannel channel = AudioChannel.Sfx, bool survivesSceneLoad = false)
+        {
+            if (clip == null) return;
+            float v = volume * Gain(channel) * ClipGain(clip);
+            if (v <= 0f || !HasOneShotRoom()) return;
+
+            var go = new GameObject("OneShot2D " + clip.name);
+            if (survivesSceneLoad) Object.DontDestroyOnLoad(go);
+            var src = go.AddComponent<AudioSource>();
+            src.clip = clip;
+            src.volume = v;
+            src.spatialBlend = 0f;
             src.Play();
             _oneShots.Add(src);
             Object.Destroy(go, clip.length / Mathf.Max(0.01f, Mathf.Abs(src.pitch)) + 0.1f);
@@ -66,7 +109,7 @@ namespace Lalim.Core
         public static void PlayOneShot(AudioSource source, AudioClip clip, float volume = 1f, AudioChannel channel = AudioChannel.Sfx)
         {
             if (source == null || clip == null) return;
-            float v = volume * Gain(channel);
+            float v = volume * Gain(channel) * ClipGain(clip);
             if (v <= 0f || !HasOneShotRoom()) return;
             ApplySpatial(source);
             source.PlayOneShot(clip, v);
@@ -78,7 +121,7 @@ namespace Lalim.Core
             if (source == null) return;
             Unbind(source);
             _bound.Add(new Bound { Source = source, BaseVolume = baseVolume, Channel = channel });
-            source.volume = baseVolume * Gain(channel);
+            source.volume = baseVolume * Gain(channel) * ClipGain(source.clip);
             ApplySpatial(source);
         }
 
@@ -95,7 +138,7 @@ namespace Lalim.Core
             {
                 Bound b = _bound[i];
                 if (b.Source == null) { _bound.RemoveAt(i); continue; }
-                b.Source.volume = b.BaseVolume * Gain(b.Channel);
+                b.Source.volume = b.BaseVolume * Gain(b.Channel) * ClipGain(b.Source.clip);
                 ApplySpatial(b.Source);
             }
         }

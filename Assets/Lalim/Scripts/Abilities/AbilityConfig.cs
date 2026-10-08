@@ -17,13 +17,13 @@ namespace Lalim.Abilities
     ///  Each skill has exactly one limiter, so nothing double-gates:
     ///   - Surge / Riptide (basic):   cooldown only — free, always available for movement.
     ///   - Spirit Sense (1 shell):    stamina is the main limit; short 20s cooldown after its 15s.
-    ///   - Tidebond (2 shells):       stamina is the main limit; 30s cooldown after the 45s ride,
+    ///   - Tidebond (2 shells):       stamina is the main limit; 7s cooldown after the 45s ride,
     ///                                and the dugong's own HP gates it when hurt.
     ///   - Seagrass Mend (support):   time-based charge (40s), gated by dugong HP. No stamina.
     ///   - Bubble Barrier (ultimate): charges from ACTIVITY — swimming (~90s of movement from empty)
     ///                                plus a bonus for every other skill used. No cooldown, no stamina.
     ///  Stamina: 4 shells, 15s each. Using Spirit Sense AND Tidebond as often as their cooldowns
-    ///  allow costs ~1 shell / 18s, just under the 1 / 15s refill — sustainable in open water.
+    ///  allow costs about 1 shell / 15s, right at the 1 / 15s refill — break-even in open water.
     ///  Toxic water halves the refill (1 / 30s), so both can't be kept up there: you choose,
     ///  or raise Bubble Barrier (which restores normal refill). Riding regenerates 1.2× faster.
     /// </summary>
@@ -59,8 +59,16 @@ namespace Lalim.Abilities
         [Tooltip("Hold time (seconds) required to trigger Riptide")]
         public float holdActivateThreshold = 0.6f;
 
+        [Header("Swim stamina (the Surge/Riptide bar under the HP bar)")]
+        [Tooltip("Segments in the bar (starts full). Surges charge it: 1 surge = ⅓ segment, 2-combo = ½, 3-combo = 1. It never refills on its own.")]
+        [Min(1)] public int swimStaminaSegments = GameConstants.Abilities.SWIM_STAMINA_SEGMENTS;
+        [Tooltip("Seconds of Riptide each whole segment buys (Riptide burns whole segments only).")]
+        [Min(0.1f)] public float riptideSecondsPerSegment = GameConstants.Abilities.RIPTIDE_SECONDS_PER_SEGMENT;
+
         [Header("Riptide (hold)")]
+        [Tooltip("Unused: Riptide lasts riptideSecondsPerSegment × the whole segments in the swim bar")]
         public float riptideDuration = GameConstants.Abilities.RIPTIDE_DURATION;
+        [Tooltip("Unused: after Riptide the shared Surge cooldown runs (surgeCooldown)")]
         public float riptideCooldown = GameConstants.Abilities.RIPTIDE_COOLDOWN;
         public int riptideCostOrbs = GameConstants.Abilities.RIPTIDE_COST_ORBS;
         public float riptideSpeedMultiplier = GameConstants.Abilities.RIPTIDE_SPEED_MULTIPLIER;

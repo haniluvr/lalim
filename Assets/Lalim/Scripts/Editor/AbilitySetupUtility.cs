@@ -699,18 +699,6 @@ namespace Lalim.Editor
                 BuildAbilityButton<AbilityButtonUI>(cluster, "Btn_SpiritSense", AbilityId.SpiritSense, new Vector2(-364, 413), 120, spiritIcon, circle, ring, lockIcon);
                 BuildAbilityButton<AbilityButtonUI>(cluster, "Btn_Tidebond", AbilityId.Tidebond, new Vector2(-225, 450), 120, FinalArt("icon_tidebond") ?? Placeholder("icon_tidebond"), circle, ring, lockIcon);
 
-                // Codex moves to middle-left under Navigation, freeing the arc.
-                Transform codex = cluster.Find("Btn_Codex");
-                if (codex != null)
-                {
-                    codex.SetParent(root.transform, false);
-                    var rt = (RectTransform)codex;
-                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
-                    rt.pivot = new Vector2(0.5f, 0.5f);
-                    rt.anchoredPosition = new Vector2(190f, 60f);
-                    rt.sizeDelta = new Vector2(140f, 140f);
-                }
-
                 BuildBottomCenter(root.transform);
 
                 PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath);
@@ -1281,9 +1269,9 @@ namespace Lalim.Editor
             hpSo.FindProperty("_ghostColor").colorValue = new Color(1f, 1f, 1f, 0.55f);
             hpSo.ApplyModifiedPropertiesWithoutUndo();
 
-            // Thin line under the HP bar: Riptide's remaining time. Hidden unless Riptide is active.
+            // Thin line under the HP bar: the swim stamina Surge and Riptide share, in 6 segments.
             DestroyChild(root, "RiptideTimer");
-            var riptideLine = NewRect(root, "RiptideTimer", new Vector2(0f, 70f), new Vector2(width, 3f));
+            var riptideLine = NewRect(root, "RiptideTimer", new Vector2(0f, 70f), new Vector2(width, 6f));
             NewImage(riptideLine, "Track", bar, new Color(0f, 0.04f, 0.08f, 0.6f), Image.Type.Simple);
             var riptideFill = NewImage(riptideLine, "Fill", bar, HudPalette.Riptide, Image.Type.Filled);
             riptideFill.fillMethod = Image.FillMethod.Horizontal;

@@ -5,12 +5,14 @@ using Lalim.Mechanics;
 namespace Lalim.Abilities
 {
     /// <summary>
-    /// Resonance skill: calls the dugong and rides it at 2.25× speed (11.25 m/s) for up to 45s
-    /// of dugong stamina ("fatigue"). Press again to dismount early. Exploration only.
-    /// Cooldown (75s) starts on dismount; if the ride ran out, the dugong rests for that long.
+    /// Resonance skill: calls the dugong, and the player swims alongside it with a hand on its
+    /// flank (not on its back) at 2.25× speed (11.25 m/s) for up to 45s of dugong stamina
+    /// ("fatigue"). Press again to let go early. Exploration only. Cooldown (7s) starts on
+    /// letting go; if the ride ran out, the dugong rests for that long.
     ///
     /// The player's CharacterController keeps doing all the movement — the dugong only snaps
-    /// under the player — so collisions and UnderwaterBounds behave exactly as when swimming.
+    /// beside the player (DugongCompanion, Mounted) — so collisions and UnderwaterBounds behave
+    /// exactly as when swimming. "Mounted"/"riding" in code means this pose.
     /// </summary>
     public class TidebondAbility : AbilityBase
     {

@@ -143,6 +143,7 @@ namespace Lalim.Mechanics
         {
             _entering = true;
             Flash();
+            Sfx.Play(SfxCue.Teleport, survivesSceneLoad: true);   // rings on into the loading screen
             yield return new WaitForSeconds(_enterDelay);
             Debug.Log($"[TeleportArchGate] Entering {_region}.");
             if (GameManager.Instance != null) GameManager.Instance.TryEnterRegion(_region);

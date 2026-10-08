@@ -19,7 +19,7 @@ MonoBehaviour:
   itemType: 0
   regionOrigin: 0
   isKeyItem: 1
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 4abbaff653d2a4fa6b03d09a28fe950f, type: 3}
   worldModelPrefab: {fileID: 5101272379127656504, guid: 524ecc4f68c9b41e2ae14dec2f56de44,
     type: 3}
   collectSound: {fileID: 0}

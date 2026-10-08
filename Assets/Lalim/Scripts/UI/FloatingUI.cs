@@ -27,7 +27,7 @@ namespace Lalim.UI
         private void Update()
         {
             // Use Mathf.Sin to create a smooth, repeating wave based on time
-            float newY = _startAnchoredPosition.y + Mathf.Sin(Time.unscaledTime * _speed) * _amplitude;
+            float newY = _startAnchoredPosition.y + Mathf.Sin(Lalim.Core.PauseClock.Time * _speed) * _amplitude;
             
             // Apply the new position
             _rectTransform.anchoredPosition = new Vector2(_startAnchoredPosition.x, newY);

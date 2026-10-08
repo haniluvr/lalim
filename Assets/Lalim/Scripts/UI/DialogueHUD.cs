@@ -134,7 +134,7 @@ namespace Lalim.UI
         {
             if (s_arcSprite != null) return s_arcSprite;
             const int size = 128;
-            const float outer = 62f, inner = 54f;
+            const float outer = 62f, inner = 58f;   // a thin line
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
             var pixels = new Color32[size * size];
             Vector2 c = new Vector2(size / 2f, size / 2f);

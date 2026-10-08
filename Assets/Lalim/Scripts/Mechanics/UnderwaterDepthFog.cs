@@ -24,12 +24,20 @@ namespace Lalim.Mechanics
         [SerializeField] private float _surfaceY;
         [Tooltip("How much darker the water gets per metre of depth.")]
         [SerializeField, Min(0f)] private float _darkeningPerMetre = 0.006f;
+        [Tooltip("Convert the fog colour to linear before the shader uses it, so far geometry fades to exactly " +
+                 "the sky dome's colour (no lighter band on the horizon). Off keeps Level 1's tuned look.")]
+        [SerializeField] private bool _linearWaterColor;
+
+        /// <summary>Per-zone multiplier on the density (PollutionDirector sets it; 1 = as authored).</summary>
+        public static float ZoneDensityScale = 1f;
 
         private void LateUpdate()
         {
-            Shader.SetGlobalVector(FogId, new Vector4(_strength, _startDistance, _density, _darkeningPerMetre));
+            Shader.SetGlobalVector(FogId, new Vector4(_strength, _startDistance, _density * ZoneDensityScale, _darkeningPerMetre));
             Shader.SetGlobalVector(AbsorbId, new Vector4(_absorption.x, _absorption.y, _absorption.z, _surfaceY));
-            Shader.SetGlobalColor(ColorId, RenderSettings.fogColor);
+            Color water = RenderSettings.fogColor;
+            if (_linearWaterColor && QualitySettings.activeColorSpace == ColorSpace.Linear) water = water.linear;
+            Shader.SetGlobalColor(ColorId, water);
         }
 
         private void OnDisable() => Shader.SetGlobalVector(FogId, Vector4.zero);

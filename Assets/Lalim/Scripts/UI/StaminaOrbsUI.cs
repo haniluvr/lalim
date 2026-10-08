@@ -62,7 +62,7 @@ namespace Lalim.UI
         private void Update()
         {
             if (_flashTimer <= 0f) return;
-            _flashTimer -= Time.unscaledDeltaTime;
+            _flashTimer -= Lalim.Core.PauseClock.DeltaTime;
             Refresh();
         }
 
@@ -128,7 +128,7 @@ namespace Lalim.UI
         private void Refresh()
         {
             int full = Mathf.FloorToInt(_current + 0.0001f);
-            bool flashOn = _flashTimer > 0f && Mathf.PingPong(Time.unscaledTime * 8f, 1f) > 0.5f;
+            bool flashOn = _flashTimer > 0f && Mathf.PingPong(Lalim.Core.PauseClock.Time * 8f, 1f) > 0.5f;
 
             for (int i = 0; i < _fills.Count; i++)
             {

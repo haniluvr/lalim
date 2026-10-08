@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61ddf68ace0b54a5c92fb380d0b55ebb, type: 3}
+  m_Name: MusicLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::Lalim.Core.MusicLibrary
+  scenes:
+  - scene: 01_Splash
+    mode: 0
+    bgm: {fileID: 0}
+    ambience: {fileID: 0}
+  - scene: 02_MainMenu
+    mode: 0
+    bgm: {fileID: 0}
+    ambience: {fileID: 0}
+  - scene: 04_Loading
+    mode: 2
+    bgm: {fileID: 0}
+    ambience: {fileID: 0}
+  - scene: 03_NameInput
+    mode: 0
+    bgm: {fileID: 8300000, guid: 1a9ea42b0ea9d4325b321dd5cc463626, type: 3}
+    ambience: {fileID: 0}
+  - scene: 01_Cutscene
+    mode: 1
+    bgm: {fileID: 8300000, guid: 1a9ea42b0ea9d4325b321dd5cc463626, type: 3}
+    ambience: {fileID: 0}
+  - scene: 01_Tutorial
+    mode: 0
+    bgm: {fileID: 8300000, guid: 1a9ea42b0ea9d4325b321dd5cc463626, type: 3}
+    ambience: {fileID: 8300000, guid: c2cc16a621d674e5f9baa12f4dd34315, type: 3}
+  - scene: TeleportScene
+    mode: 0
+    bgm: {fileID: 8300000, guid: 1a9ea42b0ea9d4325b321dd5cc463626, type: 3}
+    ambience: {fileID: 8300000, guid: c2cc16a621d674e5f9baa12f4dd34315, type: 3}
+  - scene: 02_Luzon
+    mode: 4
+    bgm: {fileID: 8300000, guid: 0103a6553b549c3428e6c92984b235d7, type: 3}
+    ambience: {fileID: 0}
+  - scene: 03_Visayas
+    mode: 4
+    bgm: {fileID: 8300000, guid: 0103a6553b549c3428e6c92984b235d7, type: 3}
+    ambience: {fileID: 0}
+  - scene: 04_Mindanao
+    mode: 4
+    bgm: {fileID: 8300000, guid: 0103a6553b549c3428e6c92984b235d7, type: 3}
+    ambience: {fileID: 0}

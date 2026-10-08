@@ -68,7 +68,7 @@ namespace Lalim.UI
             if (_ghostFill != null) _ghostFill.fillAmount = _ghost;
 
             bool low = _target > 0f && _target < _lowThreshold;
-            float pulse = low ? (Mathf.Sin(Time.unscaledTime * 6f) + 1f) * 0.5f : 0f;
+            float pulse = low ? (Mathf.Sin(Lalim.Core.PauseClock.Time * 6f) + 1f) * 0.5f : 0f;
             if (_fill != null) _fill.color = low ? Color.Lerp(_lowColor, Color.white, pulse * 0.35f) : _normalColor;
             if (_frame != null) _frame.color = low ? Color.Lerp(_frameColor, _lowColor, pulse) : _frameColor;
         }
