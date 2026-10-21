@@ -1,0 +1,51 @@
+MIT License
+
+Copyright (c) 2026 Black Cat Creative Studios and contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+### Third-Party Assets & Licenses
+
+This project makes use of the following third-party packages and assets:
+
+| Asset / Package | License | Notes |
+|---|---|---|
+| Unity Engine | Unity Companion License | https://unity.com/legal/licenses/unity-companion-license |
+| Universal Render Pipeline (URP) | Unity Companion License | Embedded in `Packages/com.unity.render-pipelines.universal` |
+| TextMeshPro | Unity Companion License | Font assets use Plus Jakarta Sans (SIL Open Font License 1.1) |
+| Plus Jakarta Sans font | SIL Open Font License 1.1 | https://fonts.google.com/specimen/Plus+Jakarta+Sans |
+| Spicy Rice font | SIL Open Font License 1.1 | |
+| Unity Visual Effect Graph | Unity Companion License | |
+| glTFast | Apache License 2.0 | https://github.com/atteneder/glTFast |
+| Unity Input System | Unity Companion License | |
+| Unity AI Navigation | Unity Companion License | |
+
+### Creative Content
+
+The dialogue scripts, lore, deity names (Amansinaya, Haik, Neguno, Manunubo, Bakunawa), and all narrative content in this project reference Philippine mythology and cultural heritage. These references are used respectfully for educational purposes. The game's educational content about marine biology and Philippine marine ecosystems is based on publicly available research.
+
+The 3D models, textures, audio, and artwork created specifically for this project remain the copyright of their respective creators on the team.
+
+---
+
+### Academic Use Notice
+
+This software was developed as an academic capstone project. It is shared for educational and portfolio purposes. Commercial use, redistribution as a standalone product, or claiming authorship of the work without attribution is not permitted without explicit written permission from the project owner.

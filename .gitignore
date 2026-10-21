@@ -107,3 +107,14 @@ InitTestScene*.unity*
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
 .DS_Store
+
+# Dev artifacts & temporary files
+graphify-out/
+Captures/
+Assets/Screenshots/
+Assets/Screenshots.meta
+Assets/_Recovery/
+Assets/_Recovery.meta
+Assets/_AxisTest/
+Assets/_AxisTest.meta
+.obsidian/
