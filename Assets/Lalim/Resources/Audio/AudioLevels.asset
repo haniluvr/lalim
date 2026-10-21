@@ -145,3 +145,63 @@ MonoBehaviour:
   - clip: {fileID: 8300000, guid: 6f176a458a68d49beaa7abd7179b4d16, type: 3}
     rmsDb: -5.9
     gain: 0.25
+  - clip: {fileID: 8300000, guid: 0c7dcc65dff0b4a7a975241a4b10792a, type: 3}
+    rmsDb: -16.8
+    gain: 0.901571
+  - clip: {fileID: 8300000, guid: abbd45b6bc6d94035a83b77256a68660, type: 3}
+    rmsDb: -17.7
+    gain: 1
+  - clip: {fileID: 8300000, guid: 59b386477ddaf4939992dd6bceaef0d3, type: 3}
+    rmsDb: -17
+    gain: 0.92257136
+  - clip: {fileID: 8300000, guid: e70733637490c474882e8d8e88f62f61, type: 3}
+    rmsDb: -17.6
+    gain: 0.98855305
+  - clip: {fileID: 8300000, guid: 261bb597d1fab476eb01f416f4525d47, type: 3}
+    rmsDb: -16.9
+    gain: 0.9120107
+  - clip: {fileID: 8300000, guid: e9510ef417b9b4e6b96e96ae7e034bde, type: 3}
+    rmsDb: -17.4
+    gain: 0.96605074
+  - clip: {fileID: 8300000, guid: dc44e1777a4524f72ad917bf87f5d241, type: 3}
+    rmsDb: -16.7
+    gain: 0.8912509
+  - clip: {fileID: 8300000, guid: 5bd700da673e74dc9b446cfa187fe656, type: 3}
+    rmsDb: -16.1
+    gain: 0.83176374
+  - clip: {fileID: 8300000, guid: abd4b55371919421398645cd8a4a2565, type: 3}
+    rmsDb: -14.8
+    gain: 0.87096363
+  - clip: {fileID: 8300000, guid: 2e49e1fd281004e1d983c706b59009d4, type: 3}
+    rmsDb: -19
+    gain: 1
+  - clip: {fileID: 8300000, guid: 8a66f69fddeb9486581e8caab75d53f8, type: 3}
+    rmsDb: -18.2
+    gain: 1
+  - clip: {fileID: 8300000, guid: a195a54656c79400cbb23b6db7500323, type: 3}
+    rmsDb: -19.9
+    gain: 1
+  - clip: {fileID: 8300000, guid: fc71927d15e3b4725a17ce32871c0c73, type: 3}
+    rmsDb: -18
+    gain: 1
+  - clip: {fileID: 8300000, guid: d060e5e8d64bf4f849438d4b1dc347d0, type: 3}
+    rmsDb: -18.4
+    gain: 1
+  - clip: {fileID: 8300000, guid: 407239d86f72942dc9c8323a157642ac, type: 3}
+    rmsDb: -10
+    gain: 0.39810717
+  - clip: {fileID: 8300000, guid: 2526946a9bea4468cbc5e257a87d3942, type: 3}
+    rmsDb: -20.4
+    gain: 0.83176374
+  - clip: {fileID: 8300000, guid: eb4ab48fe6e654b6c90932f5368789fa, type: 3}
+    rmsDb: -19.5
+    gain: 0.7498942
+  - clip: {fileID: 8300000, guid: 800c1705066a44eff8412d15137c94df, type: 3}
+    rmsDb: -18.2
+    gain: 0.64565426
+  - clip: {fileID: 8300000, guid: 8370c8b690bc34ca495b77e4754aa331, type: 3}
+    rmsDb: -21.3
+    gain: 0.92257136
+  - clip: {fileID: 8300000, guid: ea316a94a6845409bae97ea55c6d7323, type: 3}
+    rmsDb: -18.8
+    gain: 0.69183093

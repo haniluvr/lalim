@@ -63,32 +63,32 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 47bd97737c2c64150bd50fe3ecc569f2,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.36390215
+      value: 0.19557677
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 47bd97737c2c64150bd50fe3ecc569f2,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.36390215
+      value: 0.19557677
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 47bd97737c2c64150bd50fe3ecc569f2,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.36390215
+      value: 0.19557677
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 47bd97737c2c64150bd50fe3ecc569f2,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.5747855
+      value: -1.8372496
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 47bd97737c2c64150bd50fe3ecc569f2,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.7975077
+      value: -0.93042564
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 47bd97737c2c64150bd50fe3ecc569f2,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.05098583
+      value: -0.05948347
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 47bd97737c2c64150bd50fe3ecc569f2,
         type: 3}
@@ -156,7 +156,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: c3ad1d400be3748d5915d3e8bd67b416, type: 2}
-  m_CullingMode: 1
+  m_CullingMode: 2
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0

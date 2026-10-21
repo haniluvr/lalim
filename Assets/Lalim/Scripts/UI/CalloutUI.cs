@@ -80,6 +80,49 @@ namespace Lalim.UI
             TMP_FontAsset body = HUDController.Instance != null ? HUDController.Instance.BodyFont : null;
             _name = Text("Name", title, 24f, new Color(1f, 0.82f, 0.5f), new Vector2(28f, -12f), new Vector2(-28f, -40f));
             _line = Text("Line", body, 28f, new Color(0.94f, 0.96f, 0.93f), new Vector2(28f, -40f), new Vector2(-28f, -88f));
+            // Just the line, centred both ways in the pill however many lines it wraps to (the
+            // quest box beside it already says who's guiding; a name row only pushed it off-centre).
+            _name.gameObject.SetActive(false);
+            RectTransform lineRt = _line.rectTransform;
+            lineRt.anchorMin = Vector2.zero;
+            lineRt.anchorMax = Vector2.one;
+            lineRt.offsetMin = new Vector2(PadX, PadY);
+            lineRt.offsetMax = new Vector2(-PadX, -PadY);
+            _line.alignment = TextAlignmentOptions.Center;
+            _line.overflowMode = TextOverflowModes.Overflow;
+        }
+
+        private const float PadX = 32f;
+        private const float PadY = 22f;
+        private const float MaxWidth = 900f;
+        private const float MinWidth = 520f;
+        private const float Gap = 24f;
+        private const float RightReserve = 260f;   // the pause button and the dugong card
+
+        /// <summary>
+        /// Beside the quest box (just right of it, centred on it) so the two never overlap; centred
+        /// at the top when there's no quest box.
+        /// </summary>
+        private float Place(float height)
+        {
+            var canvas = GetComponent<Canvas>();
+            float sf = canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
+            float canvasW = Screen.width / sf;
+            if (QuestObjectiveUI.Instance != null && QuestObjectiveUI.Instance.TryGetOpenScreenRect(out Rect quest))
+            {
+                float left = quest.xMax / sf + Gap;
+                float questMid = (Screen.height - quest.center.y) / sf;
+                float top = Mathf.Max(16f, questMid - height * 0.5f);
+                float width = Mathf.Clamp(canvasW - left - RightReserve, MinWidth, MaxWidth);
+                _pill.anchorMin = _pill.anchorMax = new Vector2(0f, 1f);
+                _pill.pivot = new Vector2(0f, 1f);
+                _pill.anchoredPosition = new Vector2(left, -top);
+                return width;
+            }
+            _pill.anchorMin = _pill.anchorMax = new Vector2(0.5f, 1f);
+            _pill.pivot = new Vector2(0.5f, 1f);
+            _pill.anchoredPosition = new Vector2(0f, -232f);
+            return MaxWidth;
         }
 
         private TextMeshProUGUI Text(string name, TMP_FontAsset font, float size, Color color, Vector2 topLeft, Vector2 bottomRight)
@@ -109,14 +152,16 @@ namespace Lalim.UI
                 Pending p = _queue.Dequeue();
                 _name.text = p.Speaker;
                 _line.text = p.Text;
-                _line.ForceMeshUpdate();
-                float h = Mathf.Max(96f, 56f + _line.preferredHeight);
-                _pill.sizeDelta = new Vector2(900f, h);
+                float width = Place(_pill.sizeDelta.y);
+                float textH = _line.GetPreferredValues(p.Text, width - PadX * 2f, 0f).y;
+                _pill.sizeDelta = new Vector2(width, Mathf.Max(84f, PadY * 2f + textH));
+                Place(_pill.sizeDelta.y);
                 _showUntil = now + p.Seconds;
                 _showing = true;
             }
             else if (now >= _showUntil) _showing = false;
 
+            if (_showing) Place(_pill.sizeDelta.y);   // the quest box can open, close or change size meanwhile
             bool hidden = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
             float target = _showing && !hidden ? 1f : 0f;
             _group.alpha = Mathf.MoveTowards(_group.alpha, target, Time.unscaledDeltaTime * 5f);

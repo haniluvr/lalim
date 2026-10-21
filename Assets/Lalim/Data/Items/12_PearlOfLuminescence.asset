@@ -19,7 +19,8 @@ MonoBehaviour:
   itemType: 0
   regionOrigin: 1
   isKeyItem: 1
-  icon: {fileID: 0}
+  isSkill: 0
+  icon: {fileID: 21300000, guid: f3639de47538344ee954f8af7016a270, type: 3}
   worldModelPrefab: {fileID: 5968148879540234949, guid: 580351908990f47c9acfebe1923ad338,
     type: 3}
   collectSound: {fileID: 0}

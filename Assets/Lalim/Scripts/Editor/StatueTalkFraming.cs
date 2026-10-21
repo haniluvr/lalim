@@ -98,6 +98,92 @@ namespace Lalim.EditorTools
             return report.Length > 0 ? report.ToString() : "No statues in the open scene.";
         }
 
+        // ───────────────────────── Person-sized speakers (the Kataw) ─────────────────────────
+
+        private const float PersonGap = 2.0f;        // diver ↔ speaker, face to face
+        private const float PersonChest = 0.55f;     // of the speaker's height, from the feet
+        private const float PersonCamAngle = 12f;    // from side-on toward the speaker's face (small: both stay the same size)
+        private const float PersonCamDistance = 1.4f;  // × the gap, from the middle of the two
+        private const float PersonCamUp = 0.25f;
+        private const float PersonAimDown = 0.3f;      // aim a little low: the pair sits above the dialogue box
+
+        [MenuItem("Tools/Lalim/Level 2/Reframe Kataw Talk Cameras")]
+        public static void ReframePeopleMenu() => Debug.Log(ReframePeople(4f));
+
+        /// <summary>
+        /// For talkers about the diver's size (Kataw, not the giant statues or spirits): a two-shot
+        /// from the side, the camera about as far from the speaker as from the diver so neither looks
+        /// smaller, the dugong behind the diver on the far side. Speakers taller than
+        /// <paramref name="maxHeight"/> are left alone.
+        /// </summary>
+        public static string ReframePeople(float maxHeight)
+        {
+            var report = new System.Text.StringBuilder();
+            foreach (StatueDialogueRouter router in Object.FindObjectsByType<StatueDialogueRouter>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (!router.EditorTryGetFraming(out Transform point, out Transform dugong, out Transform cam) || point == null || cam == null) continue;
+                Transform body = SpeakerBody(router);
+                // A character model (spirits made of light have none) of about the diver's size.
+                if (body == null || (body.GetComponentInChildren<SkinnedMeshRenderer>() == null && body.GetComponentInChildren<MeshRenderer>() == null)) continue;
+                if (!TryBounds(body, out Bounds b) || b.size.y > maxHeight || b.size.y < 0.3f) continue;
+
+                Vector3 feet = new Vector3(b.center.x, b.min.y, b.center.z);
+                Vector3 speakerChest = feet + Vector3.up * b.size.y * PersonChest;
+                // Keep the diver on the side they already stand, at a talking distance.
+                Vector3 toDiver = point.position - feet;
+                toDiver.y = 0f;
+                if (toDiver.sqrMagnitude < 0.01f) toDiver = body.forward;
+                toDiver.Normalize();
+
+                Undo.RecordObject(point, "Kataw talk framing");
+                point.position = new Vector3(feet.x, speakerChest.y - 0.5f, feet.z) + toDiver * PersonGap;
+                point.rotation = Quaternion.LookRotation(-toDiver, Vector3.up);
+                Vector3 diverChest = point.position + Vector3.up * 0.5f;
+
+                Vector3 side = Vector3.Cross(Vector3.up, toDiver).normalized;
+                // The camera's side: whichever has more open water (the far side keeps the dugong).
+                if (OpenWater(diverChest - side * 3f, diverChest) > OpenWater(diverChest + side * 3f, diverChest)) side = -side;
+
+                Vector3 mid = (speakerChest + diverChest) * 0.5f;
+                float a = PersonCamAngle * Mathf.Deg2Rad;
+                Vector3 dir = side * Mathf.Cos(a) + toDiver * Mathf.Sin(a);
+                Undo.RecordObject(cam, "Kataw talk framing");
+                cam.position = mid + dir * PersonGap * PersonCamDistance + Vector3.up * PersonCamUp;
+                cam.rotation = Quaternion.LookRotation(mid - Vector3.up * PersonAimDown - cam.position, Vector3.up);
+
+                if (dugong != null)
+                {
+                    Undo.RecordObject(dugong, "Kataw talk framing");
+                    dugong.position = point.position + toDiver * 1.6f - side * 1.5f - Vector3.up * 0.3f;
+                    Vector3 look = speakerChest - dugong.position;
+                    look.y = 0f;
+                    dugong.rotation = Quaternion.LookRotation(look, Vector3.up);
+                }
+
+                float dS = Vector3.Distance(cam.position, speakerChest), dD = Vector3.Distance(cam.position, diverChest);
+                report.AppendLine($"{router.DeityName}: camera {dS:F1} m from the speaker, {dD:F1} m from the diver");
+            }
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            return report.Length > 0 ? report.ToString() : "No person-sized speakers with talk framing in the open scene.";
+        }
+
+        /// <summary>The speaker's visible body: the router's own model, or its parent's (a teacher's Talk child).</summary>
+        private static Transform SpeakerBody(StatueDialogueRouter router)
+        {
+            Transform t = router.transform;
+            Transform named = t.Find("Body");
+            if (named == null && t.parent != null) named = t.parent.Find("Body");
+            if (named != null) return named;
+            if (TryBounds(t, out Bounds own) && own.size.y > 0.3f) return t;
+            return t.parent;
+        }
+
+        private static float OpenWater(Vector3 from, Vector3 to)
+        {
+            Vector3 d = from - to;
+            return Physics.Raycast(to, d.normalized, out RaycastHit hit, d.magnitude, ~0, QueryTriggerInteraction.Ignore) ? hit.distance : d.magnitude;
+        }
+
         private static Transform Ensure(Transform parent, string name, out bool created)
         {
             Transform t = parent != null ? parent.Find(name) : GameObject.Find(name)?.transform;

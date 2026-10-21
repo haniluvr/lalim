@@ -106,11 +106,16 @@ namespace Lalim.Mechanics.Quest
             ZoneSiteShuffle.ApplyAll();   // this playthrough's minigame spots, before anything is placed
 
             bool resumed = PlaceAtSavedCheckpoint();
+            CheckpointManager.Instance?.SettleResume(resumed);
 
             // Replay: finished steps restore instantly, the first unfinished one begins.
             // A step added in an update before the save's progress (e.g. a relic gift in a zone
             // already cleansed) is caught up too, instead of sending the player back to it.
             int first = ResumeIndex(_allSteps.ConvertAll(IsDone));
+
+            // A level entered fresh (none of its steps done yet) starts with nothing equipped;
+            // continuing a level part way keeps the loadout.
+            if (first == 0 && !_allSteps.Exists(IsDone)) UnequipAll();
             for (int i = 0; i < first; i++)
             {
                 QuestStep step = _allSteps[i];
@@ -123,6 +128,14 @@ namespace Lalim.Mechanics.Quest
             }
 
             RunStep(first);
+        }
+
+        private static void UnequipAll()
+        {
+            foreach (string id in Lalim.Inventory.RelicLoadout.Equipped.ToArray())
+                Lalim.Inventory.RelicLoadout.SetEquipped(id, false);
+            // Old saves may list a relic the player no longer owns: clear the list itself too.
+            if (Save != null && Save.equippedRelicIds != null) Save.equippedRelicIds.Clear();
         }
 
         // ───────────────────────── Steps ─────────────────────────

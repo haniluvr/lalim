@@ -67,6 +67,29 @@ namespace Lalim.Abilities
             if (_rideVfx != null) _rideVfx.Play();
         }
 
+        // A conversation: step off the dugong (it goes to its talking spot); after it, call it back
+        // and ride on for the time that was left.
+        protected override bool PausesInDialogue => true;
+
+        protected override void OnDialoguePause()
+        {
+            IsRiding = false;
+            if (PlayerController.Instance != null)
+            {
+                PlayerController.Instance.ClearSpeedMultiplier(this);
+                PlayerController.Instance.SetMounted(false);
+            }
+            if (_rideVfx != null) _rideVfx.Stop();
+            if (DugongCompanion.Instance != null) DugongCompanion.Instance.Dismount();
+        }
+
+        protected override void OnDialogueResume()
+        {
+            if (DugongCompanion.Instance == null) return;
+            float teleportDistance = Config != null ? Config.dugongRecallTeleportDistance : 25f;
+            DugongCompanion.Instance.BeginMount(transform, teleportDistance, OnDugongArrived);
+        }
+
         protected override void OnEnd(bool cancelled)
         {
             IsRiding = false;

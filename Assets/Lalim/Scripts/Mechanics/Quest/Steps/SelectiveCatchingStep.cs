@@ -58,6 +58,15 @@ namespace Lalim.Mechanics.Quest
         [Tooltip("One school per pool in the test, in pool order; these are the schools Minigame 3 relocates.")]
         [SerializeField] private string[] _testSchools = { "tuna", "clownfish", "brownfish", "squid" };
         [SerializeField] private string[] _protectedCycle = { "turtle", "stingray", "clam" };
+        [Header("Abundance (the whole of Ajuy teems with life)")]
+        [Tooltip("Schools to net in the test: the DDA knob 'schoolsToNet', kept within this range.")]
+        [SerializeField] private Vector2Int _schoolsToNetRange = new Vector2Int(8, 25);
+        [Tooltip("Spare catchable schools on top of those needed, as a share of them (choice everywhere).")]
+        [SerializeField, Min(0f)] private float _spareSchools = 0.6f;
+        [Tooltip("Protected animals in each Root Pool in the test, as a multiple of the DDA 'protectedPerPool'.")]
+        [SerializeField, Min(1f)] private float _protectedAbundance = 2f;
+        [Tooltip("Open water between the pools (and the village square) where life swims too.")]
+        [SerializeField, Min(2f)] private float _openSiteRadius = 10f;
 
         [Header("Visuals")]
         [SerializeField] private Material _auraMaterial;
@@ -92,7 +101,10 @@ namespace Lalim.Mechanics.Quest
         private int _misses;
         private bool _sensedThisLesson;
         private readonly HashSet<string> _bagged = new HashSet<string>();
-        private readonly Dictionary<string, RootPool> _poolOfSchool = new Dictionary<string, RootPool>();
+        private readonly List<CatchableSchool> _testTargets = new List<CatchableSchool>();   // every catchable school in the test
+        private readonly List<CatchableSchool> _ambient = new List<CatchableSchool>();       // life in the open water (and protected animals kept from the lessons)
+        private int _caught;
+        private int _needed = 8;
 
         // ── For Minigame 3, which relocates the schools taken here ──
         public IReadOnlyList<string> TestSchools => _testSchools;
@@ -107,6 +119,7 @@ namespace Lalim.Mechanics.Quest
         private static SaveData Save => SaveManager.Instance != null ? SaveManager.Instance.CurrentSave : null;
         private static bool Has(string id) => Save != null && Save.HasChallengeId(id);
         private string LessonId(int n) => $"{StepId}_lesson_{n}";
+        private string DebriefId(int n) => $"{StepId}_lesson_{n}_talk";
 
         private void OnEnable()
         {
@@ -133,6 +146,9 @@ namespace Lalim.Mechanics.Quest
             ConfigureNet();
             _stage = Stage.LessonThrow;
             for (int i = 0; i < 3; i++) if (Has(LessonId(i))) _stage = (Stage)(i + 1);
+            // A lesson caught but its talk not had yet (quit in between): the talk comes first.
+            int last = (int)_stage - 1;
+            if (last >= 0 && last < 3 && !Has(DebriefId(last))) { BeginDebrief(last); return; }
             BeginStage();
         }
 
@@ -183,7 +199,9 @@ namespace Lalim.Mechanics.Quest
 
         private void BeginStage()
         {
-            ClearSpawned();
+            // Protected animals never vanish: from one lesson to the next they swim on as part of the village's life.
+            ClearSpawned(keepProtected: _stage != Stage.Test);
+            if (_stage < Stage.Test) SpawnAmbient();
             _stageLive = false;
             _misses = 0;
             _sensedThisLesson = false;
@@ -291,10 +309,34 @@ namespace Lalim.Mechanics.Quest
         {
             int n = (int)_stage;
             if (Save != null) Save.AddChallengeId(LessonId(n));
+            SaveManager.Instance?.AutoSave();
+            BeginDebrief(n);
+        }
+
+        /// <summary>
+        /// The lesson's catch is done: the teacher has a word (Talk) on what it taught and where to go
+        /// next. Only after that talk does the next lesson (or the Elder's test) begin.
+        /// </summary>
+        private void BeginDebrief(int n)
+        {
+            _stage = (Stage)n;
+            _stageLive = false;
+            if (NetThrower.Instance != null) NetThrower.Instance.Armed = false;
             RootPool pool = Pool(n);
-            if (pool != null && pool.Teacher != null) pool.Teacher.AllowIdleTalk(true);
-            _stage = (Stage)(n + 1);
-            BeginStage();
+            StatueDialogueRouter teacher = pool != null ? pool.Teacher : null;
+            RootPool next = n < 2 ? Pool(n + 1) : null;
+            void Next()
+            {
+                if (Save != null) Save.AddChallengeId(DebriefId(n));
+                if (teacher != null) teacher.AllowIdleTalk(true);
+                _stage = (Stage)(n + 1);
+                BeginStage();
+            }
+            if (teacher == null) { Next(); return; }
+            string who = pool.TeacherName;
+            SetObjective($"Talk to {who} about the lesson.");
+            ObjectiveTracker.Instance?.SetObjective(teacher.transform);
+            teacher.ArmTalk(Level2DialogueScripts.LessonDebrief(n, who, next != null ? next.TeacherName : null, next != null ? next.PoolName : null), null, Next);
         }
 
         private void PatrolAcross(CatchableSchool turtle, Vector3 through, RootPool pool)
@@ -315,50 +357,71 @@ namespace Lalim.Mechanics.Quest
         {
             _protectedCatches = 0;
             _bagged.Clear();
-            _poolOfSchool.Clear();
+            _testTargets.Clear();
+            _caught = 0;
             NetBag bag = NetBag.Ensure(_lineMaterial);
             bag.Clear();
 
             float speed = Knob(Level2DifficultyKnobs.TargetSpeed, 2.2f);
             float slow = Knob(Level2DifficultyKnobs.ProtectedSpeed, 1.1f);
             int size = Knob(Level2DifficultyKnobs.SchoolSize, 5);
-            int perPool = Mathf.Max(0, Knob(Level2DifficultyKnobs.ProtectedPerPool, 2));
-            int total = 0;
-            int cycle = 0;
-            for (int i = 0; i < _testSchools.Length; i++)
+            int perPool = Mathf.Max(1, Mathf.RoundToInt(Knob(Level2DifficultyKnobs.ProtectedPerPool, 2) * _protectedAbundance));
+            _needed = Mathf.Clamp(Knob(Level2DifficultyKnobs.SchoolsToNet, 14), _schoolsToNetRange.x, Mathf.Max(_schoolsToNetRange.x, _schoolsToNetRange.y));
+            int total = _needed + Mathf.Max(4, Mathf.CeilToInt(_needed * _spareSchools));
+
+            // The open-water life joins the test: its schools count, its protected animals are protected.
+            SpawnAmbient();
+            foreach (CatchableSchool a in _ambient)
             {
-                RootPool pool = Pool(i % Mathf.Max(1, _pools.Count));
-                if (pool == null) continue;
-                string key = _testSchools[i];
-                CatchableSchool school = SpawnIn(pool, key, size, pool.PointAt(0.4f, 40f + i * 70f), speed, pool.Radius);
+                if (a == null) continue;
+                _spawned.Add(a);
+                if (!a.IsProtected) _testTargets.Add(a);
+            }
+            _ambient.Clear();
+
+            // Schools in every pool (most of them) and the open water, the four kinds taking turns.
+            List<Site> sites = Sites(true);
+            int kind = 0, cycle = 0;
+            for (int n = _testTargets.Count, i = 0; n < total && sites.Count > 0 && i < total * 6; i++)
+            {
+                Site site = sites[i % sites.Count];
+                if (site.Pool == null && (i / sites.Count) % 2 == 1) continue;   // every other round is pools only: they hold the most
+                string key = _testSchools[kind++ % _testSchools.Length];
+                CatchableSchool school = SpawnAt(site.Centre, site.Radius, key, size, site.Point(0.15f + 0.6f * Hash01(i), Hash01(i * 7 + 3) * 360f), speed);
                 if (school == null) continue;
-                _poolOfSchool[key] = pool;
-                total++;
+                _testTargets.Add(school);
+                n++;
+            }
+
+            // Protected animals crowd every pool too, the first in each crossing a school's water.
+            foreach (Site site in sites)
+            {
+                if (site.Pool == null) continue;
+                CatchableSchool near = NearestTarget(site.Centre);
                 for (int k = 0; k < perPool; k++)
                 {
                     string p = _protectedCycle[cycle++ % _protectedCycle.Length];
-                    CatchableSchool guard = SpawnIn(pool, p, 1, pool.PointAt(0.55f, 160f + k * 110f + i * 30f), slow, pool.Radius);
-                    // The first one in each pool keeps crossing the school's water.
-                    if (k == 0 && guard != null && p != "clam") PatrolAcross(guard, school.Centre, pool);
+                    CatchableSchool guard = SpawnAt(site.Centre, site.Radius, p, 1, site.Point(0.3f + 0.6f * Hash01(k * 13 + cycle), k * 360f / perPool + cycle * 17f), slow);
+                    if (k == 0 && guard != null && p != "clam" && near != null) PatrolAcross(guard, near.Centre, site.Pool);
                 }
             }
 
             _stageLive = true;
             UpdateCounter();
             PointTestNavigation();
-            if (NeedEquip()) _pendingText = ObjectiveText;
-            else { SetObjective(ObjectiveText); ArmNet(); }
+            if (NeedEquip()) _pendingText = TestObjective;
+            else { SetObjective(TestObjective); ArmNet(); }
 
             EventBus.Publish(new ChallengeStartedEvent
             {
                 Type = ChallengeType.SelectiveCatching,
                 ChallengeId = StepId,
-                TaskQuantity = total,
+                TaskQuantity = _needed,
                 TimeLimit = 0f,
                 HintBudget = 0,
                 Perspective = ChallengePerspective.ThirdPerson
             });
-            ChallengeManager.Instance?.SetExpectedCompletionTime(total * _expectedSecondsPerSchool);
+            ChallengeManager.Instance?.SetExpectedCompletionTime(_needed * _expectedSecondsPerSchool);
             if (_profile != null) ChallengeManager.Instance?.SetExpectedFirstActionTime(_profile.expectedFirstActionSeconds);
         }
 
@@ -381,27 +444,114 @@ namespace Lalim.Mechanics.Quest
             if (fader != null) yield return fader.FadeIn(0.45f);
         }
 
-        private void UpdateCounter() => QuestObjectiveUI.Instance?.SetCounter(_bagged.Count, _poolOfSchool.Count, _counterFormat);
+        private void UpdateCounter() => QuestObjectiveUI.Instance?.SetCounter(_caught, _needed, _counterFormat);
 
+        /// <summary>The test's objective, with the number of schools to net (when the text asks for it).</summary>
+        private string TestObjective => ObjectiveText != null && ObjectiveText.Contains("{0}") ? string.Format(ObjectiveText, _needed) : ObjectiveText;
+
+        /// <summary>Navigation (and Spirit Sense) points at the nearest school still free.</summary>
         private void PointTestNavigation()
         {
             var markers = new List<Transform>();
-            foreach (KeyValuePair<string, RootPool> kv in _poolOfSchool)
-                if (!_bagged.Contains(kv.Key) && kv.Value != null && !markers.Contains(kv.Value.transform)) markers.Add(kv.Value.transform);
+            foreach (CatchableSchool s in _testTargets)
+                if (IsFree(s)) markers.Add(s.transform);
             if (markers.Count == 0) { ObjectiveTracker.Instance?.Clear(); return; }
-            ObjectiveTracker.Instance?.SetObjectiveSet(markers, t => !PoolHasLooseSchool(t));
+            ObjectiveTracker.Instance?.SetObjectiveSet(markers, t => !IsFree(t != null ? t.GetComponent<CatchableSchool>() : null));
         }
 
-        private bool PoolHasLooseSchool(Transform poolTransform)
+        private static bool IsFree(CatchableSchool s) =>
+            s != null && s.State != CatchableSchool.SchoolState.Caught && s.State != CatchableSchool.SchoolState.Netted;
+
+        private CatchableSchool NearestTarget(Vector3 p)
         {
-            foreach (KeyValuePair<string, RootPool> kv in _poolOfSchool)
-                if (kv.Value != null && kv.Value.transform == poolTransform && !_bagged.Contains(kv.Key)) return true;
-            return false;
+            CatchableSchool best = null;
+            float bestSqr = float.MaxValue;
+            foreach (CatchableSchool s in _testTargets)
+            {
+                if (s == null) continue;
+                float d = (s.Centre - p).sqrMagnitude;
+                if (d < bestSqr) { bestSqr = d; best = s; }
+            }
+            return best;
+        }
+
+        // ───────────────────────── Where life swims ─────────────────────────
+
+        private struct Site
+        {
+            public Vector3 Centre;
+            public float Radius;
+            public RootPool Pool;
+            public Vector3 Point(float ring, float degrees)
+            {
+                float a = degrees * Mathf.Deg2Rad;
+                return Centre + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * Radius * ring;
+            }
+        }
+
+        /// <summary>
+        /// The Root Pools (with <paramref name="withPools"/>) and the open water of Ajuy: the village
+        /// square, halfway from it to each pool, and between neighbouring pools.
+        /// </summary>
+        private List<Site> Sites(bool withPools)
+        {
+            var sites = new List<Site>();
+            var pools = new List<RootPool>();
+            foreach (RootPool p in _pools) if (p != null) pools.Add(p);
+            if (withPools) foreach (RootPool p in pools) sites.Add(new Site { Centre = p.Centre, Radius = p.Radius, Pool = p });
+            Vector3 square = _elder != null ? _elder.transform.position : Vector3.zero;
+            if (_elder != null) sites.Add(new Site { Centre = square, Radius = _openSiteRadius });
+            foreach (RootPool p in pools)
+            {
+                if (_elder != null) sites.Add(new Site { Centre = Vector3.Lerp(square, p.Centre, 0.5f), Radius = _openSiteRadius });
+            }
+            for (int i = 0; i + 1 < pools.Count; i += 2)
+                sites.Add(new Site { Centre = Vector3.Lerp(pools[i].Centre, pools[i + 1].Centre, 0.5f), Radius = _openSiteRadius });
+            return sites;
+        }
+
+        /// <summary>Life in the open water while the lessons run: a school and protected animals at each spot (they don't count yet).</summary>
+        private void SpawnAmbient()
+        {
+            _ambient.RemoveAll(a => a == null);
+            if (_ambient.Exists(a => a != null && !a.IsProtected)) return;   // already swimming
+            float speed = Knob(Level2DifficultyKnobs.TargetSpeed, 2.2f);
+            float slow = Knob(Level2DifficultyKnobs.ProtectedSpeed, 1.1f);
+            int size = Knob(Level2DifficultyKnobs.SchoolSize, 5);
+            int perSite = Mathf.Max(1, Knob(Level2DifficultyKnobs.ProtectedPerPool, 2));
+            List<Site> open = Sites(false);
+            for (int i = 0; i < open.Count; i++)
+            {
+                Site site = open[i];
+                CatchableSchool school = SpawnAt(site.Centre, site.Radius, _testSchools[i % _testSchools.Length], size, site.Point(0.3f, i * 47f), speed, track: false);
+                if (school != null) _ambient.Add(school);
+                for (int k = 0; k < perSite; k++)
+                {
+                    string p = _protectedCycle[(i + k) % _protectedCycle.Length];
+                    CatchableSchool guard = SpawnAt(site.Centre, site.Radius, p, 1, site.Point(0.6f, i * 47f + 120f + k * 100f), slow, track: false);
+                    if (guard != null) _ambient.Add(guard);
+                }
+            }
+        }
+
+        /// <summary>A steady pseudo-random 0..1 (spawn spots don't jump about between restarts).</summary>
+        private static float Hash01(int n)
+        {
+            unchecked
+            {
+                uint h = (uint)n * 2654435761u;
+                h ^= h >> 15;
+                return (h & 0xFFFF) / 65535f;
+            }
         }
 
         // ───────────────────────── Spawning ─────────────────────────
 
-        private CatchableSchool SpawnIn(RootPool pool, string key, int count, Vector3 at, float speed, float wanderRadius, Vector3? wanderCentre = null)
+        private CatchableSchool SpawnIn(RootPool pool, string key, int count, Vector3 at, float speed, float wanderRadius, Vector3? wanderCentre = null) =>
+            SpawnAt(wanderCentre ?? pool.Centre, wanderRadius, key, count, at, speed);
+
+        /// <param name="track">Part of the current stage (netting it counts); off for the ambient life.</param>
+        private CatchableSchool SpawnAt(Vector3 centre, float wanderRadius, string key, int count, Vector3 at, float speed, bool track = true)
         {
             Species s = Find(key);
             if (s == null) { Debug.LogWarning($"[SelectiveCatching] No species '{key}'."); return null; }
@@ -424,15 +574,19 @@ namespace Lalim.Mechanics.Quest
                 MaxHeight = s.height.y,
                 Static = s.isStatic,
             };
-            Vector3 centre = wanderCentre ?? pool.Centre;
             CatchableSchool school = CatchableSchool.Spawn(spec, centre, wanderRadius, at, _auraMaterial, _root);
-            _spawned.Add(school);
+            if (track) _spawned.Add(school);
             return school;
         }
 
-        private void ClearSpawned()
+        private void ClearSpawned(bool keepProtected = false)
         {
-            foreach (CatchableSchool s in _spawned) if (s != null) Destroy(s.gameObject);
+            foreach (CatchableSchool s in _spawned)
+            {
+                if (s == null) continue;
+                if (keepProtected && s.IsProtected) _ambient.Add(s);   // swims on, no longer part of a stage
+                else Destroy(s.gameObject);
+            }
             _spawned.Clear();
         }
 
@@ -450,7 +604,7 @@ namespace Lalim.Mechanics.Quest
             else if (!_waitingForEquip && !RelicLoadout.IsEquipped(GameConstants.Relics.WOVEN_NET_FRAGMENT))
             {
                 if (NetThrower.Instance != null) NetThrower.Instance.Armed = false;
-                _pendingText = _stage == Stage.Test ? ObjectiveText : null;
+                _pendingText = _stage == Stage.Test ? TestObjective : null;
                 NeedEquip();
             }
         }
@@ -473,7 +627,7 @@ namespace Lalim.Mechanics.Quest
             if (inside.Count == 0)
             {
                 _misses++;
-                if (_stage == Stage.LessonThrow || _misses % 3 == 0) CalloutUI.Say(speaker, Level2DialogueScripts.CalloutMiss);
+                // The quest box already says what to do: a miss needs no line.
                 return;
             }
 
@@ -500,15 +654,9 @@ namespace Lalim.Mechanics.Quest
             if (_stage == Stage.Test) { TakeIntoBag(inside, speaker); return; }
 
             // A lesson: the teacher takes the catch for the village.
-            if (_stage == Stage.LessonSense && !_sensedThisLesson && !CatchableSchool.AnyGlowing)
-                CalloutUI.Say(speaker, Level2DialogueScripts.CalloutUseSense);
             Transform to = pool != null && pool.Teacher != null ? pool.Teacher.transform : null;
-            string done = _stage == Stage.LessonThrow ? Level2DialogueScripts.CalloutLessonThrowDone
-                        : _stage == Stage.LessonSense ? Level2DialogueScripts.CalloutLessonSenseDone
-                        : Level2DialogueScripts.CalloutLessonPatienceDone;
             _stageLive = false;
             if (NetThrower.Instance != null) NetThrower.Instance.Armed = false;
-            CalloutUI.Say(speaker, done);
             int pending = inside.Count;
             foreach (CatchableSchool s in inside)
             {
@@ -527,11 +675,11 @@ namespace Lalim.Mechanics.Quest
                 {
                     if (!IsRunning || _stage != Stage.Test) return;
                     Species sp = Find(school.SpeciesKey);
-                    bag.Add(school.SpeciesKey, sp != null ? sp.model : school.Model, school.Count, sp != null ? sp.modelYaw : 180f);                    if (!_bagged.Add(school.SpeciesKey)) return;
-                    int left = _poolOfSchool.Count - _bagged.Count;
+                    bag.Add(school.SpeciesKey, sp != null ? sp.model : school.Model, school.Count, sp != null ? sp.modelYaw : 180f);                    _bagged.Add(school.SpeciesKey);
+                    _caught++;
                     UpdateCounter();
                     PointTestNavigation();
-                    CalloutUI.Say(speaker, left > 0 ? string.Format(Level2DialogueScripts.CalloutSchoolTaken, left) : Level2DialogueScripts.CalloutLastSchool);
+                    // The quest counter shows what's left; only the warnings speak up.
                     ChallengeManager.Instance?.ReportTaskCompleted();   // the last one completes the challenge
                 });
             }
@@ -562,7 +710,9 @@ namespace Lalim.Mechanics.Quest
             _stageLive = false;
             _stage = Stage.Done;
             if (NetThrower.Instance != null) NetThrower.Instance.Armed = false;
-            ClearSpawned();
+            // Ajuy keeps its life: everything still free swims on (no longer catchable).
+            foreach (CatchableSchool s in _spawned) if (IsFree(s)) _ambient.Add(s);
+            _spawned.Clear();
             foreach (RootPool p in _pools) if (p != null && p.Teacher != null) p.Teacher.AllowIdleTalk(true);
             ObjectiveTracker.Instance?.Clear();
             Complete();
@@ -577,7 +727,7 @@ namespace Lalim.Mechanics.Quest
                 Species s = Find(key);
                 if (s != null) bag.Add(key, s.model, Knob(Level2DifficultyKnobs.SchoolSize, 5), s.modelYaw);
             }
-            for (int i = 0; i < 3; i++) if (Save != null) Save.AddChallengeId(LessonId(i));
+            for (int i = 0; i < 3; i++) if (Save != null) { Save.AddChallengeId(LessonId(i)); Save.AddChallengeId(DebriefId(i)); }
             foreach (RootPool p in _pools) if (p != null && p.Teacher != null) p.Teacher.CancelTalk();
             if (_elder != null) _elder.CancelTalk();
             if (ChallengeManager.Instance != null && ChallengeManager.Instance.IsChallengeActive) ChallengeManager.Instance.CompleteChallenge(true);

@@ -74,8 +74,34 @@ namespace Lalim.Abilities
             }
         }
 
+        // ───────────────────────── Dialogue pause ─────────────────────────
+
+        /// <summary>
+        /// True for skills that step aside while someone talks (Tidebond, Spirit Sense): their effect
+        /// switches off when a conversation opens and comes back after it, with the time that was left
+        /// (durations already hold still during dialogue).
+        /// </summary>
+        protected virtual bool PausesInDialogue => false;
+
+        /// <summary>The skill is running but set aside for a conversation.</summary>
+        protected bool IsPausedForDialogue { get; private set; }
+
+        protected virtual void OnDialoguePause() { }
+        protected virtual void OnDialogueResume() { }
+
+        private void UpdateDialoguePause()
+        {
+            bool talking = PausesInDialogue && State == AbilityState.Active
+                && Lalim.UI.DialogueManager.Instance != null && Lalim.UI.DialogueManager.Instance.IsOpen;
+            if (talking == IsPausedForDialogue) return;
+            IsPausedForDialogue = talking;
+            if (talking) OnDialoguePause();
+            else OnDialogueResume();
+        }
+
         protected virtual void Update()
         {
+            UpdateDialoguePause();
             float dt = GameplayClock.DeltaTime;   // durations and cooldowns hold still during dialogue
             if (State == AbilityState.Active)
             {
@@ -253,6 +279,7 @@ namespace Lalim.Abilities
 
         private void EndInternal(bool cancelled)
         {
+            IsPausedForDialogue = false;
             OnEnd(cancelled);
             EventBus.Publish(new AbilityEndedEvent { Ability = Id, Cancelled = cancelled });
             StartCooldown();

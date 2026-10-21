@@ -79,11 +79,7 @@ namespace Lalim.Mechanics.Quest
             if (_exitTrigger == null) return;
             Bounds exit = _exitTrigger.bounds;
             PlayerController player = PlayerController.Instance;
-            if (player != null)
-            {
-                float top = _tunnelEntrance != null ? _tunnelEntrance.position.y : exit.max.y + 40f;
-                player.SetPosition(new Vector3(exit.center.x, Mathf.Lerp(top, exit.max.y, 0.5f), exit.center.z));
-            }
+            if (player != null) player.SetPosition(RestartPoint(exit));
 
             // The music leads down the tunnel, to the way back to the teleport.
             ObjectiveTracker.Instance?.SetObjective(_exitTrigger.transform);
@@ -91,6 +87,29 @@ namespace Lalim.Mechanics.Quest
             LevelExitTrigger relay = _exitTrigger.GetComponent<LevelExitTrigger>();
             if (relay == null) relay = _exitTrigger.gameObject.AddComponent<LevelExitTrigger>();
             relay.Entered = OnExitReachedAgain;
+        }
+
+        /// <summary>
+        /// Halfway down a well (Level 1: the exit is its bottom), or halfway along a level tunnel
+        /// (Level 2: the exit fills the tunnel's whole height, so "above the exit" is still inside
+        /// it): somewhere in open water and well clear of the trigger.
+        /// </summary>
+        private Vector3 RestartPoint(Bounds exit)
+        {
+            float top = _tunnelEntrance != null ? _tunnelEntrance.position.y : exit.max.y + 40f;
+            var well = new Vector3(exit.center.x, Mathf.Lerp(top, exit.max.y, 0.5f), exit.center.z);
+            Bounds keepOut = exit;
+            keepOut.Expand(6f);
+            if (!keepOut.Contains(well) || _tunnelEntrance == null) return well;
+
+            Vector3 from = _tunnelEntrance.position;
+            for (float t = 0.5f; t >= 0f; t -= 0.05f)
+            {
+                Vector3 p = Vector3.Lerp(from, exit.center, t);
+                if (keepOut.Contains(p)) continue;
+                if (!Physics.CheckSphere(p, 1.2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) return p;
+            }
+            return from;
         }
 
         private void OnExitReachedAgain()

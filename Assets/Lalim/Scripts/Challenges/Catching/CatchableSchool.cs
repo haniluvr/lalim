@@ -119,17 +119,34 @@ namespace Lalim.Challenges.Catching
         public static readonly Color PanicColor = new Color(1f, 0.85f, 0.2f);
         private bool _panicked;
         private float _calmSpeed;
+        private bool _tinted;
+        private Color _tint;
 
         /// <summary>
-        /// Minigame 3: scattered from a burst net-bag, the school darts about glowing panicked yellow
-        /// (always visible, no Spirit Sense needed). The conch calms it: it slows and the glow fades.
+        /// Minigame 3: the school glows softly in its moon phase's colour all the time (its
+        /// sanctuary glows the same), not only under Spirit Sense; panicked, that glow flickers.
+        /// </summary>
+        public void SetTint(Color c)
+        {
+            _tinted = true;
+            _tint = c;
+            _glowTarget = Mathf.Max(_glowTarget, TintedGlow);
+            _glowIntensity = 1f;
+        }
+
+        private const float TintedGlow = 0.55f;
+
+        /// <summary>
+        /// Minigame 3: scattered from a burst net-bag, the school darts about glowing panicked
+        /// (always visible, no Spirit Sense needed): yellow, or a fast flicker of its own colour when
+        /// it has one. The conch calms it: it slows and the flicker stops.
         /// </summary>
         public void SetPanicked(bool panicked)
         {
             if (_calmSpeed <= 0f) _calmSpeed = _speed;
             _panicked = panicked;
             _speed = panicked ? _calmSpeed * 1.7f : _calmSpeed * 0.6f;
-            _glowTarget = panicked ? 1f : 0f;
+            _glowTarget = panicked ? 1f : _tinted ? TintedGlow : 0f;
             _glowIntensity = 1f;
             _nextTurn = 0f;
         }
@@ -237,7 +254,7 @@ namespace Lalim.Challenges.Catching
 
         public void SetGlow(bool on, float intensity)
         {
-            _glowTarget = on || _panicked ? 1f : 0f;   // panicked fish glow regardless
+            _glowTarget = on || _panicked ? 1f : _tinted ? TintedGlow : 0f;   // panicked or tinted fish glow regardless
             _glowIntensity = Mathf.Max(0.3f, intensity);
         }
 
@@ -406,7 +423,9 @@ namespace Lalim.Challenges.Catching
             _glow = Mathf.MoveTowards(_glow, _glowTarget, dt * 3f);
             if (_aura == null) return;
             int n = _aura.GetParticles(_auraParticles);
-            Color c = _panicked ? PanicColor : IsProtected ? ProtectedColor : TargetColor;
+            Color c = _tinted ? _tint : _panicked ? PanicColor : IsProtected ? ProtectedColor : TargetColor;
+            // Panicked with a colour of its own: a fast, uneven flicker instead of a new colour.
+            float flicker = _tinted && _panicked ? 0.45f + 0.55f * Mathf.Abs(Mathf.Sin(Time.time * 9f) * Mathf.Sin(Time.time * 5.3f + 1f)) : 1f;
             float size = Mathf.Max(1.4f, BodyLength * 2.4f);   // reads through Spirit Sense's grey
             for (int i = 0; i < n && i < _bodies.Count; i++)
             {
@@ -415,7 +434,7 @@ namespace Lalim.Challenges.Catching
                 _auraParticles[i].position = b.T.position;
                 float pulse = 0.85f + 0.15f * Mathf.Sin(Time.time * 3f + b.Phase);
                 _auraParticles[i].startSize = size * pulse;
-                _auraParticles[i].startColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(0.95f * _glow * _glowIntensity));
+                _auraParticles[i].startColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(0.95f * _glow * _glowIntensity * flicker));
                 _auraParticles[i].remainingLifetime = 1000f;
             }
             _aura.SetParticles(_auraParticles, n);

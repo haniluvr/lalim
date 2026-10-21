@@ -39,3 +39,7 @@ MonoBehaviour:
     easy: 6
     normal: 5
     hard: 4
+  - key: schoolsToNet
+    easy: 8
+    normal: 14
+    hard: 25

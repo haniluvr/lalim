@@ -31,9 +31,14 @@ namespace Lalim.Abilities
         private Vector3 _velocity;
         private float _fadeOut = -1f;
         private float _fadeIn;
+        private float _shown = 1f;   // 0 while a conversation is on screen: the light steps aside
         private Light _light;
+        private TrailRenderer _trail;
         private float _lightIntensity;
         private float _phase;
+        private Vector3 _lastPlayerPos;
+        private Vector3 _playerVelocity;   // smoothed: dashes, currents and Riptide all move the diver fast
+        private bool _hasLastPlayerPos;
 
         public Transform Target => _target;
 
@@ -43,6 +48,7 @@ namespace Lalim.Abilities
             _target = target;
             _light = GetComponentInChildren<Light>();
             if (_light != null) _lightIntensity = _light.intensity;
+            _trail = GetComponentInChildren<TrailRenderer>();
             _phase = Random.value * 10f;
             _fadeIn = 0f;
         }
@@ -70,6 +76,18 @@ namespace Lalim.Abilities
             if (_player == null) { Dismiss(); return; }
 
             _fadeIn = Mathf.MoveTowards(_fadeIn, 1f, Time.deltaTime * 2.5f);
+            float dtv = Time.deltaTime;
+            if (dtv > 0f)
+            {
+                Vector3 v = _hasLastPlayerPos ? (_player.position - _lastPlayerPos) / dtv : Vector3.zero;
+                if (v.sqrMagnitude > 60f * 60f) v = Vector3.zero;   // a teleport (respawn, checkpoint), not a swim
+                _playerVelocity = Vector3.Lerp(_playerVelocity, v, 1f - Mathf.Exp(-dtv * 6f));
+                _lastPlayerPos = _player.position;
+                _hasLastPlayerPos = true;
+            }
+            float playerSpeed = _playerVelocity.magnitude;
+            // Faster than a swim (5 m/s): lead further ahead, so the light stays in front of the diver.
+            float lead = _leadDistance + Mathf.Max(0f, playerSpeed - 5f) * 0.5f;
             float t = Time.time + _phase;
             Vector3 goal;
             float pulse = 1f;
@@ -86,7 +104,7 @@ namespace Lalim.Abilities
                 Vector3 toTarget = to - from;
                 float distance = toTarget.magnitude;
 
-                if (distance <= _leadDistance)
+                if (distance <= lead)
                 {
                     // Close: hover and circle right above the target — "it's here".
                     goal = to + Vector3.up * _height + Circle(t, _circleRadius);
@@ -101,15 +119,24 @@ namespace Lalim.Abilities
                 else
                 {
                     // Lead the way: a few meters ahead of the player, on the line to the target.
-                    goal = from + toTarget / distance * _leadDistance + Vector3.up * _height;
+                    goal = from + toTarget / distance * lead + Vector3.up * _height;
                 }
             }
 
             goal += Vector3.up * (Mathf.Sin(t * 2.4f) * _bobAmplitude);
-            transform.position = Vector3.SmoothDamp(transform.position, goal, ref _velocity, _smoothTime, _maxSpeed);
+            // Keep pace: aim where the diver will be (the smoothing would otherwise trail it by
+            // about speed × smooth time) and never be slower than them.
+            bool overTarget = _target != null && (_target.position - _player.position).sqrMagnitude <= lead * lead;
+            if (!overTarget) goal += _playerVelocity * _smoothTime;
+            float maxSpeed = Mathf.Max(_maxSpeed, playerSpeed * 1.6f + 4f);
+            transform.position = Vector3.SmoothDamp(transform.position, goal, ref _velocity, _smoothTime, maxSpeed);
 
-            if (_light != null) _light.intensity = _lightIntensity * _fadeIn * pulse;
-            transform.localScale = Vector3.one * _fadeIn;
+            // Hidden while someone talks: it would hang in front of the speaker (or a relic being handed over).
+            bool talking = Lalim.UI.DialogueManager.Instance != null && Lalim.UI.DialogueManager.Instance.IsOpen;
+            _shown = Mathf.MoveTowards(_shown, talking ? 0f : 1f, Time.deltaTime * 3f);
+            if (_trail != null) _trail.emitting = _shown > 0.5f;
+            if (_light != null) _light.intensity = _lightIntensity * _fadeIn * pulse * _shown;
+            transform.localScale = Vector3.one * (_fadeIn * _shown);
         }
 
         /// <summary>

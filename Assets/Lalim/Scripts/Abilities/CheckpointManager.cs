@@ -31,8 +31,31 @@ namespace Lalim.Abilities
         private void OnEnable() => EventBus.Subscribe<PlayerDiedEvent>(OnPlayerDied);
         private void OnDisable() => EventBus.Unsubscribe<PlayerDiedEvent>(OnPlayerDied);
 
+        // The player spawns inside the level's spawn checkpoint, and its trigger fires on the first
+        // physics step — before the level has read the save to put a resumed player back at their
+        // checkpoint. Held until the level says where the player starts (SettleResume).
+        private bool _resumeSettled;
+        private Checkpoint _reachedBeforeSettled;
+
+        /// <summary>
+        /// The level has placed the player (<paramref name="resumedElsewhere"/>: at the saved
+        /// checkpoint). A checkpoint touched before then counts only for a fresh start.
+        /// </summary>
+        public void SettleResume(bool resumedElsewhere)
+        {
+            _resumeSettled = true;
+            Checkpoint held = _reachedBeforeSettled;
+            _reachedBeforeSettled = null;
+            if (!resumedElsewhere && held != null) OnCheckpointReached(held);
+        }
+
         public void OnCheckpointReached(Checkpoint checkpoint)
         {
+            if (!_resumeSettled && Lalim.Mechanics.Quest.LevelFlowDirector.Instance != null)
+            {
+                _reachedBeforeSettled = checkpoint;
+                return;
+            }
             if (checkpoint == CurrentCheckpoint) return;
 
             CurrentCheckpoint = checkpoint;

@@ -761,6 +761,7 @@ namespace Lalim.Mechanics
                 case ChallengeType.FishGathering:
                 case ChallengeType.SelectiveCatching:
                 case ChallengeType.SchoolRelocation:
+                case ChallengeType.MoonRitual:
                     return true;
 
                 case ChallengeType.SustainableFishing:

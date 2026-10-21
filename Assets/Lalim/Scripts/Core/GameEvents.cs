@@ -40,6 +40,8 @@ namespace Lalim.Core
     public struct SceneLoadProgressEvent
     {
         public float Progress; // 0.0 to 1.0
+        /// <summary>Optional: what the loader is doing right now (shown on the splash / loading screens). Null = unchanged.</summary>
+        public string Phase;
     }
 
     public struct SceneLoadedEvent
@@ -83,7 +85,8 @@ namespace Lalim.Core
         // Level 2 (Visayas) — appended for the same reason
         FishGathering,          // Caluya: call scattered herds with the Radiant Conch, avoid predators
         SelectiveCatching,      // Ajuy: net targets, spare protected species
-        SchoolRelocation        // Padre Burgos: bring the schools to sanctuaries while Bakunawa hunts
+        SchoolRelocation,       // Padre Burgos: bring the schools to sanctuaries while Bakunawa hunts
+        MoonRitual              // Padre Burgos: step on the moon-phase circles in order to appease Bakunawa
     }
 
     /// <summary>Camera perspective a challenge runs in. FirstPerson is the default (value 0).</summary>

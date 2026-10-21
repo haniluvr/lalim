@@ -63,17 +63,17 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 305453b912f134efeb62cd2fafeb64d7,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.32707068
+      value: 0.17235617
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 305453b912f134efeb62cd2fafeb64d7,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.32707068
+      value: 0.17235617
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 305453b912f134efeb62cd2fafeb64d7,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.32707068
+      value: 0.17235617
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 305453b912f134efeb62cd2fafeb64d7,
         type: 3}
@@ -162,7 +162,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: fb5d3bbb3184a4e6ba4488c7ee46ff96, type: 2}
-  m_CullingMode: 1
+  m_CullingMode: 2
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0

@@ -33,6 +33,9 @@ namespace Lalim.Challenges.Gathering
         public float Radius { get => _radius; set => _radius = Mathf.Max(2f, value); }
         public float Cooldown { get => _cooldown; set => _cooldown = Mathf.Max(0.5f, value); }
 
+        /// <summary>When the last call's sound finishes (Time.time): success sounds wait for it, so the two never overlap.</summary>
+        public static float SoundingUntil { get; private set; }
+
         /// <summary>Raised after each call with the number of herds it reached.</summary>
         public static event System.Action<int> Called;
 
@@ -55,6 +58,7 @@ namespace Lalim.Challenges.Gathering
             RelicLoadout.StartCooldown(GameConstants.Relics.RADIANT_CONCH, _cooldown);
             ChallengeManager.Instance?.ReportPlayerAction();
             GameAudio.PlayAt(_callClip, player.transform.position, 0.9f);
+            if (_callClip != null) SoundingUntil = Time.time + _callClip.length;
             StartCoroutine(Ripple(player.transform));
         }
 

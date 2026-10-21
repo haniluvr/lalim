@@ -48,8 +48,8 @@ namespace Lalim.Mechanics
         [Tooltip("What the arm collides with (triggers are always ignored).")]
         [SerializeField] private LayerMask _collisionMask = ~0;
         [SerializeField] private float _orbitSmoothSpeed = 8.0f;
-        [SerializeField] private float _minVerticalAngle = -20f;
-        [SerializeField] private float _maxVerticalAngle = 60f;
+        [SerializeField] private float _minVerticalAngle = -50f;   // looking up from below the diver
+        [SerializeField] private float _maxVerticalAngle = 80f;    // looking down from above
 
         [Header("First-Person Settings")]
         [SerializeField] private Vector3 _firstPersonOffset = new Vector3(0f, 1.7f, 0f); // Eye height
@@ -180,7 +180,7 @@ namespace Lalim.Mechanics
         public void SetShot(Transform shot, bool snap = false)
         {
             _shot = shot;
-            if (snap && shot != null) transform.SetPositionAndRotation(shot.position, shot.rotation);
+            if (snap && shot != null) { transform.SetPositionAndRotation(shot.position, shot.rotation); _shakeApplied = Vector3.zero; }
         }
 
         /// <summary>Back to following the player, from behind wherever they now face.</summary>
@@ -190,7 +190,7 @@ namespace Lalim.Mechanics
             _shot = null;
             SyncHeadingToPlayer();
             _verticalAngle = 10f;
-            if (snap) SnapToCurrentMode();
+            if (snap) { SnapToCurrentMode(); _shakeApplied = Vector3.zero; }
         }
 
         public Transform Shot => _shot;
@@ -201,6 +201,7 @@ namespace Lalim.Mechanics
         private float _shakeUntil;
         private float _shakeLength = 1f;
         private float _shakeSeed;
+        private Vector3 _shakeApplied;   // last frame's shake offset, taken back off before the camera moves again
 
         /// <summary>A short jolt (a bite, an impact). Stronger calls win; it fades out over <paramref name="seconds"/>.</summary>
         public void Shake(float amplitude, float seconds)
@@ -219,12 +220,16 @@ namespace Lalim.Mechanics
             float k = (_shakeUntil - Time.time) / _shakeLength;
             float t = Time.time * 28f;
             Vector3 offset = new Vector3(Mathf.PerlinNoise(_shakeSeed, t) - 0.5f, Mathf.PerlinNoise(t, _shakeSeed) - 0.5f, 0f) * 2f * _shakeAmplitude * k * k;
-            transform.position += transform.rotation * offset;
+            _shakeApplied = transform.rotation * offset;
+            transform.position += _shakeApplied;
         }
 
         private void LateUpdate()
         {
             if (_playerTarget == null) return;
+            // The shake rides on top of where the camera would be: take last frame's off first.
+            transform.position -= _shakeApplied;
+            _shakeApplied = Vector3.zero;
 
             if (_shot != null)
             {
@@ -232,6 +237,7 @@ namespace Lalim.Mechanics
                 float k = 1f - Mathf.Exp(-3.5f * Time.unscaledDeltaTime);
                 transform.position = Vector3.Lerp(transform.position, _shot.position, k);
                 transform.rotation = Quaternion.Slerp(transform.rotation, _shot.rotation, k);
+                ApplyShake();   // a scripted shot shakes too (e.g. the sea shaking as Bakunawa rises)
                 return;
             }
 

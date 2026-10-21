@@ -98,6 +98,21 @@ namespace Lalim.Mechanics
             EnsureVolume();
         }
 
+        protected override void Start()
+        {
+            base.Start();
+            StartCoroutine(Prewarm());
+        }
+
+        // The first use found every target and built its glow then and there, which hitched the
+        // moment the skill was pressed: do it while the level is still settling instead.
+        private System.Collections.IEnumerator Prewarm()
+        {
+            yield return null;
+            yield return null;
+            SpiritSenseRelevance.AttachToKnownTargets();
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
@@ -181,6 +196,22 @@ namespace Lalim.Mechanics
             }
         }
 
+        // A conversation: the glows, the guiding light and the tint step aside; after it they come
+        // back for the time that was left.
+        protected override bool PausesInDialogue => true;
+
+        protected override void OnDialoguePause()
+        {
+            foreach (SpiritGlow glow in SpiritGlow.All) if (glow != null) glow.SetGlow(false, 0f);
+            if (_wisp != null) { _wisp.Dismiss(); _wisp = null; }
+        }
+
+        protected override void OnDialogueResume()
+        {
+            _refreshTimer = RefreshInterval;
+            RefreshTargets();
+        }
+
         protected override void OnEnd(bool cancelled)
         {
             foreach (SpiritGlow glow in SpiritGlow.All) if (glow != null) glow.SetGlow(false, 0f);
@@ -246,7 +277,12 @@ namespace Lalim.Mechanics
         /// </summary>
         private Transform PickGuideTarget(SpiritSenseContext ctx, Transform current)
         {
-            if (_currentObjective != null && _currentObjective.gameObject.activeInHierarchy) return _currentObjective;
+            if (_currentObjective != null && _currentObjective.gameObject.activeInHierarchy)
+            {
+                // With Moontide, a far objective may be quicker by a current: lead to its way in first.
+                Transform entry = TideCurrent.BestEntryToward(transform.position, _currentObjective.position);
+                return entry != null ? entry : _currentObjective;
+            }
 
             SpiritSenseContext anywhere = ctx;
             anywhere.InChallenge = true; // relevance across the whole area, not just the glow radius
@@ -290,9 +326,9 @@ namespace Lalim.Mechanics
 
         private void UpdateVolumeBlend()
         {
-            float target = IsActive ? 1f : 0f;
+            float target = IsActive && !IsPausedForDialogue ? 1f : 0f;
             if (Mathf.Approximately(_volumeBlend, target)) return;
-            _volumeBlend = Mathf.MoveTowards(_volumeBlend, target, Time.deltaTime / _transitionSeconds);
+            _volumeBlend = Mathf.MoveTowards(_volumeBlend, target, Time.unscaledDeltaTime / _transitionSeconds);
             if (_volume != null) _volume.weight = Mathf.SmoothStep(0f, 1f, _volumeBlend);
         }
 

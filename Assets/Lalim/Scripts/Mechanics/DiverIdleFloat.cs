@@ -8,6 +8,11 @@ namespace Lalim.Mechanics
     /// while the kick animation eases to a lazy drift. It fades in after a moment without swimming
     /// and out as soon as the diver moves. Only the visible body moves (the model under the player),
     /// never the player's collider, so it can't push the diver into anything.
+    ///
+    /// Works for either kind of model: one whose swim pose lies flat (turned upright while floating,
+    /// Upright Degrees) or one that stands upright (leaned forward while swimming, Swim Lean Degrees).
+    /// If the animator has a "SwimBlend" float it is driven too (0 floating … 1 swimming), so a Float
+    /// and a Swim animation crossfade with the bob.
     /// </summary>
     public class DiverIdleFloat : MonoBehaviour
     {
@@ -16,7 +21,9 @@ namespace Lalim.Mechanics
         [SerializeField, Range(0f, 10f)] private float _swayDegrees = 3f;
         [Tooltip("How far the body turns up from its swimming pose while floating (90 = straight up, like the Kataw).")]
         [SerializeField, Range(0f, 90f)] private float _uprightDegrees = 72f;
-        [Tooltip("Animation speed while floating (the swim kick slows to a drift).")]
+        [Tooltip("For an upright model: how far the body leans forward while swimming (90 = flat, head first).")]
+        [SerializeField, Range(0f, 90f)] private float _swimLeanDegrees;
+        [Tooltip("Animation speed while floating (the swim kick slows to a drift; 1 when there's a Float animation).")]
         [SerializeField, Range(0.1f, 1f)] private float _floatAnimSpeed = 0.45f;
         [SerializeField, Min(0f)] private float _settleDelay = 0.4f;
         [SerializeField, Min(0.05f)] private float _blendSeconds = 0.8f;
@@ -27,6 +34,8 @@ namespace Lalim.Mechanics
         // The pose to float from: the animator's pose this frame if it wrote one, else the last one.
         private readonly List<Vector3> _basePos = new List<Vector3>(), _written = new List<Vector3>();
         private readonly List<Quaternion> _baseRot = new List<Quaternion>(), _writtenRot = new List<Quaternion>();
+        private static readonly int SwimBlendId = Animator.StringToHash("SwimBlend");
+        private bool _hasSwimBlend;
         private float _weight;
         private float _idleFor;
         private float _phase;
@@ -36,6 +45,9 @@ namespace Lalim.Mechanics
         {
             _player = GetComponent<PlayerController>();
             _animator = GetComponentInChildren<Animator>();
+            if (_animator != null)
+                foreach (AnimatorControllerParameter p in _animator.parameters)
+                    if (p.nameHash == SwimBlendId && p.type == AnimatorControllerParameterType.Float) _hasSwimBlend = true;
             // The visible body: every direct child that draws something (the armature and the mesh).
             foreach (Transform c in transform)
             {
@@ -60,15 +72,22 @@ namespace Lalim.Mechanics
         {
             if (_player == null) return;
             float dt = Time.deltaTime;
-            bool idle = _player.IsMovementEnabled && !_player.IsMoving && !_player.IsDashing && !_player.IsMounted;
+            // Held still counts too (dialogue, cutscenes turn movement off): the diver floats while talking.
+            bool idle = !_player.IsMoving && !_player.IsDashing && !_player.IsMounted;
             _idleFor = idle ? _idleFor + dt : 0f;
+            // A conversation starts behind a fade: be floating already when it fades in.
+            if (idle && Lalim.UI.DialogueManager.Instance != null && Lalim.UI.DialogueManager.Instance.IsOpen)
+            {
+                _idleFor = Mathf.Max(_idleFor, _settleDelay);
+                _weight = 1f;
+            }
             float target = _idleFor >= _settleDelay ? 1f : 0f;
             _weight = Mathf.MoveTowards(_weight, target, dt / _blendSeconds);
             float w = Mathf.SmoothStep(0f, 1f, _weight);
 
             float t = Time.time * _bobSpeed + _phase;
             Vector3 offset = Vector3.up * Mathf.Sin(t) * _bob * w;
-            Quaternion sway = Quaternion.AngleAxis(-_uprightDegrees * w, Vector3.right)
+            Quaternion sway = Quaternion.AngleAxis(_swimLeanDegrees * (1f - w) - _uprightDegrees * w, Vector3.right)
                             * Quaternion.Euler(Mathf.Sin(t * 0.5f) * _swayDegrees * 0.5f * w, 0f, Mathf.Sin(t * 0.7f + 1f) * _swayDegrees * w);
             for (int i = 0; i < _visuals.Count; i++)
             {
@@ -82,7 +101,11 @@ namespace Lalim.Mechanics
                 _written[i] = v.localPosition;
                 _writtenRot[i] = v.localRotation;
             }
-            if (_animator != null) _animator.speed = Mathf.Lerp(1f, _floatAnimSpeed, w);
+            if (_animator != null)
+            {
+                _animator.speed = Mathf.Lerp(1f, _floatAnimSpeed, w);
+                if (_hasSwimBlend) _animator.SetFloat(SwimBlendId, 1f - w);
+            }
         }
     }
 }

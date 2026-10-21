@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -9,9 +10,11 @@ namespace Lalim.Challenges.Gathering
     /// Danger feedback for Caluya's predators: the screen edges tint red while one is chasing,
     /// stronger and pulsing faster as it closes in, and a small "Hidden" tag shows while the diver
     /// is in cover (or riding the dugong) with a predator nearby. A predator within warning range
-    /// that is off screen gets an arrow at the screen edge pointing at it (amber while it patrols,
-    /// red while it hunts you), and a bite flashes the screen red. Sits under the HUD; built at
-    /// runtime, so it needs no art.
+    /// gets an arrow on a ring around the diver pointing at it (amber while it patrols, red while
+    /// it hunts you), where the eye already is rather than at the screen edge under the HUD, and a
+    /// bite flashes the screen red. Hiding spots nearby show a soft closed-eye marker ("HIDE HERE"
+    /// up close) so the diver knows where cover is. Sits under the HUD; built at runtime, so it
+    /// needs no art.
     /// </summary>
     public class PredatorAlertUI : MonoBehaviour
     {
@@ -23,6 +26,17 @@ namespace Lalim.Challenges.Gathering
 
         private const float WarnRange = 30f;       // metres: a patrolling predator this close gets an arrow
         private const int MaxArrows = 3;
+        private const float RingRadius = 165f;     // canvas units around the diver
+        private Image _ring;
+
+        // Hiding-spot markers.
+        private const float MarkerRange = 45f;      // metres: spots this close show their marker
+        private const float LabelRange = 18f;       // ...and "HIDE HERE" this close
+        private const int MaxMarkers = 6;
+        private static readonly Color MarkerColor = new Color(0.62f, 1f, 0.78f);
+        private readonly RectTransform[] _markers = new RectTransform[MaxMarkers];
+        private readonly CanvasGroup[] _markerGroups = new CanvasGroup[MaxMarkers];
+        private readonly CanvasGroup[] _markerLabels = new CanvasGroup[MaxMarkers];
         private static readonly Color Patrol = new Color(1f, 0.72f, 0.25f);
         private static readonly Color Hunting = new Color(1f, 0.22f, 0.18f);
         private readonly Image[] _arrows = new Image[MaxArrows];
@@ -51,6 +65,7 @@ namespace Lalim.Challenges.Gathering
             scaler.matchWidthOrHeight = 0.5f;
             _instance = go.AddComponent<PredatorAlertUI>();
             _instance.Build();
+            _instance.BuildMarkers();
             _instance.BuildWarnings();
             _instance.BuildAudio(tensionLoop, hiddenHeartbeat);
         }
@@ -120,6 +135,16 @@ namespace Lalim.Challenges.Gathering
             _flash.color = new Color(1f, 0.05f, 0.03f, 0f);
             _flash.raycastTarget = false;
 
+            var ring = new GameObject("DangerRing", typeof(RectTransform));
+            ring.transform.SetParent(transform, false);
+            var rrt = (RectTransform)ring.transform;
+            rrt.anchorMin = rrt.anchorMax = new Vector2(0.5f, 0.5f);
+            rrt.sizeDelta = Vector2.one * (RingRadius * 2f + 30f);
+            _ring = ring.AddComponent<Image>();
+            _ring.sprite = GlassSprites.AlertRing;
+            _ring.color = new Color(Hunting.r, Hunting.g, Hunting.b, 0f);
+            _ring.raycastTarget = false;
+
             for (int i = 0; i < MaxArrows; i++)
             {
                 var go = new GameObject("PredatorArrow_" + i, typeof(RectTransform));
@@ -135,37 +160,46 @@ namespace Lalim.Challenges.Gathering
             }
         }
 
-        /// <summary>Arrows at the screen edge toward each nearby predator that is off screen.</summary>
+        /// <summary>The canvas point over a world position (false when it's behind the camera).</summary>
+        private bool ToCanvas(Camera cam, Vector3 world, out Vector2 local)
+        {
+            Vector3 sp = cam.WorldToScreenPoint(world);
+            local = Vector2.zero;
+            if (sp.z <= 0f) return false;
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)transform, sp, null, out local);
+        }
+
+        /// <summary>Arrows on a ring around the diver, each pointing toward a nearby predator.</summary>
         private void UpdateArrows(bool hudUp)
         {
             Camera cam = Camera.main;
             var player = Mechanics.PlayerController.Instance;
             int used = 0;
-            if (hudUp && cam != null && player != null)
+            float ringLevel = 0f;
+            Vector2 centre = Vector2.zero;
+            if (hudUp && cam != null && player != null && ToCanvas(cam, player.transform.position, out centre))
             {
-                // Inside the screen edge, clear of the quest box and pause button (top) and the
-                // health bar and orbs (bottom).
-                Vector2 half = ((RectTransform)transform).rect.size * 0.5f;
-                Rect bounds = Rect.MinMaxRect(-half.x + 90f, -half.y + 200f, half.x - 90f, half.y - 160f);
+                Vector3 me = player.transform.position;
                 foreach (Predator pr in Predator.Active)
                 {
                     if (used >= MaxArrows) break;
                     bool hunting = pr.CurrentMode == Predator.Mode.Chase;
-                    float d = Vector3.Distance(pr.transform.position, player.transform.position);
+                    float d = Vector3.Distance(pr.transform.position, me);
                     if (!hunting && d > WarnRange) continue;
-                    Vector3 vp = cam.WorldToViewportPoint(pr.transform.position);
-                    bool onScreen = vp.z > 0f && vp.x > 0.04f && vp.x < 0.96f && vp.y > 0.06f && vp.y < 0.94f;
-                    if (onScreen) continue;
-                    Vector2 dir = new Vector2(vp.x - 0.5f, vp.y - 0.5f);
-                    if (vp.z < 0f) dir = -dir;                     // behind the camera: flip
+                    // In front of the camera: point at it on screen. Behind: the top-down bearing
+                    // from the camera's view (ahead = up, behind = down), so it never flips.
+                    Vector2 dir;
+                    if (ToCanvas(cam, pr.transform.position, out Vector2 at) && (at - centre).sqrMagnitude > 1f) dir = at - centre;
+                    else
+                    {
+                        Vector3 v = cam.transform.InverseTransformDirection(pr.transform.position - me);
+                        dir = new Vector2(v.x, v.z);
+                    }
                     if (dir.sqrMagnitude < 0.0001f) dir = Vector2.down;
                     dir.Normalize();
-                    float kx = dir.x > 0f ? bounds.xMax / dir.x : dir.x < 0f ? bounds.xMin / dir.x : float.MaxValue;
-                    float ky = dir.y > 0f ? bounds.yMax / dir.y : dir.y < 0f ? bounds.yMin / dir.y : float.MaxValue;
-                    float k = Mathf.Max(0f, Mathf.Min(kx, ky));
                     Image a = _arrows[used++];
                     a.enabled = true;
-                    a.rectTransform.anchoredPosition = dir * k;
+                    a.rectTransform.anchoredPosition = centre + dir * RingRadius;
                     a.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f);
                     float near = Mathf.InverseLerp(WarnRange, 6f, d);
                     float pulse = 0.8f + 0.2f * Mathf.Sin(Time.unscaledTime * (hunting ? 12f : 5f));
@@ -173,14 +207,117 @@ namespace Lalim.Challenges.Gathering
                     c.a = Mathf.Lerp(0.45f, 1f, near) * pulse;
                     a.color = c;
                     a.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.8f, 1.25f, near) * (pr.IsAttacking ? 1.2f : 1f);
+                    ringLevel = Mathf.Max(ringLevel, hunting ? Mathf.Lerp(0.7f, 0.9f, near) : 0.55f);
                 }
             }
             for (int i = used; i < MaxArrows; i++) _arrows[i].enabled = false;
+            // The ring the arrows ride on, around the diver: amber while a predator patrols near, red while hunted.
+            _ring.rectTransform.anchoredPosition = centre;
+            Color rc = used > 0 && ringLevel > 0.6f ? Hunting : Patrol;
+            rc.a = Mathf.MoveTowards(_ring.color.a, ringLevel, Time.unscaledDeltaTime * 3f);
+            _ring.color = rc;
 
             _flashLevel = Mathf.MoveTowards(_flashLevel, 0f, Time.unscaledDeltaTime * 2.2f);
             Color f = _flash.color;
             f.a = _flashLevel * 0.85f;
             _flash.color = f;
+        }
+
+        private void BuildMarkers()
+        {
+            TMP_FontAsset font = HUDController.Instance != null ? HUDController.Instance.TitleFont : null;
+            for (int i = 0; i < MaxMarkers; i++)
+            {
+                var go = new GameObject("HideMarker_" + i, typeof(RectTransform));
+                go.transform.SetParent(transform, false);
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(64f, 64f);
+                _markers[i] = rt;
+                _markerGroups[i] = go.AddComponent<CanvasGroup>();
+                _markerGroups[i].alpha = 0f;
+                _markerGroups[i].blocksRaycasts = false;
+
+                var disc = new GameObject("Disc", typeof(RectTransform)).AddComponent<Image>();
+                disc.transform.SetParent(rt, false);
+                Stretch(disc.rectTransform);
+                disc.sprite = GlassSprites.Circle;
+                disc.color = new Color(0.04f, 0.22f, 0.18f, 0.55f);
+                disc.raycastTarget = false;
+                var rim = new GameObject("Rim", typeof(RectTransform)).AddComponent<Image>();
+                rim.transform.SetParent(rt, false);
+                Stretch(rim.rectTransform);
+                rim.sprite = GlassSprites.CircleOutline;
+                rim.color = new Color(MarkerColor.r, MarkerColor.g, MarkerColor.b, 0.7f);
+                rim.raycastTarget = false;
+                var eye = new GameObject("Eye", typeof(RectTransform)).AddComponent<Image>();
+                eye.transform.SetParent(rt, false);
+                Stretch(eye.rectTransform);
+                eye.rectTransform.offsetMin = new Vector2(10f, 8f);
+                eye.rectTransform.offsetMax = new Vector2(-10f, -12f);
+                eye.sprite = GlassSprites.ClosedEye;
+                eye.color = MarkerColor;
+                eye.raycastTarget = false;
+
+                var label = new GameObject("Label", typeof(RectTransform));
+                label.transform.SetParent(rt, false);
+                var lrt = (RectTransform)label.transform;
+                lrt.anchorMin = lrt.anchorMax = new Vector2(0.5f, 0f);
+                lrt.pivot = new Vector2(0.5f, 1f);
+                lrt.anchoredPosition = new Vector2(0f, -4f);
+                lrt.sizeDelta = new Vector2(200f, 30f);
+                var text = label.AddComponent<TextMeshProUGUI>();
+                if (font != null) text.font = font;
+                text.text = "HIDE HERE";
+                text.fontSize = 22f;
+                text.alignment = TextAlignmentOptions.Center;
+                text.color = MarkerColor;
+                text.raycastTarget = false;
+                _markerLabels[i] = label.AddComponent<CanvasGroup>();
+                _markerLabels[i].alpha = 0f;
+            }
+        }
+
+        private static void Stretch(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+        }
+
+        private readonly List<HidingZone> _nearSpots = new List<HidingZone>();
+
+        /// <summary>A soft marker over each hiding spot near the diver; hidden once inside it.</summary>
+        private void UpdateMarkers(bool hudUp)
+        {
+            Camera cam = Camera.main;
+            var player = Mechanics.PlayerController.Instance;
+            _nearSpots.Clear();
+            if (hudUp && cam != null && player != null)
+            {
+                Vector3 me = player.transform.position;
+                foreach (HidingZone z in HidingZone.All)
+                    if (z != null && !z.Occupied && (z.MarkerPoint - me).sqrMagnitude < MarkerRange * MarkerRange) _nearSpots.Add(z);
+                _nearSpots.Sort((a, b) => (a.MarkerPoint - me).sqrMagnitude.CompareTo((b.MarkerPoint - me).sqrMagnitude));
+            }
+            float step = Time.unscaledDeltaTime * 3f;
+            for (int i = 0; i < MaxMarkers; i++)
+            {
+                float target = 0f, labelTarget = 0f;
+                if (i < _nearSpots.Count && ToCanvas(cam, _nearSpots[i].MarkerPoint, out Vector2 at))
+                {
+                    float d = Vector3.Distance(_nearSpots[i].MarkerPoint, player.transform.position);
+                    target = Mathf.Lerp(0.85f, 0.25f, Mathf.InverseLerp(10f, MarkerRange, d));
+                    labelTarget = d < LabelRange ? 1f : 0f;
+                    _markers[i].anchoredPosition = at + Vector2.up * Mathf.Sin(Time.unscaledTime * 1.6f + i) * 4f;
+                    _markers[i].localScale = Vector3.one * Mathf.Lerp(1f, 0.7f, Mathf.InverseLerp(10f, MarkerRange, d));
+                    // Brighter while something hunts the diver: that's when cover matters.
+                    if (Predator.Threat > 0.05f) target = Mathf.Min(1f, target + 0.25f);
+                }
+                else _markerGroups[i].alpha = 0f;   // nothing here (or behind the camera): don't fade across
+                _markerGroups[i].alpha = Mathf.MoveTowards(_markerGroups[i].alpha, target, step);
+                _markerLabels[i].alpha = Mathf.MoveTowards(_markerLabels[i].alpha, labelTarget, step);
+            }
         }
 
         private void BuildAudio(AudioClip tensionLoop, AudioClip hiddenHeartbeat)
@@ -240,6 +377,7 @@ namespace Lalim.Challenges.Gathering
             _hidden.alpha = Mathf.MoveTowards(_hidden.alpha, hudUp && near ? 1f : 0f, Time.unscaledDeltaTime * 4f);
             UpdateAudio();
             UpdateArrows(hudUp);
+            UpdateMarkers(hudUp);
         }
 
         private static Sprite _vignette;

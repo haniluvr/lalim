@@ -64,7 +64,8 @@ namespace Lalim.Mechanics.Quest
         private void Setup(GameObject relicPrefab, Transform statue, Transform diver, Look look)
         {
             _diver = diver;
-            _hover = HoverPoint(StatueChest(statue));
+            _hover = HoverPoint(StatueChest(statue, out float height), height);
+            if (height > 0f && height < 3f) _displaySize = Mathf.Min(_displaySize, 0.5f);   // sized for people, not giant statues
             transform.position = _hover;
 
             if (relicPrefab != null)
@@ -157,11 +158,16 @@ namespace Lalim.Mechanics.Quest
 
         // ───────────────────────── Placement ─────────────────────────
 
-        // Roughly the statue's chest: two thirds up its visible height.
-        private Vector3 StatueChest(Transform statue)
+        // Roughly the giver's chest: two thirds up its visible height. A Kataw's own body (its
+        // "Body" model) counts, not the stand-in shapes beside it.
+        private Vector3 StatueChest(Transform statue, out float height)
         {
+            height = 0f;
             if (statue == null) return _diver != null ? _diver.position + Vector3.up : Vector3.zero;
-            if (!TryBounds(statue, out Bounds b)) return statue.position + Vector3.up * 2f;
+            Transform body = statue.Find("Body");
+            if (body == null && statue.parent != null) body = statue.parent.Find("Body");
+            if (!TryBounds(body != null ? body : statue, out Bounds b)) return statue.position + Vector3.up * 2f;
+            height = b.size.y;
             Vector3 p = b.center;
             p.y = b.min.y + b.size.y * 0.66f;
             return p;
@@ -173,11 +179,20 @@ namespace Lalim.Mechanics.Quest
             return TryBounds(_diver, out Bounds b) ? b.center : _diver.position + Vector3.up * 0.5f;
         }
 
-        // In front of the diver, toward the statue and a little above eye line.
-        private Vector3 HoverPoint(Vector3 statueChest)
+        // In front of the diver, toward the statue and a little above eye line. Between two people
+        // of a size (a Kataw and the diver), it floats halfway, just above them and a little toward
+        // the camera, so the talk shot shows it in the middle.
+        private Vector3 HoverPoint(Vector3 statueChest, float giverHeight)
         {
             if (_diver == null) return statueChest + Vector3.up;
             Vector3 chest = DiverChest();
+            if (giverHeight > 0f && giverHeight < 3f)
+            {
+                Vector3 p = Vector3.Lerp(chest, statueChest, 0.5f) + Vector3.up * 0.4f;
+                Camera cam = Camera.main;
+                if (cam != null) p += (cam.transform.position - p).normalized * 0.6f;
+                return p;
+            }
             Vector3 toStatue = statueChest - chest;
             toStatue.y = 0f;
             float dist = toStatue.magnitude;

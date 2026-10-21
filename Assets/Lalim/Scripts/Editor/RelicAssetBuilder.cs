@@ -602,6 +602,142 @@ namespace Lalim.EditorTools
             }
         }
 
+        // ───────────────────────── Level 2: the Pearl of Luminescence ─────────────────────────
+        //
+        // Bakunawa's gift (Level 3 uses it to light dark places). The source is a light glTF
+        // (Models/relics/Pearl, ~4.9k triangles, imported by glTFast), so it needs no simplifying:
+        // its mesh is copied centred and sized like the other relics, its metallic/roughness map is
+        // packed for URP at 1024, and the material glows softly. PF_Relic_PearlOfLuminescence is
+        // rebuilt in place, so the gift step and the item keep pointing at it.
+
+        private const string PearlFolder = ModelFolder + "/Pearl";
+        private const string PearlPrefabPath = PrefabFolder + "/PF_Relic_PearlOfLuminescence.prefab";
+        private const string PearlMaterialPath = MaterialFolder + "/M_Relic_Pearl.mat";
+        private const float PearlDiameter = 0.75f;
+
+        [MenuItem("Tools/Lalim/Relics/Build Pearl of Luminescence")]
+        public static void BuildPearlMenu() => Report(BuildPearl());
+
+        public static string BuildPearl()
+        {
+            var report = new System.Text.StringBuilder();
+            EnsureFolder(OptimizedFolder);
+
+            // Mesh: centred, uniformly scaled to the relic size (the glTF is 100 units across).
+            Mesh source = null;
+            foreach (Object o in AssetDatabase.LoadAllAssetsAtPath($"{PearlFolder}/PearlOfLuminescence.gltf"))
+                if (o is Mesh m) { source = m; break; }
+            if (source == null) return "Pearl: PearlOfLuminescence.gltf has no mesh (is glTFast installed?).";
+            Vector3[] pos = source.vertices;
+            Bounds b = source.bounds;
+            float k = PearlDiameter / Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+            for (int i = 0; i < pos.Length; i++) pos[i] = (pos[i] - b.center) * k;
+            var mesh = new Mesh { name = "PearlOfLuminescence_Mesh" };
+            mesh.vertices = pos;
+            mesh.normals = source.normals;
+            mesh.uv = source.uv;
+            mesh.SetTriangles(source.triangles, 0);
+            mesh.RecalculateBounds();
+            mesh.RecalculateTangents();
+            string meshPath = $"{OptimizedFolder}/PearlOfLuminescence_Mesh.asset";
+            var existingMesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
+            if (existingMesh != null) { EditorUtility.CopySerialized(mesh, existingMesh); Object.DestroyImmediate(mesh); mesh = existingMesh; EditorUtility.SetDirty(mesh); }
+            else AssetDatabase.CreateAsset(mesh, meshPath);
+            report.AppendLine($"Pearl mesh: {mesh.GetIndexCount(0) / 3:N0} triangles, {PearlDiameter} m across.");
+
+            // Textures: phone-sized; the normal map marked as one.
+            SetImport($"{PearlFolder}/Pearl_BaseColor.jpg", false);
+            SetImport($"{PearlFolder}/Pearl_Normal.jpg", true);
+            Texture2D mask = PackGltfMetallicRoughness($"{PearlFolder}/Pearl_MetallicRoughness.jpg", $"{OptimizedFolder}/PearlOfLuminescence_MetallicSmoothness.png");
+
+            // Material: pearl white, very smooth, a soft moonlit glow of its own.
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(PearlMaterialPath);
+            bool created = mat == null;
+            if (created) mat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "M_Relic_Pearl" };
+            else mat.shader = Shader.Find("Universal Render Pipeline/Lit");
+            mat.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>($"{PearlFolder}/Pearl_BaseColor.jpg"));
+            mat.SetColor("_BaseColor", new Color(1f, 0.957f, 1f));
+            mat.SetTexture("_BumpMap", AssetDatabase.LoadAssetAtPath<Texture2D>($"{PearlFolder}/Pearl_Normal.jpg"));
+            mat.SetFloat("_BumpScale", 0.3f);
+            mat.EnableKeyword("_NORMALMAP");
+            if (mask != null)
+            {
+                mat.SetTexture("_MetallicGlossMap", mask);
+                mat.EnableKeyword("_METALLICSPECGLOSSMAP");
+                mat.SetFloat("_SmoothnessTextureChannel", 0f);
+                mat.SetFloat("_Smoothness", 1f);
+            }
+            mat.SetColor("_EmissionColor", new Color(0.8f, 0.86f, 1f) * 0.35f);
+            mat.EnableKeyword("_EMISSION");
+            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            if (created) AssetDatabase.CreateAsset(mat, PearlMaterialPath);
+            else EditorUtility.SetDirty(mat);
+
+            // Prefab: a root with a Model child, like the other relics.
+            GameObject root = AssetDatabase.LoadAssetAtPath<GameObject>(PearlPrefabPath) != null
+                ? PrefabUtility.LoadPrefabContents(PearlPrefabPath)
+                : new GameObject("PF_Relic_PearlOfLuminescence");
+            Object.DestroyImmediate(root.GetComponent<MeshRenderer>());
+            Object.DestroyImmediate(root.GetComponent<MeshFilter>());
+            root.transform.localScale = Vector3.one;
+            Transform model = root.transform.Find("Model");
+            if (model == null) { model = new GameObject("Model").transform; model.SetParent(root.transform, false); }
+            // (not ??: in the editor a missing component is a fake null that ?? doesn't catch)
+            var mf = model.GetComponent<MeshFilter>();
+            if (mf == null) mf = model.gameObject.AddComponent<MeshFilter>();
+            mf.sharedMesh = mesh;
+            var mr = model.GetComponent<MeshRenderer>();
+            if (mr == null) mr = model.gameObject.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = ShadowCastingMode.Off;
+            PrefabUtility.SaveAsPrefabAsset(root, PearlPrefabPath);
+            PrefabUtility.UnloadPrefabContents(root);
+            report.AppendLine("Pearl prefab and material rebuilt.");
+
+            AssetDatabase.SaveAssets();
+            return report.ToString();
+        }
+
+        private static void SetImport(string path, bool normal)
+        {
+            if (!(AssetImporter.GetAtPath(path) is TextureImporter imp)) return;
+            bool changed = imp.maxTextureSize != TextureSize || (normal && imp.textureType != TextureImporterType.NormalMap);
+            imp.maxTextureSize = TextureSize;
+            if (normal) imp.textureType = TextureImporterType.NormalMap;
+            if (changed) imp.SaveAndReimport();
+        }
+
+        /// <summary>glTF packs roughness in G and metallic in B; URP Lit wants metallic in R and smoothness in A.</summary>
+        private static Texture2D PackGltfMetallicRoughness(string sourcePath, string outPath)
+        {
+            Texture2D src = LoadRaw(sourcePath);
+            if (src == null) return null;
+            var packed = new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false, true);
+            var px = new Color32[TextureSize * TextureSize];
+            for (int y = 0; y < TextureSize; y++)
+            {
+                float v = (y + 0.5f) / TextureSize;
+                for (int x = 0; x < TextureSize; x++)
+                {
+                    Color c = src.GetPixelBilinear((x + 0.5f) / TextureSize, v);
+                    byte mv = (byte)Mathf.RoundToInt(c.b * 255f);
+                    byte sv = (byte)Mathf.RoundToInt((1f - c.g) * 255f);
+                    px[y * TextureSize + x] = new Color32(mv, mv, mv, sv);
+                }
+            }
+            packed.SetPixels32(px);
+            File.WriteAllBytes(outPath, packed.EncodeToPNG());
+            Object.DestroyImmediate(packed);
+            Object.DestroyImmediate(src);
+            AssetDatabase.ImportAsset(outPath);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(outPath);
+            importer.sRGBTexture = false;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.maxTextureSize = TextureSize;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(outPath);
+        }
+
         private static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path)) return;

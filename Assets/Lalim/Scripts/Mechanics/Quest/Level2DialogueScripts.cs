@@ -18,12 +18,14 @@ namespace Lalim.Mechanics.Quest
         public const string Bakunawa = "Bakunawa";
 
         // The Kataw who teach at the Root Pools (Minigame 2).
-        public const string TeacherThrow = "Amihan";       // lesson 1, the throw
-        public const string TeacherSense = "Lakan";        // lesson 2, identify
+        public const string TeacherThrow = "Lakan";        // lesson 1, the throw (a man)
+        public const string TeacherSense = "Amihan";       // lesson 2, identify (a woman)
         public const string TeacherPatience = "Inang Sela"; // lesson 3, patience
         public const string TeacherWatch = "Dalisay";      // watches the fourth pool in the test
 
         public const string BarkReport = "report";
+        /// <summary>The second talk, after the relic is equipped: the spirit gives the quest itself.</summary>
+        public const string BarkQuestGive = "quest_give";
         public const string BarkRelicGift = RelicRewardStep.GiftBarkKey;
 
         /// <summary>Line of each gift on which the reward rises into view (RelicRewardStep).</summary>
@@ -34,54 +36,89 @@ namespace Lalim.Mechanics.Quest
 
         // ───────────────────────── Manunubo (zone 1) ─────────────────────────
 
+        /// <summary>Talk 1: who Manunubo is, how the sea fell, the scattered herds, and the Radiant
+        /// Conch. Ends by sending the diver to equip it (then talk 2, <see cref="ManunuboQuestGive"/>).
+        /// The thing in the deep is not named yet.</summary>
         public static List<DialogueLine> ManunuboQuest() => new List<DialogueLine>
         {
-            N(Manunubo, "A diver, and a dugong beside you… Come closer. My light is weak tonight."),
-            N(Manunubo, "I am Manunubo. I keep the herds of these waters. But the sharks prowl the open sand, and my fish have scattered in fear."),
-            P("How can I help them?"),
-            N(Manunubo, "You carry a conch that sings of home. Blow it, and the lost ones will hear you and follow."),
-            N(Manunubo, "Stay in the seaweed and the narrow rocks when the hunters pass. Ride with your dugong and they will take you for one of my herd."),
-            N(Manunubo, "Bring my herds back to me, {player}."),
+            N(Manunubo, "A diver… and a dugong at your side. Come closer, child of the surface. My light is weak tonight."),
+            N(Manunubo, "I am Manunubo. I watch over these waters: the reefs, the seagrass, and every life that swims in them."),
+            N(Manunubo, "Centuries ago, this sea was clear as moonlight. The reefs shone, and the fish ran in shoals so great they shadowed the sand."),
+            N(Manunubo, "Then the surface began to give us its waste. Nets that never rot. Poison carried down the rivers. Fire that shatters the coral."),
+            N(Manunubo, "Year after year the water turned. And something old in the deep, something that loved this sea before any of us, grew angry."),
+            N(Manunubo, "The sea has not known peace since. Now that anger has grown so great that when it stirred in its sleep, the whole sea shook."),
+            N(Manunubo, "My shoals broke apart in terror. They are scattered across the open sand, lost, where the sharks hunt."),
+            P("What is down there?"),
+            N(Manunubo, "Not yet. But the oldest songs of the sea remember: an anger of the deep is not fought. It is soothed with a ritual, a song sung back to it one face of the moon at a time."),
+            N(Manunubo, "You carry the Radiant Conch, Amansinaya's gift. I can feel its song from here."),
+            N(Manunubo, "Its call means home. Blow it near my lost fish, and they will hear it, calm, and follow you."),
+            N(Manunubo, "You will need it for what I ask of you. Equip it from your inventory, then come back to me."),
+        };
+
+        /// <summary>Talk 2, once the conch is equipped: the herding quest.</summary>
+        public static List<DialogueLine> ManunuboQuestGive() => new List<DialogueLine>
+        {
+            N(Manunubo, "Good. I can hear it humming in your hands."),
+            N(Manunubo, "My shoals are scattered across the sand. Find them, blow the conch, and lead them back to my light."),
+            N(Manunubo, "Mind the sharks. When they come, slip into the seaweed or the narrow rocks, wherever you see the closed eye, and keep still."),
+            N(Manunubo, "Or swim beside your dugong. The hunters will take you both for one of my shoal."),
+            P("I'll bring them home."),
+            N(Manunubo, "Go, {player}. And keep the conch close. Its song will be needed again, deeper than you think."),
         };
 
         public static List<DialogueLine> ManunuboReport() => new List<DialogueLine>
         {
-            N(Manunubo, "They are home. Can you see? My light grows stronger with every herd."),
+            N(Manunubo, "They are home. Can you see? My light grows stronger with every school."),
         };
 
         public static List<DialogueLine> ManunuboGift() => new List<DialogueLine>
         {
             N(Manunubo, "You swam where the hunters swim and never once left a fish behind."),
-            N(Manunubo, "Take this gift: Moontide. The tides that carried my herds will show themselves to you, and carry you as they carried them."),
+            N(Manunubo, "Take this gift: Moontide. The tides that carried my shoals will show themselves to you, and carry you as they carried them."),
             P("I can see the currents… the water is moving with me."),
         };
 
         public static List<DialogueLine> ManunuboClosing() => new List<DialogueLine>
         {
-            N(Manunubo, "East, through the channel, the Kataw keep their village in the roots. They will teach you what my herds cannot."),
+            N(Manunubo, "East, through the channel, the Kataw keep their village in the roots. They will teach you what my shoals cannot."),
             N(Manunubo, "Look: the tide is already moving east, silver in the dark. Swim into it, and it will carry you."),
         };
 
         public static List<DialogueLine> ManunuboIdle() => new List<DialogueLine>
         {
-            N(Manunubo, "My herds rest easy now. Go safely."),
+            N(Manunubo, "My shoals rest easy now. Go safely."),
         };
 
         public static List<StatueDialogueRouter.NamedLines> ManunuboBarks() => new List<StatueDialogueRouter.NamedLines>
         {
+            new StatueDialogueRouter.NamedLines { key = BarkQuestGive, lines = ManunuboQuestGive() },
             new StatueDialogueRouter.NamedLines { key = BarkReport, lines = ManunuboReport() },
             new StatueDialogueRouter.NamedLines { key = BarkRelicGift, lines = ManunuboGift() },
         };
 
         // ───────────────────────── Kataw elder (zone 2) ─────────────────────────
 
+        /// <summary>Talk 1: the village, careless fishing, and the Woven Net Fragment. Ends by sending
+        /// the diver to equip it (then talk 2, <see cref="KatawQuestGive"/>).</summary>
         public static List<DialogueLine> KatawQuest() => new List<DialogueLine>
         {
             N(KatawElder, "Welcome to our village, little diver. Few from the dry world swim this far into the roots."),
-            N(KatawElder, "The fishers above take everything their nets touch. The young, the rare, the ones the sea cannot spare."),
+            N(KatawElder, "Manunubo sent word of you. You brought the scattered shoals home."),
+            N(KatawElder, "The fishers above take everything their nets touch: the young, the rare, the ones the sea cannot spare."),
             P("Then how should anyone fish?"),
-            N(KatawElder, "With care. Take only what is needed, and let the rest swim free. Your woven net knows the way, if you do."),
-            N(KatawElder, "Our fishers will teach you. Learn to see which fish may be taken, and which must be left in peace."),
+            N(KatawElder, "With care. Take only what is needed, and let the rest swim free."),
+            N(KatawElder, "You carry the Woven Net Fragment, Neguno's gift. Thrown well, it opens only where you aim, and closes around nothing else."),
+            N(KatawElder, "You will need it for what we ask. Equip it from your inventory, then come back to me."),
+        };
+
+        /// <summary>Talk 2, once the net is equipped: the eight schools and the lessons.</summary>
+        public static List<DialogueLine> KatawQuestGive() => new List<DialogueLine>
+        {
+            N(KatawElder, "Good. Now listen."),
+            N(KatawElder, "Eight schools in our pools are not safe here. They must go to safer waters, but only them, and only with care."),
+            N(KatawElder, "Our fishers will teach you first: Lakan the throw, Amihan the seeing, Inang Sela the waiting."),
+            N(KatawElder, "Find Lakan at the western Root Pool. The tide will carry you there."),
+            P("I'm ready to learn."),
         };
 
         public static List<DialogueLine> KatawReport() => new List<DialogueLine>
@@ -96,9 +133,13 @@ namespace Lalim.Mechanics.Quest
             P("Thank you. I'll keep it safe."),
         };
 
+        /// <summary>The end of Ajuy: equip the Compass for the relocation, and a warning about the serpent.</summary>
         public static List<DialogueLine> KatawClosing() => new List<DialogueLine>
         {
-            N(KatawElder, "The fish you carry need new homes. But beyond the trench lies the deep, and something sleeps there that does not like to be woken."),
+            N(KatawElder, "The schools in your net-bag cannot stay in Ajuy. Each belongs in a home of its own, somewhere in these waters."),
+            N(KatawElder, "Equip the Compass. It will lead you to the sanctuaries, so you can bring each school safely to where it belongs."),
+            N(KatawElder, "But hear me. Beyond the trench the sea falls into the deep, and a great serpent rests there."),
+            N(KatawElder, "It is the anger Manunubo spoke of. Swim softly, and do not disturb it."),
         };
 
         public static List<DialogueLine> KatawIdle() => new List<DialogueLine>
@@ -108,6 +149,7 @@ namespace Lalim.Mechanics.Quest
 
         public static List<StatueDialogueRouter.NamedLines> KatawBarks() => new List<StatueDialogueRouter.NamedLines>
         {
+            new StatueDialogueRouter.NamedLines { key = BarkQuestGive, lines = KatawQuestGive() },
             new StatueDialogueRouter.NamedLines { key = BarkReport, lines = KatawReport() },
             new StatueDialogueRouter.NamedLines { key = BarkRelicGift, lines = KatawGift() },
         };
@@ -140,10 +182,43 @@ namespace Lalim.Mechanics.Quest
         public static List<DialogueLine> CatchingTest() => new List<DialogueLine>
         {
             N(KatawElder, "The throw, the seeing and the waiting. You have all three now."),
-            N(KatawElder, "Four schools must leave Ajuy for safer waters: the tuna, the clownfish, the reef fish and the squid. One waits in each pool."),
+            N(KatawElder, "Eight schools must leave Ajuy for safer waters: the tuna, the clownfish, the rabbitfish, the blue tang, the squid, the mud crabs, the lobsters and the eels. They wait in our pools."),
             N(KatawElder, "Bring them all into your net-bag, and harm none of the protected ones."),
             N(KatawElder, "Net three of them and we will start again. Go."),
         };
+
+        // ── After each lesson: what it meant, and where to go next (talk to the teacher again) ──
+
+        /// <summary>
+        /// The teacher's word once the lesson's catch is done. <paramref name="nextWho"/> /
+        /// <paramref name="nextWhere"/> name the next teacher and pool; empty after the last lesson
+        /// (then the diver goes back to the Elder).
+        /// </summary>
+        public static List<DialogueLine> LessonDebrief(int lesson, string teacher, string nextWho, string nextWhere)
+        {
+            var lines = new List<DialogueLine>();
+            switch (lesson)
+            {
+                case 0:
+                    lines.Add(N(teacher, "You see? The net closed only around the fish inside its ring. Nothing else was touched."));
+                    lines.Add(N(teacher, "A careful throw takes only what you mean to take. A careless one takes everything near it."));
+                    break;
+                case 1:
+                    lines.Add(N(teacher, "Green, and only green. The pagi, the taklobo and the pawikan are few, and the sea needs every one of them."));
+                    lines.Add(N(teacher, "Before you throw, look. Your Spirit Sense will always tell you what may be taken."));
+                    break;
+                default:
+                    lines.Add(N(teacher, "You waited for the water to clear. That is how a protected life stays safe beside your catch."));
+                    lines.Add(N(teacher, "No catch is worth a life the sea cannot spare. Patience is the last thing a fisher learns, and the most important."));
+                    break;
+            }
+            if (!string.IsNullOrEmpty(nextWho))
+                lines.Add(N(teacher, $"Now go to {nextWho} at {nextWhere}. The tide will carry you there."));
+            else
+                lines.Add(N(teacher, "You have learned all three. Return to the Elder in the village square."));
+            lines.Add(P("Thank you. I'll remember."));
+            return lines;
+        }
 
         public static List<DialogueLine> TeacherIdle(string teacher) => new List<DialogueLine>
         {
@@ -159,7 +234,7 @@ namespace Lalim.Mechanics.Quest
         public const string CalloutSpoiled = "A protected one was in there too. The whole net goes free.";
         public const string CalloutTestRestart = "Three protected lives in your net. Let them all go. We start again.";
         public const string CalloutSchoolTaken = "Into the bag. {0} to go.";
-        public const string CalloutLastSchool = "That's all four. Come back to the Elder.";
+        public const string CalloutLastSchool = "That's all eight. Come back to the Elder.";
 
         /// <summary>What the teachers say when a protected animal is netted (and released).</summary>
         public static string CalloutProtected(string species)
@@ -181,7 +256,10 @@ namespace Lalim.Mechanics.Quest
             N(Bakunawa, "For centuries your kind has poured its filth into my sea. You blast the reefs, you strip the shores, you take and take."),
             P("We're trying to put things right. These fish need a safe home."),
             N(Bakunawa, "A safe home? There is no safe home while your kind still breathes."),
-            N(Bakunawa, "You woke me, little one. Now swim."),
+            N(Bakunawa, "You woke me, little one."),
+            N(Bakunawa, "Swim, {player}. Swim as fast as you can."),
+            N(Bakunawa, "Before I catch you."),
+            N(Bakunawa, "Swim."),
         };
 
         public static List<DialogueLine> BakunawaReport() => new List<DialogueLine>

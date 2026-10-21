@@ -68,6 +68,8 @@ namespace Lalim.UI
         {
             public string speaker;
             public Sprite sprite;
+            [Tooltip("Size of this bust (0 or 1 = normal). Grows up and out to the left, clear of the text.")]
+            [Min(0f)] public float scale;
         }
 
         [Header("NPC portraits (bottom-left of the box)")]
@@ -93,6 +95,9 @@ namespace Lalim.UI
         [SerializeField, Min(8f)] private float _nextIndicatorSize = 26f;
         [SerializeField] private Color _nextIndicatorColor = new Color(0.16f, 0.32f, 0.5f, 0.9f);
         [SerializeField, Min(0.01f)] private float _nextIndicatorFadeSeconds = 0.3f;
+        [Tooltip("How far the ▼ floats up and down (pixels) and how fast.")]
+        [SerializeField, Min(0f)] private float _nextIndicatorBob = 5f;
+        [SerializeField, Min(0.1f)] private float _nextIndicatorBobSpeed = 4f;
 
         [Header("Auto")]
         [SerializeField, Min(0f)] private float _autoDelayBase = 1.2f;
@@ -304,7 +309,7 @@ namespace Lalim.UI
 
             ApplyLayout(line.isPlayer);
             if (_nameText != null) _nameText.text = speaker;
-            ApplyPortrait(line.isPlayer ? null : (line.portrait != null ? line.portrait : PortraitFor(speaker)));
+            ApplyPortrait(line.isPlayer ? null : (line.portrait != null ? line.portrait : PortraitFor(speaker)), line.isPlayer ? 1f : PortraitScaleFor(speaker));
 
             _history.Add(new HistoryEntry { Speaker = speaker, Text = _currentSentence, IsPlayer = line.isPlayer });
 
@@ -462,7 +467,7 @@ namespace Lalim.UI
                 content.anchoredPosition = new Vector2(content.anchoredPosition.x, needed);
         }
 
-        // The ▼ fades in once a line has finished typing (tap for the next); it doesn't move.
+        // The ▼ fades in once a line has finished typing (tap for the next) and floats gently.
         private void UpdateNextIndicator(bool frozen)
         {
             if (_nextIndicator == null) return;
@@ -478,6 +483,7 @@ namespace Lalim.UI
             Color c = _nextIndicatorColor;
             c.a *= _nextIndicatorAlpha;
             _nextIndicatorImage.color = c;
+            if (!frozen) _nextIndicator.anchoredPosition = new Vector2(0f, Mathf.Sin(Time.unscaledTime * _nextIndicatorBobSpeed) * _nextIndicatorBob);
         }
 
         private void TickAuto()
@@ -495,18 +501,36 @@ namespace Lalim.UI
             return null;
         }
 
+        public float PortraitScaleFor(string speaker)
+        {
+            if (string.IsNullOrEmpty(speaker)) return 1f;
+            foreach (SpeakerPortrait p in _speakerPortraits)
+                if (string.Equals(p.speaker, speaker, StringComparison.OrdinalIgnoreCase)) return p.scale > 0f ? p.scale : 1f;
+            return 1f;
+        }
+
+        private bool _portraitBaseCached;
+        private Vector2 _portraitBasePos;
+
         private bool _bodyDefaultsCached;
         private Vector2 _bodyAnchorMin;
         private Vector2 _bodyOffsetMin;
 
         // The portrait sits left of the name strip, so the body text moves over to line up with the name.
-        private void ApplyPortrait(Sprite portrait)
+        private void ApplyPortrait(Sprite portrait, float scale = 1f)
         {
             bool show = portrait != null && _npcPortraitImage != null;
             if (_npcPortraitImage != null)
             {
                 _npcPortraitImage.gameObject.SetActive(show);
                 if (show) _npcPortraitImage.sprite = portrait;
+                // A bigger bust (e.g. Bakunawa) grows up from the box and out to the left, so its
+                // right edge (and the text beside it) stays where it was.
+                RectTransform rt = _npcPortraitImage.rectTransform;
+                if (!_portraitBaseCached) { _portraitBasePos = rt.anchoredPosition; _portraitBaseCached = true; }
+                scale = Mathf.Max(0.1f, scale);
+                rt.localScale = Vector3.one * scale;
+                rt.anchoredPosition = _portraitBasePos - new Vector2(rt.rect.width * (scale - 1f) * (1f - rt.pivot.x), 0f);
             }
             if (_bodyText == null) return;
             RectTransform body = _bodyFrame != null ? _bodyFrame : _bodyText.rectTransform;   // the scroll viewport moves, not the text

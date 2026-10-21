@@ -18,11 +18,28 @@ namespace Lalim.Challenges.Gathering
         [SerializeField] private Kind _kind = Kind.Thicket;
 
         private static readonly HashSet<HidingZone> _occupied = new HashSet<HidingZone>();
+        private static readonly List<HidingZone> _all = new List<HidingZone>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => _occupied.Clear();
+        private static void ResetStatics() { _occupied.Clear(); _all.Clear(); }
 
         public Kind ZoneKind => _kind;
+
+        /// <summary>Every enabled hiding spot (for the "hide here" markers).</summary>
+        public static IReadOnlyList<HidingZone> All => _all;
+
+        /// <summary>The diver is inside this spot.</summary>
+        public bool Occupied => _occupied.Contains(this);
+
+        /// <summary>Where the spot's marker floats: over a thicket's top, in a crevice's middle.</summary>
+        public Vector3 MarkerPoint
+        {
+            get
+            {
+                Bounds b = GetComponent<Collider>().bounds;
+                return _kind == Kind.Thicket ? new Vector3(b.center.x, b.max.y - 2f, b.center.z) : b.center;
+            }
+        }
 
         /// <summary>The diver is inside a thicket or crevice.</summary>
         public static bool PlayerInCover => _occupied.Count > 0;
@@ -52,7 +69,13 @@ namespace Lalim.Challenges.Gathering
             if (other.CompareTag(GameConstants.Tags.PLAYER)) _occupied.Remove(this);
         }
 
-        private void OnDisable() => _occupied.Remove(this);
+        private void OnEnable() { if (!_all.Contains(this)) _all.Add(this); }
+
+        private void OnDisable()
+        {
+            _occupied.Remove(this);
+            _all.Remove(this);
+        }
 
         private void OnDrawGizmos()
         {

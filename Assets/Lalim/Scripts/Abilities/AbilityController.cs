@@ -13,7 +13,7 @@ namespace Lalim.Abilities
     ///    preventing accidental Riptides. While Riptide runs, taps do nothing.
     ///    A tap made mid-dash is buffered briefly so combo taps aren't lost.
     ///  - F toggles Tidebond (press again to dismount), Q Spirit Sense, R Seagrass Mend, G Bubble Barrier.
-    ///  - A challenge starting cancels Riptide and dismounts Tidebond; Barrier keeps running.
+    ///  - A 1st-person challenge starting cancels Riptide and dismounts Tidebond; Barrier keeps running.
     ///  - Death / respawn force-ends every active ability (cooldowns keep running).
     ///
     /// Touch buttons call RequestActivate() directly rather than setting InputManager flags, so a
@@ -237,7 +237,10 @@ namespace Lalim.Abilities
 
         private void OnChallengeStarted(ChallengeStartedEvent evt)
         {
-            // Bubble Barrier deliberately keeps running.
+            // A 3rd-person challenge is free swimming (e.g. the Bakunawa chase across the map): a ride
+            // in progress carries on. Only a 1st-person minigame, which frames the diver in place,
+            // ends the movement skills. Bubble Barrier deliberately keeps running either way.
+            if (evt.Perspective == ChallengePerspective.ThirdPerson) return;
             Get(AbilityId.Riptide)?.ForceEnd();
             Get(AbilityId.Tidebond)?.ForceEnd();
         }

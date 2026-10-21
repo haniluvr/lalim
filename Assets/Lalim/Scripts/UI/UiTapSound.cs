@@ -5,10 +5,6 @@ using System.Collections.Generic;
 
 namespace Lalim.UI
 {
-    /// <summary>Marks UI whose buttons are gameplay, not menus (minigame panels, the action button): no tap sound.</summary>
-    [DisallowMultipleComponent]
-    public class NoTapSound : MonoBehaviour { }
-
     /// <summary>
     /// One quiet tap for every menu button in the game (menus, pause, inventory, Equip, settings,
     /// the dialogue's own buttons), without each screen wiring it up: a press and release on the

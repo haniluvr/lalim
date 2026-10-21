@@ -365,6 +365,8 @@ MonoBehaviour:
   _bob: 0.18
   _bobSpeed: 0.8
   _swayDegrees: 3
-  _floatAnimSpeed: 0.45
+  _uprightDegrees: 0
+  _swimLeanDegrees: 0
+  _floatAnimSpeed: 1
   _settleDelay: 0.4
   _blendSeconds: 0.8

@@ -63,32 +63,32 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: f2ebf33813f6e4f11b81442c8c465dbd,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.31051493
+      value: 0.19495046
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2ebf33813f6e4f11b81442c8c465dbd,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.31051493
+      value: 0.19495046
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2ebf33813f6e4f11b81442c8c465dbd,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.31051493
+      value: 0.19495046
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2ebf33813f6e4f11b81442c8c465dbd,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.0295956
+      value: 2.78251
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2ebf33813f6e4f11b81442c8c465dbd,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.5711823
+      value: -0.78307253
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2ebf33813f6e4f11b81442c8c465dbd,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.047379643
+      value: -0.064955965
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2ebf33813f6e4f11b81442c8c465dbd,
         type: 3}
@@ -162,7 +162,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: d21d644702aa3438f89d36be1dec2994, type: 2}
-  m_CullingMode: 1
+  m_CullingMode: 2
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0

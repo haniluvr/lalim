@@ -86,6 +86,33 @@ namespace Lalim.Core
 
         public float CurrentVolume => _volume;
 
+        /// <summary>
+        /// Ducking for a scene's own music (the moon ritual's melodies, Bakunawa's lullaby, a
+        /// sanctuary's song): each owner asks for 0 (normal) … 1 (silent); the strongest wins, and
+        /// it eases. Set back to 0 when done.
+        /// </summary>
+        public void SetHush(object owner, float level)
+        {
+            if (owner == null) return;
+            level = Mathf.Clamp01(level);
+            if (level <= 0.001f) _hushes.Remove(owner);
+            else _hushes[owner] = level;
+        }
+
+        /// <summary>The hush in force now (the strongest request).</summary>
+        public float Hush
+        {
+            get
+            {
+                float h = 0f;
+                foreach (float v in _hushes.Values) h = Mathf.Max(h, v);
+                return h;
+            }
+        }
+
+        private readonly System.Collections.Generic.Dictionary<object, float> _hushes = new System.Collections.Generic.Dictionary<object, float>();
+        private float _hush;
+
         /// <summary>The level's music is playing (it hands its track to MusicDirector as the level unloads).</summary>
         public bool IsPlaying => Current != null && Current.isPlaying && Current.clip != null;
 
@@ -194,7 +221,8 @@ namespace Lalim.Core
 
             if (_crossfade < 1f) _crossfade = Mathf.MoveTowards(_crossfade, 1f, Time.unscaledDeltaTime / _crossfadeSeconds);
 
-            float gain = GameAudio.Gain(AudioChannel.Music) * GameAudio.ClipGain(Current.clip);
+            _hush = Mathf.MoveTowards(_hush, Hush, Time.unscaledDeltaTime / 1.5f);
+            float gain = GameAudio.Gain(AudioChannel.Music) * GameAudio.ClipGain(Current.clip) * (1f - _hush);
             GameSettings settings = SettingsManager.Active;
             float guideShare = settings.spatialAudio ? _guideShare : 0f;   // flat audio: no guide
             Current.volume = _volume * _crossfade * gain;   // the flat track always plays at full level

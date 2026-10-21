@@ -19,6 +19,7 @@ namespace Lalim.DDA
         public const string ProtectedPerPool = "protectedPerPool"; // protected animals sharing each pool in the test
         public const string ProtectedSpeed = "protectedSpeed";   // m/s the protected animals drift at
         public const string SchoolSize = "schoolSize";           // fish in each school
+        public const string SchoolsToNet = "schoolsToNet";       // schools to net in the Ajuy test (8–25)
 
         // Padre Burgos: relocation under Bakunawa's chase
         public const string BakunawaSpeed = "bakunawaSpeed";     // chase speed, m/s (the diver swims 5)
@@ -26,5 +27,10 @@ namespace Lalim.DDA
         public const string StrikeDamage = "strikeDamage";
         public const string CalmSeconds = "calmSeconds";         // how long the conch calms it
         public const string ReturnSeconds = "returnSeconds";     // seconds of chasing outside Padre Burgos before it goes home
+
+        // Padre Burgos: the moon ritual (appeasing Bakunawa)
+        public const string RitualLabels = "ritualLabels";       // 1 = phase names shown over the circles
+        public const string RitualReshuffle = "ritualReshuffle"; // 1 = the phases move to new circles after every restart
+        public const string RitualFreeHintAfter = "ritualFreeHintAfter"; // restarts in a row before the next circle pulses on its own (0 = never)
     }
 }

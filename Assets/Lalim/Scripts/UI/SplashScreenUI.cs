@@ -28,10 +28,12 @@ namespace Lalim.UI
 
         private float _targetProgress = 0f;
         private float _currentProgress = 0f;
+        private string _phase = "Starting up...";
 
         private void OnEnable()
         {
             EventBus.Subscribe<SceneLoadProgressEvent>(OnLoadProgress);
+            if (_loadingText != null) _loadingText.text = _phase;
         }
 
         private void OnDisable()
@@ -42,6 +44,7 @@ namespace Lalim.UI
         private void OnLoadProgress(SceneLoadProgressEvent evt)
         {
             _targetProgress = evt.Progress;
+            if (!string.IsNullOrEmpty(evt.Phase)) _phase = evt.Phase;   // what the loader is doing right now
         }
 
         private void Update()
@@ -61,10 +64,10 @@ namespace Lalim.UI
                 _loadingBarFill.fillAmount = _currentProgress;
             }
 
-            // Update loading text
-            if (_loadingText != null)
+            // Loading text: the current loader phase, swapped instantly (no fade)
+            if (_loadingText != null && _loadingText.text != _phase)
             {
-                _loadingText.text = $"Loading... {Mathf.RoundToInt(_currentProgress * 100f)}%";
+                _loadingText.text = _phase;
             }
         }
     }

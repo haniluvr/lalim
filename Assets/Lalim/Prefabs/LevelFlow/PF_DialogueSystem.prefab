@@ -479,12 +479,46 @@ MonoBehaviour:
   _speakerPortraits:
   - speaker: Amansinaya
     sprite: {fileID: 21300000, guid: 025ce5633b2654aa6930debd059b86d4, type: 3}
+    scale: 0
   - speaker: Haik
     sprite: {fileID: 21300000, guid: 4a1e388993bcb45acb63086a089f3b38, type: 3}
+    scale: 0
   - speaker: Neguno
     sprite: {fileID: 21300000, guid: 9735fbcdabaa243ef98fe21077ae7c78, type: 3}
+    scale: 0
   - speaker: Manunubo
     sprite: {fileID: 21300000, guid: b200c35a1a9ce46de87dad03e3c6fd6a, type: 3}
+    scale: 0
+  - speaker: Kataw Elder
+    sprite: {fileID: 21300000, guid: 39ab10eda5e764b249bfe0e133ddc277, type: 3}
+    scale: 0
+  - speaker: Amihan
+    sprite: {fileID: 21300000, guid: 450ce79f230534a018cb277a9814a1df, type: 3}
+    scale: 0
+  - speaker: Lakan
+    sprite: {fileID: 21300000, guid: f38534e08e7cc4ac88b6b846bcc7aa6a, type: 3}
+    scale: 0
+  - speaker: Dalisay
+    sprite: {fileID: 21300000, guid: 450ce79f230534a018cb277a9814a1df, type: 3}
+    scale: 0
+  - speaker: Inang Sela
+    sprite: {fileID: 21300000, guid: d832f81a320164457a6cf57265a44f46, type: 3}
+    scale: 0
+  - speaker: Kataw Fisher
+    sprite: {fileID: 21300000, guid: f38534e08e7cc4ac88b6b846bcc7aa6a, type: 3}
+    scale: 0
+  - speaker: Kataw Weaver
+    sprite: {fileID: 21300000, guid: 450ce79f230534a018cb277a9814a1df, type: 3}
+    scale: 0
+  - speaker: Lolo Kataw
+    sprite: {fileID: 21300000, guid: 39ab10eda5e764b249bfe0e133ddc277, type: 3}
+    scale: 0
+  - speaker: Lola Kataw
+    sprite: {fileID: 21300000, guid: d832f81a320164457a6cf57265a44f46, type: 3}
+    scale: 0
+  - speaker: Bakunawa
+    sprite: {fileID: 21300000, guid: 98ff43a059474472b95d047b2b512e79, type: 3}
+    scale: 1.5
   _bodyLeftWithPortrait: 0.142
   _bodyInsetWithPortrait: 28
   _npcNameMin: {x: 0.142, y: 0.77}
@@ -497,6 +531,8 @@ MonoBehaviour:
   _nextIndicatorSize: 26
   _nextIndicatorColor: {r: 0.16, g: 0.32, b: 0.5, a: 0.9}
   _nextIndicatorFadeSeconds: 0.3
+  _nextIndicatorBob: 5
+  _nextIndicatorBobSpeed: 4
   _autoDelayBase: 1.2
   _autoDelayPerChar: 0.03
 --- !u!1 &1464712560491272766

@@ -127,9 +127,9 @@ namespace Lalim.Core
             public const string LUZON_CORAL_BED = "luzon_zone_c";
 
             // Visayas zones
-            public const string VISAYAS_FISHING_GROUNDS = "visayas_zone_a";
-            public const string VISAYAS_GHOST_NET_FIELD = "visayas_zone_b";
-            public const string VISAYAS_RESCUE_SITE = "visayas_zone_c";
+            public const string VISAYAS_CALUYA = "visayas_zone_a";
+            public const string VISAYAS_AJUY = "visayas_zone_b";
+            public const string VISAYAS_PADRE_BURGOS = "visayas_zone_c";
 
             // Mindanao zones
             public const string MINDANAO_TRENCH_ENTRY = "mindanao_zone_a";
@@ -148,7 +148,7 @@ namespace Lalim.Core
                     case Region.Luzon:
                         return new[] { LUZON_BLEACHED_REEF, LUZON_TOXIN_SITES, LUZON_CORAL_BED };
                     case Region.Visayas:
-                        return new[] { VISAYAS_FISHING_GROUNDS, VISAYAS_GHOST_NET_FIELD, VISAYAS_RESCUE_SITE };
+                        return new[] { VISAYAS_CALUYA, VISAYAS_AJUY, VISAYAS_PADRE_BURGOS };
                     case Region.Mindanao:
                         return new[] { MINDANAO_TRENCH_ENTRY, MINDANAO_BOMB_FIELD, MINDANAO_WHALE_SANCTUARY };
                     default:

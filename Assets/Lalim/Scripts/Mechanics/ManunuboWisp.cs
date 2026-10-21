@@ -36,6 +36,11 @@ namespace Lalim.Mechanics
         [Tooltip("Starting brightness: the herds are scattered, so Manunubo is dim.")]
         [SerializeField, Range(0f, 1f)] private float _brightness = 0.45f;
         [SerializeField, Min(0.1f)] private float _brightnessEaseSeconds = 2f;
+        [Header("Bright water")]
+        [Tooltip("In cleansed (bright) water the additive glow can't show: a deep halo behind the core keeps Manunubo visible.")]
+        [SerializeField] private Color _brightWaterHalo = new Color(0.06f, 0.14f, 0.42f, 0.8f);
+        [SerializeField, Min(0.1f)] private float _haloSize = 3.6f;
+        [SerializeField] private Color _brightWaterTrail = new Color(0.08f, 0.3f, 0.6f, 0.7f);
 
         private Vector3 _home;
         private Vector3 _velocity;
@@ -45,6 +50,11 @@ namespace Lalim.Mechanics
         private float _brightnessTarget;
         private Vector3 _coreScale = Vector3.one;
         private float _trailWidth = 1f;
+        private Transform _halo;
+        private Material _haloMat;
+        private Material _trailGlow, _trailShade;
+        private Color _trailStart, _trailEnd;
+        private float _contrast, _contrastCheck;
 
         /// <summary>Glow level 0..1 the wisp eases toward.</summary>
         public float Brightness => _brightnessTarget;
@@ -59,7 +69,70 @@ namespace Lalim.Mechanics
             _brightnessTarget = _brightness;
             _shownBrightness = _brightness;
             if (_core != null) _coreScale = _core.localScale;
-            if (_trail != null) _trailWidth = _trail.widthMultiplier;
+            if (_trail != null)
+            {
+                _trailWidth = _trail.widthMultiplier;
+                _trailGlow = _trail.sharedMaterial;
+                _trailStart = _trail.startColor;
+                _trailEnd = _trail.endColor;
+            }
+        }
+
+        private void OnDestroy() { if (_haloMat != null) Destroy(_haloMat); }
+
+        /// <summary>The deep halo for bright water, built the first time it's needed.</summary>
+        private void BuildHalo()
+        {
+            Material glow = null;
+            foreach (ParticleSystemRenderer r in GetComponentsInChildren<ParticleSystemRenderer>(true))
+                if (r.sharedMaterial != null && r.sharedMaterial.name.StartsWith("M_Manunubo_Glow")) { glow = r.sharedMaterial; break; }
+            Material shade = WaterBrightness.ShadeOf(glow);
+            if (shade == null) return;
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            go.name = "BrightWaterHalo";
+            Destroy(go.GetComponent<Collider>());
+            go.transform.SetParent(transform, false);
+            go.AddComponent<FaceCamera>();
+            var r2 = go.GetComponent<MeshRenderer>();
+            r2.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r2.receiveShadows = false;
+            _haloMat = new Material(shade);
+            r2.sharedMaterial = _haloMat;
+            _halo = go.transform;
+        }
+
+        private void UpdateBrightWater(float dt, float glow)
+        {
+            _contrastCheck -= dt;
+            if (_contrastCheck <= 0f) { _contrastCheck = 0.25f; _contrast = Mathf.MoveTowards(_contrast, WaterBrightness.Contrast, 0.25f); }
+            if (_contrast > 0.01f && _halo == null) BuildHalo();
+            if (_halo != null)
+            {
+                bool show = _contrast > 0.01f;
+                if (_halo.gameObject.activeSelf != show) _halo.gameObject.SetActive(show);
+                if (show)
+                {
+                    _halo.position = _core != null ? _core.position : transform.position;
+                    _halo.localScale = Vector3.one * _haloSize * Mathf.Lerp(0.8f, 1.1f, glow);
+                    Color c = _brightWaterHalo;
+                    c.a *= _contrast;
+                    _haloMat.SetColor("_BaseColor", c);
+                }
+            }
+            // The trail: glowing in dark water, deep and see-through in bright water.
+            if (_trail != null && _trailGlow != null)
+            {
+                bool bright = _contrast > 0.5f;
+                if (bright && _trailShade == null) _trailShade = WaterBrightness.ShadeOf(_trailGlow);
+                Material want = bright && _trailShade != null ? _trailShade : _trailGlow;
+                if (_trail.sharedMaterial != want)
+                {
+                    _trail.sharedMaterial = want;
+                    Color end = _brightWaterTrail; end.a = 0f;
+                    _trail.startColor = want == _trailGlow ? _trailStart : _brightWaterTrail;
+                    _trail.endColor = want == _trailGlow ? _trailEnd : end;
+                }
+            }
         }
 
         private void Update()
@@ -90,6 +163,7 @@ namespace Lalim.Mechanics
             float glow = Mathf.Lerp(0.35f, 1f, _shownBrightness) * pulse;
             if (_core != null) _core.localScale = _coreScale * glow;
             if (_light != null) _light.intensity = _lightIntensityBright * glow;
+            UpdateBrightWater(dt, glow);
 
             // The trail only streams while moving; a still wisp shouldn't leave a smear.
             if (_trail != null)

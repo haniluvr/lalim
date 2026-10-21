@@ -148,7 +148,7 @@ namespace Lalim.Core
                     yield return LoadParked(intermediateScene, s => screen = s);
                     if (screen != null)
                     {
-                        EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f });
+                        EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f, Phase = "Starting up..." });
                         yield return screen.Fade(0f, 1f, _crossfadeSeconds);
                         SceneManager.SetActiveScene(SceneManager.GetSceneByName(intermediateScene));
                         yield return SceneManager.UnloadSceneAsync(leaving);
@@ -160,7 +160,7 @@ namespace Lalim.Core
                 {
                     // Loading it on its own also unloads the scene we're leaving.
                     yield return ScreenFader.Instance.FadeOut(isFromBoot ? _bootFadeSeconds : _fadeSeconds);
-                    EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f });
+                    EventBus.Publish(new SceneLoadProgressEvent { Progress = 0f, Phase = "Starting up..." });
                     AsyncOperation interOp = SceneManager.LoadSceneAsync(intermediateScene);
                     if (interOp == null)
                         Debug.LogError($"[SceneLoader] Failed to load intermediate scene '{intermediateScene}'. Please ensure it is added to your Build Settings.");
@@ -187,13 +187,13 @@ namespace Lalim.Core
             }
 
             float shown = 0f;
-            void Report(LoadingStages.Stage stage, float t)
+            void Report(LoadingStages.Stage stage, float t, string phase = null)
             {
                 // The bar never runs ahead of the minimum time, and never goes backwards.
                 float minimum = showLoadingScreen ? _minimumLoadTime : 0f;
                 float timeProgress = minimum > 0f ? Mathf.Clamp01((Time.unscaledTime - startTime) / minimum) : 1f;
                 shown = Mathf.Max(shown, Mathf.Min(timeProgress, LoadingStages.Progress(stage, t)));
-                EventBus.Publish(new SceneLoadProgressEvent { Progress = shown });
+                EventBus.Publish(new SceneLoadProgressEvent { Progress = shown, Phase = phase ?? LoadingStages.Label(stage) });
             }
 
             // 3a. Free the memory the old scene used. A single-mode load already unloaded the old
@@ -222,6 +222,7 @@ namespace Lalim.Core
             UnityEngine.Rendering.GraphicsStateCollection shaders = null;
             if (showLoadingScreen)
             {
+                EventBus.Publish(new SceneLoadProgressEvent { Progress = shown, Phase = "Retrieving shader data..." });
                 ResourceRequest shaderRequest = ShaderWarmup.Request(sceneName);
                 while (!shaderRequest.isDone) yield return null;
                 shaders = shaderRequest.asset as UnityEngine.Rendering.GraphicsStateCollection;
@@ -255,10 +256,10 @@ namespace Lalim.Core
             float hold = showLoadingScreen ? _minimumLoadTime : 0f;
             while (Time.unscaledTime - startTime < hold)
             {
-                Report(LoadingStages.Stage.WarmShaders, 1f);
+                Report(LoadingStages.Stage.WarmShaders, 1f, "Verifying resources...");
                 yield return null;
             }
-            EventBus.Publish(new SceneLoadProgressEvent { Progress = 1f });
+            EventBus.Publish(new SceneLoadProgressEvent { Progress = 1f, Phase = "Almost ready..." });
 
             // 4. Swap in the new scene. The loading screen is kept through the swap (it covers it),
             //    the bar sitting at 100% for a moment first.
@@ -271,6 +272,7 @@ namespace Lalim.Core
             // Activation: every object in the new scene is created and set up (Awake/Start: the
             // save is restored, the player placed, quests and systems initialised), and its
             // textures and meshes are uploaded to the GPU — all behind the loading screen.
+            if (showLoadingScreen) EventBus.Publish(new SceneLoadProgressEvent { Progress = 1f, Phase = "Setting things up..." });
             asyncOp.allowSceneActivation = true;
             while (!asyncOp.isDone) yield return null;
             RestoreLoadingSettings(uploadSlice);

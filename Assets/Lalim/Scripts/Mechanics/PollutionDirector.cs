@@ -76,6 +76,8 @@ namespace Lalim.Mechanics
         [Header("Fog")]
         [SerializeField] private Color _pollutedFogColor = new Color(0.16f, 0.22f, 0.12f);
         [SerializeField, Min(0f)] private float _pollutedFogDensity = 0.035f;
+        [Tooltip("The camera's far plane follows the fog (where it hides 98% of the scene), up to this. 0 leaves the camera alone.")]
+        [SerializeField, Min(0f)] private float _fogFarClipMax = 500f;
 
         [Header("Colour grading (polluted volume, weight = 1 − look)")]
         [SerializeField, Range(-100f, 0f)] private float _pollutedSaturation = -45f;
@@ -239,6 +241,20 @@ namespace Lalim.Mechanics
             }
         }
 
+        private const float MinFarClip = 120f;
+
+        /// <summary>
+        /// The camera stops drawing where the fog has already hidden the scene: exponential fog lets
+        /// exp(-density·d) of an object through, 2% at d = 3.9 / density. Nothing visible is lost, and
+        /// phones draw far less (Ajuy's village view: about a quarter of the objects at 500 m).
+        /// </summary>
+        private void FitFarClipToFog(float density)
+        {
+            if (_fogFarClipMax <= 0f || density <= 0f || RenderSettings.fogMode != FogMode.Exponential) return;
+            Camera cam = Camera.main;
+            if (cam != null) cam.farClipPlane = Mathf.Clamp(3.9f / density, MinFarClip, _fogFarClipMax);
+        }
+
         /// <summary>Look of the zone containing the player (falls back to the level value).</summary>
         private float LookAtPlayer()
         {
@@ -260,6 +276,7 @@ namespace Lalim.Mechanics
 
             RenderSettings.fogColor = Color.Lerp(_pollutedFogColor, _cleanFogColor, look);
             RenderSettings.fogDensity = Mathf.Lerp(_pollutedFogDensity, _cleanFogDensity, look);
+            FitFarClipToFog(RenderSettings.fogDensity);
             if (_volume != null) _volume.weight = 1f - look;
 
             float lightFactor = Mathf.Lerp(_pollutedLightFactor, 1f, look);

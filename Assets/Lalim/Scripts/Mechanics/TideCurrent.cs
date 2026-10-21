@@ -47,6 +47,8 @@ namespace Lalim.Mechanics
         private float _length;
         private Bounds _bounds;
         private ParticleSystem _streaks;
+        private ParticleSystem _shadeStreaks;   // the same streaks for bright water (made when first needed)
+        private float _contrast;
         private float _reveal;            // 0 hidden … 1 shown
         private float _ownedCheck;
         private bool _owned;
@@ -54,6 +56,7 @@ namespace Lalim.Mechanics
         private float _emitDebt;
 
         public float Length => _length;
+        public Material StreakMaterial => _streakMaterial;
         public bool Revealed => _reveal > 0.5f;
 
         private void OnEnable() => _all.Add(this);
@@ -72,6 +75,8 @@ namespace Lalim.Mechanics
         private void OnDestroy()
         {
             if (_streaks != null) Destroy(_streaks.gameObject);
+            if (_shadeStreaks != null) Destroy(_shadeStreaks.gameObject);
+            if (_entryMarker != null) Destroy(_entryMarker.gameObject);
         }
 
         // ───────────────────────── Path ─────────────────────────
@@ -111,6 +116,96 @@ namespace Lalim.Mechanics
             return 0.5f * (2f * p1 + (-p0 + p2) * t + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
         }
 
+        // ───────────────────────── Route (Spirit Sense) ─────────────────────────
+
+        private Transform _entryMarker;
+
+        /// <summary>The diver is in this current's moving water.</summary>
+        public bool IsInside(Vector3 p) => Closest(p, out _, out _, out float off) && off < _radius;
+
+        /// <summary>Distance along the path of its nearest point to <paramref name="p"/> (anywhere, not just near it).</summary>
+        private float NearestAlong(Vector3 p, out float off)
+        {
+            float best = float.MaxValue, along = 0f;
+            for (int i = 0; i < _points.Count - 1; i++)
+            {
+                Vector3 a = _points[i], b = _points[i + 1], ab = b - a;
+                float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
+                float d = (p - (a + ab * t)).sqrMagnitude;
+                if (d < best) { best = d; along = _distance[i] + ab.magnitude * t; }
+            }
+            off = Mathf.Sqrt(best);
+            return along;
+        }
+
+        /// <summary>
+        /// Where Spirit Sense should lead first on the way to <paramref name="goal"/>: the way into
+        /// the current that gets there soonest (swim to it, ride, perhaps ride a second one on from
+        /// where it ends, swim the rest), or null when swimming straight there is about as quick,
+        /// Moontide isn't owned, or the diver is already riding one.
+        /// </summary>
+        public static Transform BestEntryToward(Vector3 from, Vector3 goal, float swimSpeed = 5f)
+        {
+            swimSpeed = Mathf.Max(0.5f, swimSpeed);
+            var usable = new List<TideCurrent>();
+            foreach (TideCurrent c in _all)
+            {
+                if (c == null || !c._owned || c._carrySpeed <= 0f || c._length < 10f) continue;
+                if (c.IsInside(from)) return null;   // riding: head for the goal itself
+                usable.Add(c);
+            }
+            if (usable.Count == 0) return null;
+
+            // Each current's nearest pass to the goal (shared by both legs).
+            var toGoalAlong = new float[usable.Count];
+            var toGoalOff = new float[usable.Count];
+            for (int i = 0; i < usable.Count; i++) toGoalAlong[i] = usable[i].NearestAlong(goal, out toGoalOff[i]);
+
+            TideCurrent best = null;
+            float bestTime = Vector3.Distance(from, goal) / swimSpeed * 0.8f;   // must save a fifth of the trip
+            float bestAlong = 0f;
+            for (int i = 0; i < usable.Count; i++)
+            {
+                TideCurrent c = usable[i];
+                float enter = c.NearestAlong(from, out float toEntry);
+                float approach = Mathf.Max(0f, toEntry - c._radius * 0.6f) / swimSpeed;   // into the tube's edge
+
+                // Ride it, then swim from where it passes nearest the goal…
+                float leave = toGoalAlong[i];
+                float rest = float.MaxValue;
+                if (leave - enter >= 10f) rest = (leave - enter) / c._carrySpeed + toGoalOff[i] / swimSpeed;
+
+                // …or ride it to its end and on along a second one.
+                Vector3 end = c._points[c._points.Count - 1];
+                float toEnd = (c._length - enter) / c._carrySpeed;
+                if (c._length - enter >= 10f)
+                {
+                    for (int j = 0; j < usable.Count; j++)
+                    {
+                        if (j == i) continue;
+                        TideCurrent c2 = usable[j];
+                        float enter2 = c2.NearestAlong(end, out float gap);
+                        if (gap > 30f || toGoalAlong[j] - enter2 < 10f) continue;
+                        float t2 = toEnd + Mathf.Max(0f, gap - c2._radius * 0.6f) / swimSpeed
+                                 + (toGoalAlong[j] - enter2) / c2._carrySpeed + toGoalOff[j] / swimSpeed;
+                        if (t2 < rest) rest = t2;
+                    }
+                }
+
+                float time = approach + rest;
+                if (time < bestTime) { bestTime = time; best = c; bestAlong = enter; }
+            }
+            if (best == null) return null;
+            if (best._entryMarker == null)
+            {
+                // Not a child: the children are the path.
+                best._entryMarker = new GameObject(best.name + "_SpiritSenseEntry").transform;
+                best._entryMarker.SetParent(best.transform.parent, false);
+            }
+            best._entryMarker.position = best.PointAt(Mathf.Min(bestAlong + 2f, best._length), out _);
+            return best._entryMarker;
+        }
+
         /// <summary>Closest point on the path: its index (segment start), distance along, and how far off.</summary>
         private bool Closest(Vector3 p, out int segment, out float along, out float off)
         {
@@ -146,7 +241,7 @@ namespace Lalim.Mechanics
             if (dt <= 0f || _length <= 0f) return;
 
             _ownedCheck -= dt;
-            if (_ownedCheck <= 0f) { _ownedCheck = 0.5f; _owned = _alwaysVisible || MoontideOwned; }
+            if (_ownedCheck <= 0f) { _ownedCheck = 0.5f; _owned = _alwaysVisible || MoontideOwned; _contrast = WaterBrightness.Contrast; }
             // A gentle-only flow (no carry) never turns into a Moontide ride.
             _reveal = Mathf.MoveTowards(_reveal, _owned && _carrySpeed > 0f ? 1f : 0f, dt * 0.6f);
 
@@ -179,10 +274,12 @@ namespace Lalim.Mechanics
 
         // ───────────────────────── Look ─────────────────────────
 
-        private ParticleSystem CreateStreaks()
+        private ParticleSystem CreateStreaks() => CreateStreaks(name + "_Streaks", _streakMaterial);
+
+        private ParticleSystem CreateStreaks(string objectName, Material material)
         {
             // Not a child: the children are the path.
-            var go = new GameObject(name + "_Streaks");
+            var go = new GameObject(objectName);
             go.transform.SetParent(transform.parent, false);
             var ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -208,8 +305,23 @@ namespace Lalim.Mechanics
             r.velocityScale = 0.1f;
             r.lengthScale = 1.4f;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            if (_streakMaterial != null) r.sharedMaterial = _streakMaterial;
+            if (material != null) r.sharedMaterial = material;
             ps.Play();
+            return ps;
+        }
+
+        /// <summary>
+        /// The streaks for bright water: the glow can't show there, so they're drawn plain white
+        /// (see-through, not added light), and longer (no bloom to smear them) to read as flowing water.
+        /// </summary>
+        private ParticleSystem CreateBrightWaterStreaks()
+        {
+            ParticleSystem ps = CreateStreaks(name + "_Streaks_BrightWater", WaterBrightness.ShadeOf(_streakMaterial));
+            var main = ps.main;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.32f);
+            var r = ps.GetComponent<ParticleSystemRenderer>();
+            r.velocityScale = 0.4f;   // long thin streaks, not dots
+            r.lengthScale = 3f;
             return ps;
         }
 
@@ -244,8 +356,18 @@ namespace Lalim.Mechanics
                 p.position = pos + side;
                 p.velocity = tangent * speed * Random.Range(0.7f, 1.1f);
                 c.a = Mathf.Lerp(0.25f, 0.9f, _reveal) * Random.Range(0.6f, 1f);
-                p.startColor = c;
-                _streaks.Emit(p, 1);
+                // Bright water: the glow would vanish, so this streak is drawn plain white instead.
+                ParticleSystem target = _streaks;
+                if (_contrast > 0.01f && Random.value < _contrast)
+                {
+                    if (_shadeStreaks == null) _shadeStreaks = CreateBrightWaterStreaks();
+                    target = _shadeStreaks;
+                    Color d = Color.white;
+                    d.a = Mathf.Lerp(0.45f, 1f, _reveal) * Random.Range(0.75f, 1f);
+                    p.startColor = d;
+                }
+                else p.startColor = c;
+                target.Emit(p, 1);
             }
         }
 

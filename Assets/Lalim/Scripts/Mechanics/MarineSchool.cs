@@ -230,6 +230,7 @@ namespace Lalim.Mechanics
             go.transform.localRotation = Quaternion.Euler(0f, modelYaw, 0f);
             foreach (Collider c in go.GetComponentsInChildren<Collider>()) Object.Destroy(c);
             foreach (Renderer r in go.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            CreatureRig.Play(go, model.name, false);   // its own swim (eels bend, turtles paddle), not a rigid body
 
             if (TryBounds(go, out Bounds b))
             {

@@ -20,6 +20,18 @@ namespace Lalim.Core
 
         private static readonly float[] Starts = { 0f, 0.1f, 0.8f, 1f };
 
+        /// <summary>Player-facing description of what each stage is doing.</summary>
+        public static string Label(Stage stage)
+        {
+            switch (stage)
+            {
+                case Stage.FreeMemory: return "Freeing up memory...";
+                case Stage.LoadData: return "Loading scene data...";
+                case Stage.WarmShaders: return "Compiling shaders...";
+                default: return "Loading...";
+            }
+        }
+
         /// <summary>Overall 0..1 progress for <paramref name="t"/> (0..1) of the way through <paramref name="stage"/>.</summary>
         public static float Progress(Stage stage, float t)
         {

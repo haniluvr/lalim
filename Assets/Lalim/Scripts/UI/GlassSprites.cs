@@ -5,13 +5,13 @@ namespace Lalim.UI
 {
     /// <summary>
     /// Generated sprites for the frosted-glass minigame panels (Sea Sensors, coral site prep):
-    /// rounded cards and outlines (9-sliced), a top sheen, arc rings, circles, a check, a triangle,
-    /// a light bulb and a chevron.
+    /// rounded cards and outlines (9-sliced), a top sheen, arc rings, circles, an alert ring, a check, a triangle,
+    /// a light bulb, a chevron and a closed eye.
     /// Made once at runtime, so the panels need no art.
     /// </summary>
     public static class GlassSprites
     {
-        private static Sprite _rounded, _roundedOutline, _roundedSheen, _ring, _ringWide, _circle, _circleOutline, _check, _triangle, _bulb, _chevron;
+        private static Sprite _rounded, _roundedOutline, _roundedSheen, _ring, _ringWide, _circle, _circleOutline, _alertRing, _check, _triangle, _bulb, _chevron, _closedEye;
 
         public static Sprite Rounded => _rounded ??= Make(128, 48, (x, y) => RoundedBox(x, y, 128, 48));
         public static Sprite RoundedOutline => _roundedOutline ??= Make(128, 48, (x, y) =>
@@ -27,6 +27,14 @@ namespace Lalim.UI
         public static Sprite Circle => _circle ??= Make(128, 0, (x, y) => Mathf.Clamp01(62f - Vector2.Distance(new Vector2(x, y), new Vector2(63.5f, 63.5f))));
         public static Sprite CircleOutline => _circleOutline ??= Make(128, 0, (x, y) =>
             Mathf.Clamp01(2.5f - Mathf.Abs(Vector2.Distance(new Vector2(x, y), new Vector2(63.5f, 63.5f)) - 58f)));
+        // A bold ring with a soft glow either side: reads at a glance even small on a phone (the predator alert).
+        public static Sprite AlertRing => _alertRing ??= Make(256, 0, (x, y) =>
+        {
+            float d = Mathf.Abs(Vector2.Distance(new Vector2(x, y), new Vector2(127.5f, 127.5f)) - 116f);
+            float band = Mathf.Clamp01(4.5f - d);
+            float glow = Mathf.Clamp01(1f - d / 11f) * 0.35f;
+            return Mathf.Max(band, glow);
+        });
         public static Sprite Check => _check ??= Make(128, 0, (x, y) =>
         {
             var p = new Vector2(x, y);
@@ -68,6 +76,31 @@ namespace Lalim.UI
             var p = new Vector2(x + 0.5f, y + 0.5f);
             float d = Mathf.Min(Segment(p, new Vector2(18f, 44f), new Vector2(64f, 88f)), Segment(p, new Vector2(64f, 88f), new Vector2(110f, 44f)));
             return Mathf.Clamp01(10f - d);
+        });
+
+        // A closed eye (a lid curve with lashes hanging down): "hidden here".
+        public static Sprite ClosedEye => _closedEye ??= Make(128, 0, (x, y) =>
+        {
+            var p = new Vector2(x + 0.5f, y + 0.5f);
+            // The lid: a downward-bulging arc from (18, 72) to (110, 72), lowest at (64, 50).
+            float lid = float.MaxValue;
+            Vector2 prev = new Vector2(18f, 72f);
+            for (int i = 1; i <= 16; i++)
+            {
+                float t = i / 16f;
+                var q = new Vector2(Mathf.Lerp(18f, 110f, t), 72f - 22f * Mathf.Sin(t * Mathf.PI));
+                lid = Mathf.Min(lid, Segment(p, prev, q));
+                prev = q;
+            }
+            float lashes = float.MaxValue;
+            for (int i = 0; i < 5; i++)
+            {
+                float t = 0.18f + i * 0.16f;
+                var root = new Vector2(Mathf.Lerp(18f, 110f, t), 72f - 22f * Mathf.Sin(t * Mathf.PI));
+                var tip = root + new Vector2((t - 0.5f) * 26f, -16f);
+                lashes = Mathf.Min(lashes, Segment(p, root, tip));
+            }
+            return Mathf.Max(Mathf.Clamp01(6.5f - lid), Mathf.Clamp01(5f - lashes));
         });
 
         private static float RoundedSdf(float x, float y, int size, float r)

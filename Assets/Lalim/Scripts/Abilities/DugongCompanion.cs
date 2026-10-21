@@ -51,10 +51,14 @@ namespace Lalim.Abilities
         [SerializeField] private float _lostDistance = 40f;
 
         [Header("Approach (Tidebond call)")]
+        [Tooltip("Top speed above the player's own while it swims over (it slows as it arrives).")]
         [SerializeField] private float _approachSpeed = 18f;
+        [Tooltip("Close enough to count as beside the player: from here it settles in smoothly.")]
         [SerializeField] private float _mountSnapDistance = 1.5f;
-        [Tooltip("Safety net: if the dugong hasn't arrived after this long it snaps to the player.")]
-        [SerializeField] private float _approachTimeout = 2.5f;
+        [Tooltip("Safety net: if the dugong hasn't arrived after this long it settles in anyway (smoothly).")]
+        [SerializeField] private float _approachTimeout = 5f;
+        [Tooltip("How long the last stretch (settling beside the player) takes before the hand reaches for it.")]
+        [SerializeField, Min(0.05f)] private float _settleSeconds = 0.5f;
 
         [Header("Tidebond (hand on its side)")]
         [Tooltip("Half the body's width at the flank the player touches, in the model's own units.")]
@@ -65,7 +69,13 @@ namespace Lalim.Abilities
         [SerializeField] private float _flankForward = -0.1f;
         [Tooltip("How much of the arm's length the hand reaches out (1 = fully straight).")]
         [SerializeField, Range(0.5f, 1f)] private float _reachFraction = 0.85f;
-        [SerializeField] private float _handBlendSeconds = 0.25f;
+        [Tooltip("Where the hand rests, relative to the shoulder (x out to the side, y up, z forward), in arm reaches: down and a little forward is a relaxed arm on the dugong's back, not one stuck straight out.")]
+        [SerializeField] private Vector3 _handRest = new Vector3(0.55f, -0.6f, 0.3f);
+        [SerializeField] private float _handBlendSeconds = 0.6f;
+        [Tooltip("How far the wrist stays off the dugong's skin, so the palm rests on it (metres).")]
+        [SerializeField, Min(0f)] private float _palmThickness = 0.03f;
+        [Tooltip("Which way the right hand bone's local X points from the palm: +1 = palm on +X (this rig; the left hand is mirrored).")]
+        [SerializeField] private float _palmAxisSign = 1f;
 
         [Header("Resting")]
         [SerializeField] private float _restFollowDistance = 9f;
@@ -90,6 +100,7 @@ namespace Lalim.Abilities
         private Vector3 _lastPlayerPos;
         private bool _hasLastPlayerPos;
         private float _handWeight;
+        private float _seated;   // 0 just arrived … 1 settled beside the player (then the hand reaches)
         private Arm _rightArm, _leftArm;
         private bool _armsResolved;
 
@@ -152,6 +163,7 @@ namespace Lalim.Abilities
             _approachTimer = 0f;
             _restTimer = 0f;
             _handWeight = 0f;
+            _seated = 0f;
             SetTired(false);
             // Keeps the side it's on: on the player's right → the player's right hand touches it.
             Vector3 right = Vector3.Cross(Vector3.up, FlatForward(rider));
@@ -371,19 +383,32 @@ namespace Lalim.Abilities
             {
                 State = DugongState.Mounted;
                 _velocity = Vector3.zero;
+                _seated = 0f;   // the last stretch is eased in SnapToSeat, never a jump; the ride starts once settled
                 SnapToSeat();
                 SetMountedAnim(true);
-                if (_rideVfx != null) _rideVfx.Play();
-
-                Action callback = _onArrived;
-                _onArrived = null;
-                callback?.Invoke();
                 return;
             }
 
-            _velocity = toTarget / dist * Mathf.Min(_approachSpeed, dist / Mathf.Max(Time.deltaTime, 0.0001f));
+            // Swim over at a natural pace: as fast as the player plus a margin (so it catches up),
+            // slowing to a glide over the last few metres; turning to the player's heading as it nears.
+            float playerSpeed = PlayerController.Instance != null ? PlayerController.Instance.Velocity.magnitude : 0f;
+            float cruise = Mathf.Min(_approachSpeed, playerSpeed + 6f);
+            float speed = Mathf.Min(cruise, playerSpeed + dist * 1.6f + 0.5f);
+            Vector3 want = toTarget / dist * speed;
+            _velocity = Vector3.MoveTowards(_velocity, want, Time.deltaTime * 14f);
             Move(_velocity * Time.deltaTime);
-            FaceTravelDirection();
+            float near = Mathf.InverseLerp(4f, 1f, dist);
+            if (near > 0f) TurnTo(FlatForward(_player), near);
+            else FaceTravelDirection();
+        }
+
+        private void TurnTo(Vector3 heading, float amount)
+        {
+            if (heading.sqrMagnitude < 1e-4f) return;
+            Quaternion along = Quaternion.LookRotation(heading.normalized) * Quaternion.Euler(_modelRotationOffset);
+            Quaternion travel = _velocity.sqrMagnitude > 0.04f ? Quaternion.LookRotation(_velocity.normalized) * Quaternion.Euler(_modelRotationOffset) : along;
+            Quaternion target = Quaternion.Slerp(travel, along, amount);
+            transform.rotation = Quaternion.Slerp(transform.rotation, target, 1f - Mathf.Exp(-_turnSpeed * Time.deltaTime));
         }
 
         private void SnapToSeat()
@@ -391,7 +416,18 @@ namespace Lalim.Abilities
             Vector3 heading = PlayerController.Instance != null ? PlayerController.Instance.Velocity : Vector3.zero;
             if (heading.sqrMagnitude < 0.25f) heading = FlatForward(_player);
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(heading.normalized) * Quaternion.Euler(_modelRotationOffset), 1f - Mathf.Exp(-10f * Time.deltaTime));
-            transform.position = BesidePosition(transform.rotation);
+            // Settling in: glide the last bit to the player's side, then stay locked there.
+            Vector3 beside = BesidePosition(transform.rotation);
+            _seated = Mathf.MoveTowards(_seated, 1f, Time.deltaTime / _settleSeconds);
+            transform.position = _seated >= 1f ? beside : Vector3.Lerp(transform.position, beside, 1f - Mathf.Exp(-8f * Time.deltaTime));
+            // Beside the player now: the ride begins (Tidebond's speed and pose) as the hand reaches for it.
+            if (_seated >= 0.8f && _onArrived != null)
+            {
+                if (_rideVfx != null) _rideVfx.Play();
+                Action callback = _onArrived;
+                _onArrived = null;
+                callback.Invoke();
+            }
 
             float speed = PlayerController.Instance != null ? PlayerController.Instance.Velocity.magnitude : 0f;
             UpdateAnimSpeed(speed);
@@ -415,7 +451,10 @@ namespace Lalim.Abilities
             if (arm.Valid) { shoulder = arm.Upper.position; reach = arm.Length * _reachFraction; }
             else { shoulder = _player.position + Vector3.up * 0.45f; reach = 0.25f; }
 
-            Vector3 flankTarget = shoulder + right * (_sideSign * reach);
+            // The hand rests out, down and a little ahead of the shoulder (elbow bent): the dugong
+            // sits there, lower than the diver, its back under the hand.
+            Vector3 rest = _handRest.normalized * reach;
+            Vector3 flankTarget = shoulder + right * (_sideSign * rest.x) + Vector3.up * rest.y + heading * rest.z;
             return flankTarget - rotation * Vector3.Scale(FlankLocal(), transform.lossyScale);
         }
 
@@ -424,29 +463,61 @@ namespace Lalim.Abilities
 
         private void ReachHand()
         {
-            _handWeight = Mathf.MoveTowards(_handWeight, 1f, Time.deltaTime / Mathf.Max(0.01f, _handBlendSeconds));
+            // The hand reaches only once the dugong is beside the player, not while it's still arriving.
+            float handTarget = _seated >= 0.8f ? 1f : 0f;
+            _handWeight = Mathf.MoveTowards(_handWeight, handTarget, Time.deltaTime / Mathf.Max(0.01f, _handBlendSeconds));
             Arm arm = _sideSign > 0f ? _rightArm : _leftArm;
             if (!arm.Valid) return;
             Vector3 flank = transform.TransformPoint(FlankLocal());
-            TwoBoneIK.Solve(arm.Upper, arm.Fore, arm.Hand, flank, -Vector3.up + _player.forward * -0.3f, _handWeight);
+            // Into the dugong's body from the touched point (a little down: the hand lies on its upper flank).
+            Vector3 core = transform.TransformPoint(new Vector3(0f, _flankHeight * 0.4f, _flankForward));
+            Vector3 inward = core - flank;
+            inward = inward.sqrMagnitude > 1e-6f ? inward.normalized : _player.right * _sideSign;
+            // The wrist stays a palm's thickness off the skin, so the palm rests on it rather than sinking in.
+            Vector3 wrist = flank - inward * _palmThickness;
+            // The elbow bends out and back, as when leaning a hand on something beside you.
+            Vector3 side = _player.right * _sideSign;
+            TwoBoneIK.Solve(arm.Upper, arm.Fore, arm.Hand, wrist, side * 0.6f - _player.forward * 0.8f, _handWeight);
+            LayPalm(arm, inward);
+        }
+
+        /// <summary>
+        /// Turns the hand so its palm (not its edge or back) lies on the dugong: the palm faces
+        /// <paramref name="inward"/> and the fingers run on along the forearm's line, over its skin.
+        /// The diver's rig has its palms on the hand bones' local +X (right) / −X (left), fingers along +Y.
+        /// </summary>
+        private void LayPalm(Arm arm, Vector3 inward)
+        {
+            if (arm.Hand == null || arm.Fore == null) return;
+            Vector3 fingers = arm.Hand.position - arm.Fore.position;
+            fingers -= inward * Vector3.Dot(fingers, inward);   // flat along the skin
+            if (fingers.sqrMagnitude < 1e-6f) fingers = Vector3.ProjectOnPlane(_player.forward, inward);
+            if (fingers.sqrMagnitude < 1e-6f) return;
+            fingers.Normalize();
+            Vector3 localX = (_sideSign > 0f ? 1f : -1f) * _palmAxisSign * inward;   // the palm's side of the hand
+            Quaternion lay = Quaternion.LookRotation(Vector3.Cross(localX, fingers), fingers);
+            arm.Hand.rotation = Quaternion.Slerp(arm.Hand.rotation, lay, _handWeight);
         }
 
         private void ResolveArms()
         {
             if (_armsResolved || _player == null) return;
             _armsResolved = true;
-            _rightArm = FindArm("R_");
-            _leftArm = FindArm("L_");
+            _rightArm = FindArm('R');
+            _leftArm = FindArm('L');
         }
 
-        private Arm FindArm(string prefix)
+        /// <summary>The diver's arm bones on one side, in either rig's naming ("R_Upperarm" or "UpperArm.R").</summary>
+        private Arm FindArm(char side)
         {
             var arm = new Arm();
+            string old = side + "_", suffix = "." + side;
             foreach (Transform t in _player.GetComponentsInChildren<Transform>(true))
             {
-                if (t.name == prefix + "Upperarm") arm.Upper = t;
-                else if (t.name == prefix + "Forearm") arm.Fore = t;
-                else if (t.name == prefix + "Hand") arm.Hand = t;
+                string n = t.name;
+                if (n == old + "Upperarm" || n == "UpperArm" + suffix) arm.Upper = t;
+                else if (n == old + "Forearm" || n == "LowerArm" + suffix) arm.Fore = t;
+                else if (n == old + "Hand" || n == "Hand" + suffix) arm.Hand = t;
             }
             return arm;
         }

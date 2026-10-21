@@ -117,8 +117,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   _orbitSmoothSpeed: 8
-  _minVerticalAngle: -20
-  _maxVerticalAngle: 60
+  _minVerticalAngle: -50
+  _maxVerticalAngle: 80
   _firstPersonOffset: {x: 0, y: 1.7, z: 0}
   _fpMinVerticalAngle: -80
   _fpMaxVerticalAngle: 80

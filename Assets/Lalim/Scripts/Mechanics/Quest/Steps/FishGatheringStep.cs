@@ -48,7 +48,7 @@ namespace Lalim.Mechanics.Quest
         [SerializeField] private MinigameDifficultyProfile _profile;
         [SerializeField, Min(1)] private int _baseHerds = 5;
         [SerializeField, Min(1f)] private float _expectedSecondsPerHerd = 45f;
-        [SerializeField] private string _counterFormat = "Herds home: {0} / {1}";
+        [SerializeField] private string _counterFormat = "Schools home: {0} / {1}";
         [SerializeField, TextArea(1, 2)] private string _equipConchText = "Open your inventory and equip the Radiant Conch.";
 
         [Header("Sound (the conch call itself is on ConchCall)")]
@@ -324,8 +324,26 @@ namespace Lalim.Mechanics.Quest
 
         private bool Live => IsRunning && _started;
 
-        private void OnHerdCalmed(Herd h) { if (Live) GameAudio.PlayAt(_herdCalmedClip, h.Center, 0.85f); }
-        private void OnHerdJoined(Herd h) { if (Live) GameAudio.PlayAt(_herdJoinsClip, h.Center, 0.75f); }
+        private void OnHerdCalmed(Herd h) { if (Live) PlayAfterConch(_herdCalmedClip, 0.85f); }
+        private void OnHerdJoined(Herd h) { if (Live) PlayAfterConch(_herdJoinsClip, 0.75f); }
+
+        // The conch call plays in full first; the success sound follows it (once for herds called together).
+        private readonly HashSet<AudioClip> _waitingForConch = new HashSet<AudioClip>();
+
+        private void PlayAfterConch(AudioClip clip, float volume)
+        {
+            if (clip == null) return;
+            float wait = ConchCall.SoundingUntil - Time.time;
+            if (wait <= 0f) { GameAudio.PlayAt(clip, PlayerController.Instance != null ? PlayerController.Instance.transform.position : transform.position, volume); return; }
+            if (_waitingForConch.Add(clip)) StartCoroutine(PlayWhenConchEnds(clip, volume));
+        }
+
+        private System.Collections.IEnumerator PlayWhenConchEnds(AudioClip clip, float volume)
+        {
+            while (Time.time < ConchCall.SoundingUntil) yield return null;
+            _waitingForConch.Remove(clip);
+            if (Live) GameAudio.PlayAt(clip, PlayerController.Instance != null ? PlayerController.Instance.transform.position : transform.position, volume);
+        }
         private readonly Dictionary<Predator, float> _spottedAt = new Dictionary<Predator, float>();
         private float _gaveUpAt = -100f;
 
@@ -354,7 +372,11 @@ namespace Lalim.Mechanics.Quest
             if (Live && PlayerController.Instance != null) GameAudio.PlayAt(_hideRustleClip, PlayerController.Instance.transform.position, 0.8f);
         }
 
-        /// <summary>Carrying fish → Manunubo; otherwise the nearest scattered herd.</summary>
+        /// <summary>
+        /// Spirit Sense (through the tracker) leads to whatever is nearer: the closest scattered
+        /// school, or — once fish follow the diver — Manunubo if it is closer than any of them.
+        /// The tracker re-picks the nearest as the diver swims.
+        /// </summary>
         private void PointNavigation(bool force)
         {
             bool followers = HerdRibbon.Instance.HasFollowers;
@@ -362,11 +384,18 @@ namespace Lalim.Mechanics.Quest
             _hadFollowers = followers;
             ObjectiveTracker tracker = ObjectiveTracker.Instance;
             if (tracker == null) return;
-            if (followers && _manunubo != null) { tracker.SetObjective(_manunubo.transform); return; }
             var markers = new List<Transform>();
+            if (followers && _manunubo != null) markers.Add(_manunubo.transform);
             foreach (Herd h in _herds) if (h != null) markers.Add(h.Marker);
-            tracker.SetObjectiveSet(markers, t => t == null || t.GetComponentInParent<Herd>() == null ||
-                                                  t.GetComponentInParent<Herd>().State != Herd.HerdState.Scattered);
+            // A school is done once it stops being scattered (calmed, following, home); Manunubo never is.
+            Transform manunubo = _manunubo != null ? _manunubo.transform : null;
+            tracker.SetObjectiveSet(markers, t =>
+            {
+                if (t == null) return true;
+                if (t == manunubo) return false;
+                Herd herd = t.GetComponentInParent<Herd>();
+                return herd == null || herd.State != Herd.HerdState.Scattered;
+            });
         }
 
         private void UpdateCounter() => QuestObjectiveUI.Instance?.SetCounter(_delivered, _total, _counterFormat);
