@@ -232,7 +232,7 @@ LALIM/
 │   │   ├── UnderwaterMenu/     ← Main-menu scripts, materials, textures, seabed mesh
 │   │   └── Videos/             ← LoadingReef_Loop.mp4, PortalSwirl_Loop.mp4
 │   ├── URPDefaultResources/    ← URP renderer config
-│   └── _Recovery/              ← ⚠️ Do not commit (Unity crash copies)
+│   └── _Recovery/              ← Unity crash copies (ignored by .gitignore)
 ├── Packages/                   ← Unity Package Manager
 │   └── manifest.json           ← ⚠️ Remove com.coplaydev.unity-mcp line before committing
 ├── ProjectSettings/
@@ -244,7 +244,7 @@ LALIM/
 ├── GEMINI.md                   ← AI agent rules (Antigravity/Gemini)
 ├── CLAUDE.md                   ← AI agent rules (Claude)
 ├── LEVEL1_IMPLEMENTATION_PLAN.md
-└── graphify-out/               ← ⚠️ Do not commit (dev-tool graph dump)
+└── graphify-out/               ← Dev-tool graph dump (ignored by .gitignore)
 ```
 
 ---
@@ -452,7 +452,7 @@ Tests cover: abilities, stamina math, dialogue, DDA, save/load, inventory, quest
 
 | Document | What it covers |
 |---|---|
-| **[DETAILED_UPDATES_2026-10-22.md](DETAILED_UPDATES_2026-10-22.md)** | All work from 2026-10-08 → 2026-10-22. Covers underwater main menu, Bakunawa v2 model & boss encounter, Pearl of Luminescence & Kataw Gift 3D models/materials, dialogue portraits, Moon Phase Ritual minigame, School Relocation, Selective Catching, Fish Gathering, and Level 2 editor tools. ~67 files/folders added. |
+| **[DETAILED_UPDATES_2026-10-22.md](DETAILED_UPDATES_2026-10-22.md)** | All work from 2026-10-08 → 2026-10-22. Covers underwater main menu, Bakunawa v2 model & boss encounter, Pearl of Luminescence & Kataw Gift 3D models/materials, dialogue portraits, Moon Phase Ritual minigame, School Relocation, Selective Catching, Fish Gathering, and Level 2 editor tools. ~63 files/folders added; committed as `372643b` + `372d601`. |
 | **[DETAILED_UPDATES_2026-10-08.md](DETAILED_UPDATES_2026-10-08.md)** | All work from 2026-10-04 → 2026-10-08. Covers audio system, swim-bar redesign, inventory & relic HUD, Level 2 Visayas groundwork (world models, Bakunawa, Kataw, 3 minigames), creature animation pipeline, and scene tools. ~86 files added. |
 | **[DETAILED_UPDATES_2026-10-04.md](DETAILED_UPDATES_2026-10-04.md)** | All work from 2026-09-26 → 2026-10-04. Covers the full skill kit, HUD, Level 1 build (3 zones, 5 minigames), scene flow, dialogue, relics, teleport hub, loading screen, and more. 545 files added. |
 | **[CHANGELOG.md](CHANGELOG.md)** | Concise version-keyed change log. |
@@ -471,7 +471,7 @@ Tests cover: abilities, stamina math, dialogue, DDA, save/load, inventory, quest
 - **Level 2 dialogue is draft placeholder** — needs a final writer's pass for character voice and tone.
 - **Kataw Gift & Pearl abilities** — 3D models, icons, and item assets are complete; active abilities are TBD by design.
 - **Shader warm-up recordings only exist for Metal (Mac/iOS)** — Android (Vulkan/GLES) needs recordings from a connected device.
-- **`graphify-out/`, `Assets/Screenshots/`, `.obsidian/`, and `Captures/`** need to be added to `.gitignore`.
+- **Old tracked dev files** — `.gitignore` now covers `graphify-out/`, `Assets/Screenshots/`, `.obsidian/` and `Captures/`, but `Assets/Lalim/Scripts/Core/graphify-out/`, one screenshot and `.claude/settings.json` were committed earlier and are still tracked. Untrack them with `git rm -r --cached <path>` if they shouldn't be in the repo.
 - **`Packages/manifest.json`** has a local-path MCP package — remove before committing to shared branches.
 
 ---
@@ -484,7 +484,7 @@ Quick summary:
 - Branch from `hym-test` (the active dev branch)
 - Follow the conventions in `GEMINI.md` (AI agents) or this README (humans)
 - Run the `Lalim.Tests` EditMode suite before submitting
-- Never commit `Assets/_Recovery/`, `graphify-out/` (repo root) or `Assets/Lalim/Scripts/Core/graphify-out/`, `Assets/Screenshots/`, `Captures/`, `.claude/`, or the local MCP package path
+- Never commit `Assets/_Recovery/`, `graphify-out/` (repo root) or `Assets/Lalim/Scripts/Core/graphify-out/`, `Assets/Screenshots/`, `Captures/`, `.claude/`, or the local MCP package path (`.gitignore` covers all of these except `.claude/` and the manifest line)
 
 ---
 

@@ -8,13 +8,19 @@ For full technical detail on any version, see the linked Detailed Update documen
 
 ---
 
-## [Unreleased] — 0.4.0 (working tree, 2026-10-22)
+## [Unreleased]
+
+Changes not yet committed to a tagged version.
+
+---
+
+## [0.4.0] — 2026-10-22
 
 > **Full technical detail:** [DETAILED_UPDATES_2026-10-22.md](DETAILED_UPDATES_2026-10-22.md)
 
-Not yet committed. Will become **0.4.0** when committed.  
-Branch: `hym-test` (baseline `e35e93a`)  
-~67 files/folders added · 79 modified (47 scripts) · 2 deleted
+Commits: `feat: add Visayas minigames, underwater menu, Bakunawa v2, and relic assets` (`372643b`) + `docs: add Oct 22 detailed updates, changelog, readme, and project docs` (`372d601`)  
+Branch: `hym-test`  
+~63 files/folders added · 80 modified (47 scripts) · 2 deleted
 
 ### Added
 
@@ -86,6 +92,7 @@ Branch: `hym-test` (baseline `e35e93a`)
 - `03_Visayas.unity` — Bakunawa v2, Kataw village, currents, glow stones, level pieces and audio placed.
 - `DugongAnimator` (single `Swim` state), `PlayerAnimator` (`FloatSwim` state).
 - `Bakunawa.fbx`, `dugong.fbx`, `Player_final_final.fbx` re-exported; `MAT_Bakunawa_Body.mat` double-sided; `M_WaterSurface.mat` transparent blue.
+- `.gitignore` — new dev-artifacts block: `graphify-out/`, `Captures/`, `Assets/Screenshots/`, `Assets/_Recovery/`, `Assets/_AxisTest/`, `.obsidian/`.
 
 ### Removed
 - `1_sample.md` — scratch file at the repo root.
@@ -340,7 +347,8 @@ Early prototype commits on `main` and `prototype-test`:
 
 ---
 
-[Unreleased]: https://github.com/Ombrei/Lalim_Capstone_Final/compare/e35e93a...hym-test
+[Unreleased]: https://github.com/Ombrei/Lalim_Capstone_Final/compare/372d601...hym-test
+[0.4.0]: https://github.com/Ombrei/Lalim_Capstone_Final/compare/e35e93a...372d601
 [0.3.0]: https://github.com/Ombrei/Lalim_Capstone_Final/compare/c16e4fe...e35e93a
 [0.2.0]: https://github.com/Ombrei/Lalim_Capstone_Final/compare/8e8f8d5...c16e4fe
 [0.1.0]: https://github.com/Ombrei/Lalim_Capstone_Final/compare/16142e7...8e8f8d5

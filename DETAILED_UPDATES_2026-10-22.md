@@ -2,8 +2,9 @@
 
 **Branch:** `hym-test`
 **Last commit (baseline):** `e35e93a` "feat: add Visayas environment, audio, and core mechanics" (2026-10-08)
-**Covers:** every uncommitted change in the working tree from 2026-10-08 to 2026-10-22, in the order the work happened.
-**Size (not counting `.meta` files):** ~67 files/folders added · 79 modified (47 scripts: 3,793 insertions, 437 deletions) · 2 deleted.
+**Committed as:** `372643b` "feat: add Visayas minigames, underwater menu, Bakunawa v2, and relic assets" and `372d601` "docs: add Oct 22 detailed updates, changelog, readme, and project docs" (both 2026-10-22).
+**Covers:** every change on top of `e35e93a` from 2026-10-08 to 2026-10-22, in the order the work happened.
+**Size (not counting `.meta` files):** ~63 files/folders added · 80 modified (47 scripts: 3,793 insertions, 437 deletions) · 2 deleted. (`372643b` alone, `.meta` included: 327 files — 240 added, 85 modified, 2 deleted.)
 
 This file is for teammates and for AI assistants working on Lalim. It explains **what changed, why, where it lives, and how to work with it safely**. Read §1 and §2 before touching anything.
 
@@ -81,6 +82,7 @@ This file is for teammates and for AI assistants working on Lalim. It explains *
 - **`03_Visayas.unity`** updated: Bakunawa_v2 placed, Kataw village populated, glow stones placed, tide-current routes threaded, level pieces built, ritual and Bakunawa audio assigned.
 - **6 new Level 2 editor scripts:** `Zone3GlowStones`, `PlayFromZone` and `KatawGiftPlaceholderBuilder` have menu items; `Level2Currents`, `Level2KatawVillage` and `Level2LevelPieces` are code-only builders (no menu item, see §6). `RelicAssetBuilder` gains **Build Pearl of Luminescence**.
 - **Root clean-up:** `1_sample.md` and `nextsteps (aug 4).md` deleted.
+- **`.gitignore`** gains a dev-artifacts block (`372d601`): `graphify-out/`, `Captures/`, `Assets/Screenshots/`, `Assets/_Recovery/`, `Assets/_AxisTest/`, `.obsidian/`.
 
 ---
 
@@ -90,16 +92,13 @@ This file is for teammates and for AI assistants working on Lalim. It explains *
 |---|---|---|
 | 1 | **`03_Visayas.unity` has not been play-tested end to end** — zone 3 steps are still being wired. | Use **Tools ▸ Lalim ▸ Play From ▸ Level 2 · Zone N** — it guards your real save.[^playfromzone] |
 | 2 | **No Padre Burgos zone BGM** — `Audio/Music/PadreBurgos/` holds only the 8 ritual melodies and the lullaby. | Assign a BGM clip to `MusicLibrary` for the Padre Burgos zone before playtesting. |
-| 3 | **All new work is untracked**, including `Materials/MoonRitual/`, `Audio/Music/PadreBurgos/` and `Audio/SFX/Visayas/PadreBurgos/`. `03_Visayas.unity` references them. | Commit them together with the scene, or the references break on other machines. |
-| 4 | **`graphify-out/`** (repo root, and the older `Assets/Lalim/Scripts/Core/graphify-out/`) is a dev-tool dump. | Add `graphify-out/` to `.gitignore`. Do not commit. |
-| 5 | **`Assets/Screenshots/`** has 29 dev screenshots. | Do not commit. Add to `.gitignore` or delete before push. |
-| 6 | **`.obsidian/`** at root was created by the Obsidian vault setup. | Add to `.gitignore`, or commit intentionally if the team shares vault config. |
-| 7 | **`Captures/`** at root has screen captures. | Do not commit. Add to `.gitignore`. |
-| 8 | **`RelicAssetBuilder` / `KatawGiftPlaceholderBuilder`** rebuild relic prefabs in place. | **Relics ▸ Build Pearl of Luminescence** overwrites `PF_Relic_PearlOfLuminescence.prefab`; **Relics ▸ Build Kataw Gift Placeholder** overwrites `PF_Relic_KatawGift_PH.prefab`. Back up manual prefab edits first. |
-| 9 | **`PlayFromZone`** backs up the slot-0 save and restores it on Play stop. | If Unity crashes mid-test, run **Tools ▸ Lalim ▸ Play From ▸ Restore My Save** immediately. |
-| 10 | **`Level2Currents`, `Level2KatawVillage`, `Level2LevelPieces` have no menu items.** | Call their static `Build…()` methods from an editor script or the Unity MCP bridge (§6). |
-| 11 | **`1_sample.md` and `nextsteps (aug 4).md` are deleted** from the working tree. | Confirm nobody still needs them before committing the deletion. |
-| 12 | All baseline warnings from the earlier docs still apply: local MCP package path, crash-recovery scenes, stray assets, embedded URP edit, Git LFS, save-file location. | See [DETAILED_UPDATES_2026-10-04.md](DETAILED_UPDATES_2026-10-04.md) §2 and [DETAILED_UPDATES_2026-10-08.md](DETAILED_UPDATES_2026-10-08.md) §2. |
+| 3 | **`.gitignore` now ignores the dev folders** (since `372d601`): `graphify-out/`, `Captures/`, `Assets/Screenshots/`, `Assets/_Recovery/`, `Assets/_AxisTest/`, `.obsidian/`. The 28 untracked screenshots, `Captures/`, `.obsidian/` and the root `graphify-out/` were left out of the commits. | Nothing to do for new files in those folders. Don't `git add -f` them. |
+| 4 | **Some ignored paths still have tracked files** committed before the rule existed: `Assets/Lalim/Scripts/Core/graphify-out/` (47 files + `.meta`) and `Assets/Screenshots/screenshot-20261005-220223.png`. `.claude/settings.json` is tracked and not ignored. | If they shouldn't be in the repo, run `git rm -r --cached <path>` and commit. |
+| 5 | **`RelicAssetBuilder` / `KatawGiftPlaceholderBuilder`** rebuild relic prefabs in place. | **Relics ▸ Build Pearl of Luminescence** overwrites `PF_Relic_PearlOfLuminescence.prefab`; **Relics ▸ Build Kataw Gift Placeholder** overwrites `PF_Relic_KatawGift_PH.prefab`. Back up manual prefab edits first. |
+| 6 | **`PlayFromZone`** backs up the slot-0 save and restores it on Play stop. | If Unity crashes mid-test, run **Tools ▸ Lalim ▸ Play From ▸ Restore My Save** immediately. |
+| 7 | **`Level2Currents`, `Level2KatawVillage`, `Level2LevelPieces` have no menu items.** | Call their static `Build…()` methods from an editor script or the Unity MCP bridge (§6). |
+| 8 | **`1_sample.md` and `nextsteps (aug 4).md` were deleted** in `372643b`. | Recover with `git show e35e93a:<file>` if anyone still needs them. |
+| 9 | All baseline warnings from the earlier docs still apply: local MCP package path, crash-recovery scenes, stray assets, embedded URP edit, Git LFS, save-file location. | See [DETAILED_UPDATES_2026-10-04.md](DETAILED_UPDATES_2026-10-04.md) §2 and [DETAILED_UPDATES_2026-10-08.md](DETAILED_UPDATES_2026-10-08.md) §2. |
 
 ---
 
@@ -248,6 +247,7 @@ The main menu was rebuilt as a live 3D underwater environment. Its scripts live 
 - **Loading text**: `SceneLoadProgressEvent.Phase` (new field); `SceneLoader` (+8/−6) publishes it and `LoadingStages.Label(stage)` (+12) gives each stage a player-facing line.
 - **Fonts**: `PlusJakartaSans-ExtraBold/Medium SDF Padded` and `Spicy Sale SDF` atlases regenerated.
 - **Deleted** from the repo root: `1_sample.md` (scratch file flagged in the Oct 8 doc) and `nextsteps (aug 4).md` (old to-do notes).
+- **`.gitignore`** (committed in `372d601`): new "Dev artifacts & temporary files" block for `graphify-out/`, `Captures/`, `Assets/Screenshots/`, `Assets/_Recovery/`, `Assets/_AxisTest/` (with their folder `.meta` files) and `.obsidian/`.
 
 ---
 
@@ -380,7 +380,7 @@ The Oct 8 list (`SwimStaminaPool`, `RelicLoadout`, `ZoneSiteShuffle`) is still u
 
 > `.meta` files are omitted. Paths are relative to `Assets/Lalim/` unless they start with `Assets/` or the repo root.
 
-### 8.1 Added — scripts (new, untracked)
+### 8.1 Added — scripts (new)
 
 **Challenges/MoonRitual/:** `MoonCircle.cs`, `MoonPhases.cs`
 
@@ -396,7 +396,7 @@ The Oct 8 list (`SwimStaminaPool`, `RelicLoadout`, `ZoneSiteShuffle`) is still u
 
 **UnderwaterMenu/** (outside `Scripts/`): `LalimTitleAnimator.cs`, `UnderwaterMenuDirector.cs`, `UnderwaterMenuMotion.cs`, `UIFloat.cs`
 
-### 8.2 Added — assets (new, untracked)
+### 8.2 Added — assets (new)
 
 | Group | Contents |
 |---|---|
@@ -407,8 +407,9 @@ The Oct 8 list (`SwimStaminaPool`, `RelicLoadout`, `ZoneSiteShuffle`) is still u
 | **Prefabs** | `Prefabs/Creatures/PF_Bakunawa_v2_Model.prefab`; `Prefabs/UI/LalimTitle.prefab` |
 | **Sprites** | `Sprites/Characters/bakunawa.png`, `kataw-female.png`, `kataw-male.png`, `old-kataw-female.png`, `old-kataw-male.png`; `Sprites/UI/Game Mechanics/icon_relic_pearl.png` |
 | **UnderwaterMenu** | `SeabedMesh.asset`, `UW_PostProfile.asset`, `MenuPlayerAnimator.controller`, `Caustics.png`, `T_Bubble/T_Fish/T_Shaft.png`, `Castle_Albedo.jpg`, `M_Bubble`, `M_BubbleText`, `M_BubbleText_Splash`, `M_Castle`, `M_Fish`, `M_Shaft`, `UW_*.mat` (root) and `Materials/UW_*.mat` (16 variants) |
-| **Docs (repo root)** | `CHANGELOG.md`, `CONTRIBUTING.md`, `README.md`, `LICENSE`, `DETAILED_UPDATES_2026-10-22.md` |
-| **Other** | `Assets/Screenshots/` (29 PNGs), `Captures/`, `.obsidian/`, `graphify-out/` (probably not for the repo, see §2) |
+| **Docs (repo root)** | `CHANGELOG.md`, `CONTRIBUTING.md`, `README.md`, `LICENSE`, `DETAILED_UPDATES_2026-10-22.md` (all in `372d601`) |
+
+**Not committed (ignored by `.gitignore`):** 28 PNGs in `Assets/Screenshots/`, `Captures/`, `.obsidian/`, `graphify-out/` (repo root).
 
 ### 8.3 Modified (selected notes)
 
@@ -483,6 +484,7 @@ The Oct 8 list (`SwimStaminaPool`, `RelicLoadout`, `ZoneSiteShuffle`) is still u
 | `Scenes/Levels/01_Luzon/02_Luzon.unity` | Minor quest-step / dialogue updates |
 | `Scenes/Levels/02_Visayas/03_Visayas.unity` | Bakunawa_v2, village, glow stones, currents, level pieces, ritual + Bakunawa audio |
 | `Scenes/Tutorial/01_Tutorial.unity` | Camera and dialogue minor updates |
+| `.gitignore` (repo root) | Dev-artifacts block (`372d601`), see §4.12 |
 
 ### 8.4 Deleted
 
@@ -504,7 +506,7 @@ All rules from the Oct 4 (1–12) and Oct 8 (13–20) documents apply ([Oct 4 §
 25. **`ITalkPrelude` for all dramatic NPC entrances.** Any NPC with a pre-conversation animation implements `ITalkPrelude`. Don't bespoke-wire `StatueDialogueRouter`.
 26. **Bakunawa v1 model kept for reference.** Do not delete `PF_Bakunawa_Model.prefab` or `Bakunawa.fbx`. Use `PF_Bakunawa_v2_Model.prefab` for new scene work.
 27. **Level 2 builders rebuild from scratch.** `Level2KatawVillage`, `Level2Currents`, `Level2LevelPieces` and `Zone3GlowStones` remove their own earlier output before rebuilding. Manual edits to their output will be lost on the next build.
-28. **`graphify-out/` (both copies), `Assets/Screenshots/`, `.obsidian/`, `Captures/` must not be committed.** Add them to `.gitignore`.
+28. **`graphify-out/` (both copies), `Assets/Screenshots/`, `.obsidian/`, `Captures/` must not be committed.** `.gitignore` covers them; never `git add -f` them. Older files still tracked under those paths are listed in §2.
 29. **Bakunawa audio lives on `Bakunawa.cs`.** Assign its clips on the component (or through its `EditorSet…` helpers), not in `SfxLibrary`.
 
 ---
@@ -516,8 +518,8 @@ All rules from the Oct 4 (1–12) and Oct 8 (13–20) documents apply ([Oct 4 §
 - **Kataw Gift ability** — model and icon are done; equipped-relic action does nothing. TBD by design.
 - **Pearl of Luminescence ability** — relic model is done; the gameplay action (light-based ability) is not designed or implemented.
 - **`Level2DialogueScripts` is a draft** — needs a writer's pass. `{player}` token not resolved in all Padre Burgos lines.
-- **`graphify-out/` and `Captures/`** not yet in `.gitignore` — block push until resolved.
-- **`.obsidian/`** at root — team must decide: track (shared vault config) or ignore.
+- **Tracked files under ignored paths** — `Assets/Lalim/Scripts/Core/graphify-out/` (47 files), one screenshot in `Assets/Screenshots/`, and `.claude/settings.json` (not ignored) are still in the repo. Decide whether to untrack them.
+- **`.obsidian/`** is ignored by default. If the team wants a shared vault config, commit it deliberately and drop the ignore rule.
 - **Android shader warm-up** — no `.graphicsstate` recordings for Android Vulkan/GLES yet.
 - **Two castle models**: `Models/Castle/castle.fbx` (menu) and `Models/Environment/Castle/Castle.fbx` (Level 1) are different files. Decide whether both are needed.
 - **Level 2 builders without menu items** (`Level2Currents`, `Level2KatawVillage`, `Level2LevelPieces`) — add menu items or keep them code-only.
@@ -535,4 +537,4 @@ All rules from the Oct 4 (1–12) and Oct 8 (13–20) documents apply ([Oct 4 §
 
 ---
 
-*Generated 2026-10-22 from the working tree (`git status` against `e35e93a`) and the session history. If something here disagrees with the code, the code wins — please update this file.*
+*Generated 2026-10-22 from the working tree (`git status` against `e35e93a`) and the session history, then updated after commits `372643b` and `372d601`. If something here disagrees with the code, the code wins — please update this file.*
